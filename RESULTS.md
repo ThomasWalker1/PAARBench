@@ -233,6 +233,115 @@ perturbs exactly that surface: parameters the adapter marked trainable, plus the
 correction slots it installed. Both methods pass, along with an idempotence check. 5
 integration tests, opt-in with `-m integration` so the default suite stays GPU-free.
 
+---
+
+## Second setting, and the unconditioned control
+
+2026-08-01. `pusht` runs for the first time, and `static_lora` joins as a fourth arm.
+
+### pushobj (n=600)
+
+| method | success | median dist Δ | catastrophe | compounding | regret | adapt s | peak MB |
+|---|---|---|---|---|---|---|---|
+| AdaJEPA | **0.678** | +13 [+7, +22] | 14.0% [9%, 19%] | +0.91 [+0.40, +1.68] | 62% / +196 | 0.568 | 177 |
+| HyperJEPA | 0.610 | **−6** [−14, −1] | 8.3% [5%, 12%] | +0.01 [−0.16, +0.09] | 43% / +93 | 0.147 | 977 |
+| **Static LoRA** | 0.567 | −5 [−9, +1] | **6.2%** [3%, 10%] | −0.08 [−0.24, +0.04] | 46% / **+73** | **0.000** | **157** |
+| Frozen | 0.485 | — | — | — | — | 0.000 | 157 |
+
+**The unconditioned control is the story here.** Static LoRA buys +0.082 success over
+frozen for *zero* per-replan adaptation cost and no extra memory, and it has the **lowest
+catastrophe rate on the board** — 6.2%, against HyperJEPA's 8.3% and AdaJEPA's 14.0%. Its
+distance delta, −5 [−9, +1], is statistically indistinguishable from HyperJEPA's
+−6 [−14, −1].
+
+So on this setting HyperJEPA's *conditioning* buys +0.043 success over a constant
+correction, and nothing measurable on distance, catastrophe or compounding — in exchange
+for 0.147 s and 977 MB per replan against 0.000 s and 157 MB. That is a much harder
+question for the amortized method than "does it beat frozen", and it only becomes
+visible once the control is on the board. It reproduces the predecessor's 0.567 for this
+arm exactly.
+
+### pusht (n=300) — the ordering flips
+
+| method | success | median dist Δ | catastrophe | compounding | adapt s |
+|---|---|---|---|---|---|
+| HyperJEPA | **0.430** | −7 [−22, +6] | 10.0% [6%, 15%] | −0.05 [−0.44, +0.26] | 0.137 |
+| AdaJEPA | 0.397 | +3 [−9, +16] | 13.9% [9%, 19%] | **+0.65** [+0.07, +1.16] | 0.558 |
+| Frozen | 0.350 | — | — | — | 0.000 |
+
+On PushObj the online learner wins on success; here the amortized one does. Neither
+distance interval excludes zero at this n, so the two are not separated on the
+discriminating metric either way — which is the honest reading, and exactly why the
+leaderboard reports intervals rather than an ordering.
+
+What *does* carry across both settings is the compounding signature: AdaJEPA accumulates
+(+0.65 [+0.07, +1.16] here, +0.91 [+0.40, +1.68] on PushObj — both exclude zero) while
+the two recomputed-correction methods sit flat. The mechanism metric is measuring a
+property of the method, not of the domain.
+
+### What running a second setting exposed
+
+- **`pusht`'s base ships `data_path: <path>`** — the literal placeholder, never
+  substituted. Staging now detects placeholder values and falls back to a `dataset_path`
+  declared on the setting, so a caller never has to know which bases are affected.
+- **A method carrying trained weights needs different ones per setting.** `method.yaml`
+  had a single `params` block, so HyperJEPA on `pusht` would have loaded the PushObj
+  hypernetwork. Added `params_by_setting`, validated against the declared settings list.
+  Duplicating the method per domain would have split one method across two leaderboard
+  rows.
+
+### Adding a third method sharpened the reset tests
+
+Three problems surfaced, in the tests rather than the methods:
+
+1. **The world-model fixture was module-scoped.** Constructing an adapter *mutates the
+   model's structure* — it installs LoRA wrappers on the predictor — so the second
+   method under test received a predictor the first had already wrapped and emptied.
+   That reported a bug in `static_lora` that did not exist. Now one model per test.
+2. **A weight-based probe cannot see a wrapper-held correction.** HyperJEPA and
+   static_lora keep their correction as plain tensors inside the LoRA modules, which
+   never enter `state_dict` — so the bit-identity check passes *vacuously* for them.
+   Added `test_installed_corrections_are_cleared_on_reset` for that path.
+3. **That new test then flagged AdaJEPA wrongly.** Its LoRA factors are registered
+   `nn.Parameter`s — its parameterization, not a transient correction — and clearing
+   them would delete what its optimizer points at. The check now distinguishes plain
+   tensors (must be cleared) from parameters (restored by value, already covered).
+
+Current reset coverage, honestly: **adajepa** by bit-identity, **static_lora** by
+correction-clearing, **hyperjepa** by idempotence only — its correction is generated
+from a real observation, which these tests do not supply. Closing that needs a driven
+episode with real observation tensors.
+
+### Static LoRA on pusht — and whether conditioning earns its keep
+
+An earlier note here claimed PushT's static checkpoints were stored only as baked
+full-model weights that the adapter could not read. That was wrong:
+`pvs_adapters/static_r2/` carries `hyper_lora_epoch_*.pth` in exactly the same factored
+format as the PushObj ones, alongside the `baked_ep*` directories. Supporting it was a
+config change, not a loader.
+
+| setting | frozen | static LoRA | HyperJEPA | static's share of the gain |
+|---|---|---|---|---|
+| pushobj | 0.485 | 0.567 (**+0.082**) | 0.610 (+0.125) | **66%** |
+| pusht | 0.350 | 0.363 (+0.013) | 0.430 (+0.080) | **16%** |
+
+**Whether conditioning earns its keep is domain-dependent.** On PushObj a single constant
+correction captures two-thirds of what the hypernetwork achieves, so most of that method's
+benefit is not conditioning at all. On PushT the same control captures almost nothing —
++0.013 against an SE of 0.028, indistinguishable from doing nothing — and the
+hypernetwork's +0.080 is genuinely episode-dependent adaptation.
+
+A single-setting evaluation would have supported either conclusion. That is an argument
+for the control arm and for the second setting together; neither shows this alone.
+
+One thing is consistent across both: **static LoRA has the lowest catastrophe rate
+wherever it runs** (6.2% on PushObj, 6.6% on PushT, against 8.3–14.0% for the adaptive
+methods) at zero adaptation cost. A correction that cannot react also cannot overreact.
+
+Both `EpochSelection` rules are now setting-aware, keyed on `harness.setting_id` — the
+only thing a selection rule is told about where it is running, which is enough to pick
+the right weights and not enough to reach a test cohort.
+
 ### Note for M0
 
 `AdaJEPAAdapter` has **no episode-reset method at all** — it is constructed once per

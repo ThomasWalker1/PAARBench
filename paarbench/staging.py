@@ -106,8 +106,10 @@ def stage_dataset(
 def checkpoint_dataset_path(ckpt_base_path: os.PathLike | str) -> Path | None:
     """Read the training dataset path baked into a checkpoint's ``hydra.yaml``.
 
-    Returns ``None`` when the checkpoint does not record one, which is the signal
-    to leave ``dataset_data_path`` unset and let the config decide.
+    Returns ``None`` when the checkpoint does not record a usable one -- either the
+    key is absent, or it holds an unsubstituted placeholder, which some released
+    bases ship (``data_path: <path>``). The caller then falls back to the setting's
+    declared ``dataset_path``.
     """
     hydra_yaml = Path(ckpt_base_path) / "hydra.yaml"
     if not hydra_yaml.is_file():
@@ -118,4 +120,36 @@ def checkpoint_dataset_path(ckpt_base_path: os.PathLike | str) -> Path | None:
 
     cfg = OmegaConf.load(hydra_yaml)
     path = OmegaConf.select(cfg, "env.dataset.data_path")
-    return Path(path) if path else None
+    if not path:
+        return None
+    text = str(path)
+    # A placeholder looks like a path to Path() but names nothing; treat it as absent
+    # rather than letting it surface later as a confusing FileNotFoundError.
+    if text.startswith("<") or text in {"???", "null", "None"}:
+        return None
+    return Path(text)
+
+
+def resolve_dataset_path(setting, tmpfs_root=None, stage: bool = True,
+                         verbose: bool = True) -> Path | None:
+    """Where a setting's dataset should be read from, staged if asked.
+
+    Prefers the path recorded on the checkpoint, falls back to the one the setting
+    declares. Returns ``None`` when neither is usable, which leaves
+    ``dataset_data_path`` unset so the config decides.
+    """
+    source = checkpoint_dataset_path(setting.base_path)
+    if source is None or not source.is_dir():
+        declared = Path(setting.dataset_path) if setting.dataset_path else None
+        if declared is not None and declared.is_dir():
+            if verbose:
+                print(f"[stage] {setting.id}: checkpoint records no usable dataset "
+                      f"path; using the setting's declared {declared}", flush=True)
+            source = declared
+        else:
+            if verbose:
+                print(f"[stage] {setting.id}: no usable dataset path on "
+                      f"{setting.base_path}/hydra.yaml and none declared on the "
+                      f"setting; leaving dataset_data_path unset", flush=True)
+            return None
+    return stage_dataset(source, tmpfs_root, verbose=verbose) if stage else source

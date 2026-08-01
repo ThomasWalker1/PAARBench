@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from paarbench import methods, settings as settings_mod
 from paarbench.runner import DEFAULT_OUT_ROOT, run_column
 from paarbench.selection import FixedParams, SelectionHarness
-from paarbench.staging import DEFAULT_TMPFS, checkpoint_dataset_path, stage_dataset
+from paarbench.staging import DEFAULT_TMPFS, resolve_dataset_path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = REPO_ROOT / "results"
@@ -72,12 +72,7 @@ def resolve_data_path(setting, args):
         return args.data_path
     if args.no_stage:
         return None
-    source = checkpoint_dataset_path(setting.base_path)
-    if source is None or not source.is_dir():
-        print(f"[stage] no usable dataset path on {setting.base_path}/hydra.yaml "
-              f"(got {source!r}); leaving dataset_data_path unset", flush=True)
-        return None
-    return stage_dataset(source, args.tmpfs_root)
+    return resolve_dataset_path(setting, args.tmpfs_root)
 
 
 def main() -> int:
@@ -119,12 +114,12 @@ def main() -> int:
             print(f'[isolate] {name} declares requires_episode_isolation: one process '
                   f'per episode ({setting.n_evals} per shape). A batched cohort would '
                   f'average unrelated episodes into one shared update.', flush=True)
-        rule = method.load_selection_rule() or FixedParams(method.params)
+        rule = method.load_selection_rule() or FixedParams(method.params_for(setting.id))
         if isinstance(rule, type):
             rule = rule()
 
         if args.skip_selection or isinstance(rule, FixedParams):
-            params = dict(method.params)
+            params = method.params_for(setting.id)
             selection_cost = 0 if isinstance(rule, FixedParams) else None
             selection_rule = ("none (params used as-is)" if isinstance(rule, FixedParams)
                               else f"{method.selection_ref} (SKIPPED via --skip-selection)")
@@ -142,7 +137,7 @@ def main() -> int:
                     f"{method.selection_ref}.select returned {type(chosen).__name__}, "
                     f"expected a dict of parameters to freeze"
                 )
-            params = {**method.params, **chosen}
+            params = {**method.params_for(setting.id), **chosen}
             selection_cost = harness.columns_used
             selection_rule = method.selection_ref
             print(f"[select] {name}: froze {params} after {selection_cost} column(s)",

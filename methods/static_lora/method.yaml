@@ -1,0 +1,31 @@
+name: static_lora
+display_name: "Static LoRA — unconditioned correction"
+description: >
+  A learned rank-2 correction on the predictor's last block, applied identically to
+  every episode and never updated. No optimizer, no context: nothing about the
+  correction depends on what the controller observed. This is the control that asks
+  whether conditioning buys anything — if a conditioned method barely beats it, the
+  conditioning is decorative rather than load-bearing.
+reference: "Predecessor project ~/HyperJEPA, the 'static' control arm @ 628dff7"
+
+adapter: adapter:StaticLoRAAdapter
+settings: [pushobj, pushobj_shift, pusht]
+
+# Must match the checkpoint's metadata.json; the adapter checks shapes on load.
+params:
+  checkpoint_path: checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth
+  target_scope: predlast_all
+  rank: 2
+  lora_scale: 1.0
+
+# Same architecture, separately trained weights. PushT's static_r2 directory also
+# carries pre-baked full-model variants (baked_ep*), which the predecessor used to
+# skip the LoRA wrapper's per-rollout overhead; we read the factors instead so the
+# arm goes through the ordinary adapter path like every other method.
+params_by_setting:
+  pusht:
+    checkpoint_path: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_2.pth
+
+# Same hyperparameter as hyperjepa: which training epoch to deploy. Selected on the
+# selection cohort, not hand-picked.
+selection: selection:EpochSelection

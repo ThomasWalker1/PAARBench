@@ -107,8 +107,16 @@ def _shipped_methods():
         return []
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def world_model():
+    """A fresh model per test.
+
+    Deliberately not module-scoped despite the load cost. Constructing an adapter
+    *mutates the model's structure* -- it installs LoRA wrappers on the predictor --
+    so a shared model would hand the second method a predictor the first had already
+    wrapped and then emptied. That is not the state a method is built against, and it
+    made this suite report a nonexistent bug before the scope was fixed.
+    """
     from paarbench.world_model import load_world_model
 
     return load_world_model(_BASE, "latest")
@@ -147,15 +155,20 @@ def test_registered_methods_undo_their_own_mutations(world_model, name):
     method = methods.load(name)
     adapter = method.build(wm=world_model, preprocessor=None)
 
-    guard = BaseWeightGuard(world_model)
-    assert guard.is_pristine()
+    # Give the adapter a chance to install its correction first. Some methods populate
+    # their slots at construction (an optimizer needs parameters to exist); others only
+    # on first use, and probing before that would find nothing to perturb.
+    adapter.on_episode_start({}, {})
+    adapter.before_plan({"visual": torch.zeros(2, 1, 3, 8, 8)})
 
+    guard = BaseWeightGuard(world_model)
     reachable = _reachable(world_model, adapter)
-    assert reachable, (
-        f"{name} declares no trainable parameters and installs no correction slots, "
-        f"so it has no way to affect the model at all -- which cannot be right for an "
-        f"adaptation method."
-    )
+    if not reachable:
+        pytest.skip(
+            f"{name} has installed nothing by this point -- it applies its correction "
+            f"from a real observation, which this test does not supply. Its reset is "
+            f"covered only by the idempotence check below."
+        )
 
     state = world_model.state_dict()
     with torch.no_grad():
@@ -174,6 +187,59 @@ def test_registered_methods_undo_their_own_mutations(world_model, name):
         f"weights with paarbench.adapter.BaseWeightGuard, and clear any correction "
         f"it installed."
     )
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(not _BASE.is_dir(), reason="no base checkpoint staged")
+@pytest.mark.parametrize("name", _shipped_methods())
+def test_installed_corrections_are_cleared_on_reset(world_model, name):
+    """The other leak path: a correction held in the LoRA wrappers, not in the weights.
+
+    A method whose correction rides in a wrapper never touches ``state_dict``, so the
+    bit-identity check above cannot see it -- and passes vacuously. What has to be
+    true for those methods is that the wrapper slots are empty again after a reset;
+    otherwise episode N+1 silently starts with episode N's correction installed.
+    """
+    adapter = methods.load(name).build(wm=world_model, preprocessor=None)
+    targets = list(getattr(adapter, "lora_targets", [])) + \
+        list(getattr(adapter, "norm_targets", []))
+    if not targets:
+        pytest.skip(f"{name} installs no correction slots")
+
+    adapter.on_episode_start({}, {})
+    adapter.before_plan({"visual": torch.zeros(2, 1, 3, 8, 8)})
+
+    installed = [t.name for t in targets if _has_correction(t.module)]
+    if not installed:
+        pytest.skip(f"{name} applies from a real observation, which this test omits")
+
+    adapter.on_episode_start({}, {})
+    still_installed = [t.name for t in targets if _has_correction(t.module)]
+    assert not still_installed, (
+        f"{name}.on_episode_start left a correction installed on {still_installed}. "
+        f"Clear the wrappers as well as restoring weights, or the next episode starts "
+        f"with this one's correction."
+    )
+
+
+_CORRECTION_ATTRS = ("lora_A", "lora_B", "delta_weight", "delta_bias")
+
+
+def _has_correction(module) -> bool:
+    """Does a wrapper hold a *transient* correction that a reset must clear?
+
+    Only plain tensors count. When the wrapper holds ``nn.Parameter`` objects they are
+    the method's own parameterization -- registered in ``state_dict``, referenced by
+    its optimizer -- and a reset restores their *values* rather than removing them.
+    Clearing those would delete the parameters the optimizer is pointing at. That case
+    is already covered by the bit-identity test above; this one is for corrections that
+    never reach ``state_dict`` and so are invisible to it.
+    """
+    for attr in _CORRECTION_ATTRS:
+        value = getattr(module, attr, None)
+        if value is not None and not isinstance(value, torch.nn.Parameter):
+            return True
+    return False
 
 
 @pytest.mark.integration

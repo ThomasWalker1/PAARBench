@@ -156,3 +156,22 @@ Include your directory and the result record `evaluate.py` produced. CI re-runs
 `frozen` is built in, not a directory here: it is `NullAdapter`, whose hooks do nothing.
 It is reported on every setting as the do-nothing reference that every metric is measured
 against. You do not need to add it, and you cannot override it.
+
+## Carrying different weights per setting
+
+A method's architecture is usually shared across domains; its trained weights are not.
+Declare per-setting overrides rather than duplicating the method:
+
+```yaml
+params:
+  checkpoint_path: checkpoints/my_method/pushobj/best.pth
+  rank: 2
+
+params_by_setting:
+  pusht:
+    checkpoint_path: checkpoints/my_method/pusht/best.pth
+```
+
+`params_by_setting` is layered on top of `params` for that setting only, and every key
+in it must name a setting you declared in `settings`. Duplicating the method instead
+would split its results across two leaderboard rows for no reason.

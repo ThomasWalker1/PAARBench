@@ -93,6 +93,19 @@ each method's own outcomes, and restricts distance comparisons to episodes both 
 (success is absorbing). Those three choices are each a mistake that produced a plausible
 wrong answer in the predecessor project; `tests/test_metrics.py` pins them.
 
+## Methods
+
+Four arms, all going through the same interface. `LEADERBOARD.md` has the numbers.
+
+| method | what it does | isolation |
+|---|---|---|
+| `frozen` | built in; the do-nothing reference every metric is measured against | — |
+| `static_lora` | a learned but *unconditioned* correction — the control that asks whether conditioning buys anything | no |
+| `hyperjepa` | a hypernetwork emits a correction from the episode's own transitions, regenerated from frozen weights each replan | no |
+| `adajepa` | online gradient steps on the prediction loss; an optimizer trajectory that accumulates | **yes** |
+
+`methods/README.md` is the contributor guide. `methods/_template/` is what you copy.
+
 ## Settings
 
 Declared in `paarbench/settings.py`; cohort seeds are fixed by the benchmark, never by a

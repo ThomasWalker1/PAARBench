@@ -48,7 +48,9 @@ diff <(git -C ~/HyperJEPA show 628dff7:planning/mpc.py) planning/mpc.py
 |---|---|---|
 | `env/__init__.py` | `LOCAL_DEPS_DIR` default `/home/tw78/HyperJEPA/.local-deps` → this repo's `.local-deps` | the only hardcoded path into the predecessor; leaving it would make this repo depend on a directory it does not own |
 | `conf/eval.yaml` | renamed copy of `628dff7:conf/plan_gd_mpc_local.yaml`, **byte-identical content** | canonical benchmark eval entry point; a method is selected with `+planner.adapter.method=<name>` |
-| `planning/mpc.py` | the two hardcoded per-method branches replaced by one `TestTimeAdapter`; adaptation timing and peak memory now decomposed from planner cost | the whole point of the interface. Verified not to change the frozen path: 0.4900 per-shape-exactly, before and after |
+| `planning/mpc.py` | the two hardcoded per-method branches replaced by one `TestTimeAdapter`; adaptation timing and peak memory decomposed from planner cost; writes `episodes.jsonl` | the whole point of the interface. Verified not to change the frozen path: 0.4900 per-shape-exactly, before and after |
+| `planning/evaluator.py` | `_compute_rollout_metrics` returns per-episode arrays instead of only their means | the mean is the one summary §4 forbids on distance, and every discriminating metric needs the distribution |
+| `plan.py` | `load_ckpt` / `load_model` moved to `paarbench/world_model.py` and imported back | so anything wanting just a model — a test, a CI check — does not have to run the whole Hydra pipeline or reimplement it |
 
 ### Moved out of the core
 
@@ -111,9 +113,28 @@ deferral and the two constraints it carries.
 ## New code (no predecessor)
 
 ```
-paarbench/__init__.py     package marker
-paarbench/settings.py     the §6 settings suite and its declared cohort split
-paarbench/staging.py      tmpfs dataset staging (§9)
-scripts/eval_column.py    the column driver
-pyproject.toml            uv project; cu121 torch pinned (§9)
+paarbench/adapter.py         the TestTimeAdapter protocol, NullAdapter, BaseWeightGuard
+paarbench/methods.py         discovery, loading and validation of methods/<name>/
+paarbench/selection.py       selection rules + a harness that cannot reach a test cohort
+paarbench/runner.py          column execution, including episode-isolated fan-out
+paarbench/settings.py        the §6 settings suite and its declared cohort split
+paarbench/schema.py          the per-episode/per-replan record (§7's "one output schema")
+paarbench/metrics.py         the §4 metrics, with bootstrap CIs
+paarbench/staging.py         tmpfs dataset staging (§9)
+paarbench/planner_hooks.py   the planner's single method-resolution point
+paarbench/world_model.py     base-model loading, extracted from plan.py
+
+scripts/evaluate.py          the submission path: select, freeze, test, record
+scripts/eval_column.py       single-column debugging driver
+scripts/validate_method.py   GPU-free method check; the CI gate
+scripts/leaderboard.py       leaderboard generation from results/
+
+methods/_template/           what a contributor copies
+methods/static_lora/         the unconditioned control, written against the protocol
+                             directly rather than ported
+
+.github/workflows/ci.yml     validate + test on every pull request
+pyproject.toml               uv project; cu121 torch pinned (§9)
 ```
+
+`methods/adajepa/` and `methods/hyperjepa/` are ports; see "Moved out of the core" above.

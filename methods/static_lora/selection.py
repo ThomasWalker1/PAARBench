@@ -1,8 +1,7 @@
-"""HyperJEPA's hyperparameter-selection rule.
+"""Static LoRA's selection rule: which training epoch to deploy.
 
-This method has no step size to tune -- that is the point of amortizing -- but it
-does have one hyperparameter that is easy to forget is a hyperparameter: which
-training epoch's adapter to deploy.
+The method has no step size and no context, so the checkpoint is all there is
+to choose.
 
 The method's only hyperparameter is which trained checkpoint to deploy. That is still
 a hyperparameter, and picking it on a test cohort is the leak the protocol exists to
@@ -20,9 +19,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 ADAPTER_DIRS = {
-    "pushobj": "checkpoints/pushobj_adapters/hyper_r2_distill0",
-    "pushobj_shift": "checkpoints/pushobj_adapters/hyper_r2_distill0",
-    "pusht": "checkpoints/pvs_adapters/hyper_r2_distill0",
+    "pushobj": "checkpoints/pushobj_adapters/static_r2",
+    "pushobj_shift": "checkpoints/pushobj_adapters/static_r2",
+    "pusht": "checkpoints/pvs_adapters/static_r2",
 }
 
 

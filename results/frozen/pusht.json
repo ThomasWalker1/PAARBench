@@ -1,0 +1,54 @@
+{
+  "method": "frozen",
+  "display_name": "Frozen base model (no adaptation)",
+  "setting": "pusht",
+  "params": {},
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "episode_isolated": false,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 150,
+      "params": {},
+      "success_by_shape": {
+        "T": 0.58,
+        "L": 0.26,
+        "Z": 0.2
+      },
+      "success": 0.3466666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 132.9,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pusht/test200"
+    },
+    "test400": {
+      "setting": "pusht",
+      "cohort": "test400",
+      "seed": 400,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 150,
+      "params": {},
+      "success_by_shape": {
+        "T": 0.38,
+        "L": 0.5,
+        "Z": 0.18
+      },
+      "success": 0.35333333333333333,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 124.4,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pusht/test400"
+    }
+  },
+  "success": 0.35,
+  "n": 300,
+  "complete": true,
+  "frozen_reference": null
+}

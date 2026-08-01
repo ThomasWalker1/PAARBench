@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from paarbench import settings as settings_mod
 from paarbench.runner import DEFAULT_OUT_ROOT, run_column
-from paarbench.staging import DEFAULT_TMPFS, checkpoint_dataset_path, stage_dataset
+from paarbench.staging import DEFAULT_TMPFS, resolve_dataset_path
 
 
 def parse_param(text: str):
@@ -65,12 +65,7 @@ def main() -> int:
         data_path = args.data_path
         print(f"[stage] using {data_path} verbatim", flush=True)
     elif not args.no_stage:
-        source = checkpoint_dataset_path(setting.base_path)
-        if source is None or not source.is_dir():
-            print(f"[stage] no usable dataset path on {setting.base_path}/hydra.yaml "
-                  f"(got {source!r}); leaving dataset_data_path unset", flush=True)
-        else:
-            data_path = stage_dataset(source, args.tmpfs_root)
+        data_path = resolve_dataset_path(setting, args.tmpfs_root)
 
     result = run_column(
         setting,

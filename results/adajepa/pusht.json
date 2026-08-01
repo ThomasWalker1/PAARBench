@@ -1,0 +1,96 @@
+{
+  "method": "adajepa",
+  "display_name": "AdaJEPA \u2014 online gradient TTA",
+  "setting": "pusht",
+  "params": {
+    "steps": 10,
+    "pred_lr": 0.0005,
+    "update_scope": "lora_predlast_all",
+    "lora_rank": 2,
+    "lora_scale": 1.0,
+    "buffer_size": 5,
+    "buffer_strategy": "recent",
+    "refresh_interval": 1,
+    "enc_lr": 1e-05,
+    "action_lr": 0.0005,
+    "stop_grad": true,
+    "grad_clip_norm": 1.0,
+    "require_single_episode": true
+  },
+  "selection_rule": "selection:StepSizeGrid (SKIPPED via --skip-selection)",
+  "selection_cost_columns": null,
+  "episode_isolated": true,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "adajepa",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 10,
+        "pred_lr": 0.0005,
+        "update_scope": "lora_predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "buffer_size": 5,
+        "buffer_strategy": "recent",
+        "refresh_interval": 1,
+        "enc_lr": 1e-05,
+        "action_lr": 0.0005,
+        "stop_grad": true,
+        "grad_clip_norm": 1.0,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "T": 0.66,
+        "L": 0.32,
+        "Z": 0.26
+      },
+      "success": 0.41333333333333333,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 684.9,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pusht/test200"
+    },
+    "test400": {
+      "setting": "pusht",
+      "cohort": "test400",
+      "seed": 400,
+      "tag": "adajepa",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 10,
+        "pred_lr": 0.0005,
+        "update_scope": "lora_predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "buffer_size": 5,
+        "buffer_strategy": "recent",
+        "refresh_interval": 1,
+        "enc_lr": 1e-05,
+        "action_lr": 0.0005,
+        "stop_grad": true,
+        "grad_clip_norm": 1.0,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "T": 0.5,
+        "L": 0.46,
+        "Z": 0.18
+      },
+      "success": 0.37999999999999995,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 696.9,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pusht/test400"
+    }
+  },
+  "success": 0.39666666666666667,
+  "n": 300,
+  "complete": true,
+  "frozen_reference": null
+}

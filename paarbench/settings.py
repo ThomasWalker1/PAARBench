@@ -43,6 +43,15 @@ class Setting:
     frozen_success_by_shape: dict[str, float] = field(default_factory=dict)
     """Per-shape reference on the *selection* cohort, where one is on record."""
 
+    dataset_path: str = ""
+    """Training dataset, when the checkpoint does not record a usable one.
+
+    The dataset supplies normalization statistics at startup; nothing else reads it.
+    Most bases record an absolute path in their ``hydra.yaml``, but some released ones
+    ship an unresolved placeholder, and then every column has to be told where the data
+    is. Declaring it on the setting means a caller never has to know that.
+    """
+
     enabled: bool = True
     notes: str = ""
 
@@ -126,12 +135,16 @@ PUSHT = _register(
         selection_seed=100,
         test_seeds=(200, 400),
         n_evals=50,
-        frozen_success={"selection": 0.360},
+        frozen_success={"selection": 0.360, "test": 0.350},
         frozen_success_by_shape={"T": 0.640, "L": 0.260, "Z": 0.180},
+        # This base's released hydra.yaml ships `data_path: <path>` -- the literal
+        # placeholder, never substituted. Without an override the dataset call dies
+        # with a bare FileNotFoundError naming only `env.dataset`. It reads the same
+        # pushobj_multishape statistics as the pushobj base does.
+        dataset_path="/mnt/richb/tw78/data/hyperjepa_pushobj/pushobj_multishape",
         notes=(
-            "Frozen headroom is very unevenly spread across shapes; always report "
-            "per-shape alongside the mean. This base's released config ships an "
-            "unresolved env.dataset.data_path, so dataset_data_path must be set."
+            "Frozen headroom is very unevenly spread across shapes (0.640/0.260/0.180); "
+            "always report per-shape alongside the mean."
         ),
     )
 )

@@ -84,6 +84,15 @@ class Method:
     params: Dict[str, Any] = field(default_factory=dict)
     """Adapter constructor kwargs -- the frozen, selected hyperparameters."""
 
+    params_by_setting: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    """Per-setting overrides layered on top of ``params``.
+
+    A method carrying trained weights needs different ones per domain -- the same
+    hypernetwork architecture, a different checkpoint for PushObj than for PushT.
+    Without this a method would have to be duplicated per setting, which would split
+    its results across two leaderboard rows for no reason.
+    """
+
     selection_ref: Optional[str] = None
     """``"<module>:<attr>"`` of a SelectionRule, or None for no hyperparameters."""
 
@@ -132,6 +141,10 @@ class Method:
 
     def supports(self, setting_id: str) -> bool:
         return setting_id in self.settings
+
+    def params_for(self, setting_id: str) -> Dict[str, Any]:
+        """The frozen parameters this method uses on one setting."""
+        return {**self.params, **self.params_by_setting.get(setting_id, {})}
 
 
 def _load_ref(method: Method, ref: str, kind: str):
@@ -218,6 +231,18 @@ def load(name: str, methods_dir: Optional[Path] = None) -> Method:
     if not isinstance(params, dict):
         raise MethodError(f"{manifest}: 'params' must be a mapping")
 
+    by_setting = raw.get("params_by_setting") or {}
+    if not isinstance(by_setting, dict) or any(
+            not isinstance(v, dict) for v in by_setting.values()):
+        raise MethodError(
+            f"{manifest}: 'params_by_setting' must map a setting id to a mapping of "
+            f"parameter overrides")
+    unknown = set(by_setting) - set(declared)
+    if unknown:
+        raise MethodError(
+            f"{manifest}: 'params_by_setting' names setting(s) {sorted(unknown)} that "
+            f"are not in 'settings' {declared}")
+
     declared_name = raw.get("name", name)
     if declared_name != name:
         raise MethodError(
@@ -232,6 +257,7 @@ def load(name: str, methods_dir: Optional[Path] = None) -> Method:
         adapter_ref=str(raw["adapter"]),
         settings=[str(s) for s in declared],
         params=params,
+        params_by_setting=by_setting,
         selection_ref=(str(raw["selection"]) if raw.get("selection") else None),
         requires_episode_isolation=bool(raw.get("requires_episode_isolation", False)),
         description=str(raw.get("description", "")),

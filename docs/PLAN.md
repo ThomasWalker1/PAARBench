@@ -1,8 +1,18 @@
 # PlanActAdaptRepeatBench — a benchmark for test-time adaptation of latent world models
 
-**Status:** **M0 complete** (2026-08-01) — scaffold up, frozen PushObj column reproduces
-0.490 per-shape-exactly. See `RESULTS.md` for the acceptance record, `PROVENANCE.md` for
-what was copied from where, and `docs/ADAPTER_PROTOCOL.md` for the M1 design. **M1 is next.**
+**Status (2026-08-01):** **M0–M3 done, M4/M5 ongoing.** The harness works: a method is a
+self-contained directory under `methods/`, the planner has no per-method branch, cohort
+separation is enforced in code, and the per-episode record feeds the §4 metrics with
+bootstrap CIs. Four arms (frozen, `static_lora`, `hyperjepa`, `adajepa`) run on two
+settings (`pushobj`, `pusht`); all three reproduction targets were hit before the
+predecessor was retired as a reference.
+
+Read `RESULTS.md` first — it is the running record, including several findings that only
+appeared once the harness was exercised. Then `LEADERBOARD.md` for current numbers,
+`methods/README.md` to add a method, `PROVENANCE.md` for what came from where.
+
+**Next:** one genuinely external method (T3A), which is the first real test of whether the
+interface absorbs something not descended from the predecessor's codebase.
 **Predecessor:** `~/HyperJEPA/` — the source of the findings below. **Treat it as read-only.**
 It is actively maintained by a separate session, so pin your reads to commit **`628dff7`** rather
 than to whatever `HEAD` happens to be; later commits may revise the paper's tables.
@@ -440,6 +450,10 @@ directory**. If that requires touching the planner, the harness, or a registry b
 not done — this is the bar §2.2's descoping raises.
 
 **M4 — baselines (ongoing, no longer a gate).** Port methods from §2.2 opportunistically.
+*Standing: 3 methods + frozen, on 2 settings.* `adajepa` and `hyperjepa` (both ports) and
+`static_lora` (written against the protocol directly). Next: one genuinely external method
+— T3A is training-free and cheap — which is the first real test of whether the interface
+absorbs something not descended from this codebase.
 *Accept (per method):* one declared selection rule, one reported selection cost, one
 leaderboard row. Each port is also a usability test of M1/M3 — friction is a bug in the
 interface, not a cost of the port. Order: whatever is cheapest next.
@@ -450,6 +464,8 @@ schedulable now is **adding the deformable domain**, which is the cheapest route
 task diversity since `env/deformable_env/` is already ported and the dataset exists.
 *Accept (deformable):* a frozen column runs end to end and the setting is registered in
 `paarbench/settings.py` with a declared cohort split.
+*Done:* `pusht` now runs end to end for all four arms — the second setting, and the one
+that showed the value of conditioning is domain-dependent (RESULTS.md).
 *Accept (distribution, when it happens):* every base model pinned by hash and downloadable by
 a third party — and the whole suite re-baselined, since retraining invalidates every
 reproduction target.

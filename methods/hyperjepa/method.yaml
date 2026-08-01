@@ -18,6 +18,7 @@ settings: [pushobj, pushobj_shift, pusht]
 params:
   checkpoint_path: checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth
   rank: 2
+
   target_scope: predlast_all
   context_mode: transition_buffer
   context_feature_kind: residual_action
@@ -32,3 +33,9 @@ params:
 
 # The epoch is the hyperparameter here, and it was chosen on the selection cohort.
 selection: selection:EpochSelection
+
+# The architecture is shared across domains; the trained weights are not. PushT has
+# its own hypernetwork, trained on the pusht_visual_shift base.
+params_by_setting:
+  pusht:
+    checkpoint_path: checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_best.pth
