@@ -21,19 +21,13 @@ from custom_resolvers import replace_slash
 from preprocessor import Preprocessor
 from planning.evaluator import PlanEvaluator
 from planning.image_corruption import corrupt_obs_dict
+from paarbench.world_model import ALL_MODEL_KEYS, load_ckpt, load_model
 from utils import cfg_to_dict, seed
 
 warnings.filterwarnings("ignore")
 log = logging.getLogger(__name__)
 
 
-ALL_MODEL_KEYS = [
-    "encoder",
-    "predictor",
-    "decoder",
-    "proprio_encoder",
-    "action_encoder",
-]
 
 def planning_main_in_dir(working_dir, cfg_dict):
     os.chdir(working_dir)
@@ -513,68 +507,6 @@ class PlanWorkspace:
         with open(self.log_filename, "a") as file:
             file.write(json.dumps(logs_entry) + "\n")
         return logs
-
-
-def load_ckpt(snapshot_path, device):
-    from models.dino import DinoV2Encoder
-    _ = DinoV2Encoder('dinov2_vits14', 'x_norm_patchtokens')
-    with snapshot_path.open("rb") as f:
-        payload = torch.load(f, map_location=device)
-    loaded_keys = []
-    result = {}
-    for k, v in payload.items():
-        if k in ALL_MODEL_KEYS:
-            loaded_keys.append(k)
-            result[k] = v.to(device) if v is not None else None
-    result["epoch"] = payload["epoch"]
-    return result
-
-
-def load_model(model_ckpt, train_cfg, num_action_repeat, device):
-    result = {}
-    if model_ckpt.exists():
-        result = load_ckpt(model_ckpt, device)
-        print(f"Resuming from epoch {result['epoch']}: {model_ckpt}")
-
-    if "encoder" not in result:
-        result["encoder"] = hydra.utils.instantiate(
-            train_cfg.encoder,
-        )
-    if "predictor" not in result:
-        raise ValueError("Predictor not found in model checkpoint")
-
-    if train_cfg.has_decoder and "decoder" not in result:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        if train_cfg.env.decoder_path is not None:
-            decoder_path = os.path.join(base_path, train_cfg.env.decoder_path)
-            ckpt = torch.load(decoder_path)
-            if isinstance(ckpt, dict):
-                result["decoder"] = ckpt["decoder"]
-            else:
-                result["decoder"] = torch.load(decoder_path)
-        else:
-            raise ValueError(
-                "Decoder path not found in model checkpoint \
-                                and is not provided in config"
-            )
-    elif not train_cfg.has_decoder:
-        result["decoder"] = None
-
-    model = hydra.utils.instantiate(
-        train_cfg.model,
-        encoder=result["encoder"],
-        proprio_encoder=result["proprio_encoder"],
-        action_encoder=result["action_encoder"],
-        predictor=result["predictor"],
-        decoder=result["decoder"],
-        proprio_dim=train_cfg.proprio_emb_dim,
-        action_dim=train_cfg.action_emb_dim,
-        concat_dim=train_cfg.concat_dim,
-        num_action_repeat=num_action_repeat,
-        num_proprio_repeat=train_cfg.num_proprio_repeat,
-    )
-    model.to(device)
-    return model
 
 
 class DummyWandbRun:

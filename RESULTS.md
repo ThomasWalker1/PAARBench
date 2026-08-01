@@ -174,11 +174,64 @@ are +13 and 14.0%). `scripts/leaderboard.py` now checks that the episode count o
 matches the result record's `n` and suppresses the continuous columns when they disagree.
 Mixing a complete summary with partial detail is a quiet way to publish a wrong number.
 
-### Still outstanding
+### Follow-up pass (same day)
 
-- The M2 acceptance criterion proper — reproducing the predecessor's distance spans
-  (12.7× / 8.8× / 14.7× / 1.4×; catastrophe 18–178) from the new schema.
-- Confidence intervals on the continuous metrics; only success rate carries an SE today.
+Bootstrap CIs, the remaining two §4 metrics, and four correctness fixes:
+
+| method | success | median dist Δ | catastrophe | compounding | regret | adapt s | peak MB |
+|---|---|---|---|---|---|---|---|
+| AdaJEPA | **0.678** | +13 [+7, +22] | 14.0% [9%, 19%] | **+0.91** [+0.40, +1.68] | 62% / +196 | 0.568 | **177** |
+| HyperJEPA | 0.610 | **−6** [−14, −1] | **8.3%** [5%, 12%] | **+0.01** [−0.16, +0.09] | **43% / +93** | **0.147** | 977 |
+
+Both distance intervals exclude zero, so the reversal is real and not a rounding
+artifact: AdaJEPA is *significantly worse than not adapting* on final distance while
+being significantly better on success. The compounding intervals separate the mechanism
+cleanly — accumulating (+0.91, excludes 0) against recomputed (+0.01, includes 0).
+Peak memory is the one axis where the amortized method loses: its generator is 10.7 M
+parameters, 977 MB against 177 MB, in exchange for 3.9× lower latency.
+
+CIs are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed).
+Episodes are the unit of independence; replans within one are a trajectory, so the
+compounding slope is refit per resample from an episode × replan matrix rather than
+bootstrapped over rows.
+
+Fixed in the same pass:
+
+- **`episodes.jsonl` was opened in append mode.** Hydra does not clear a reused run
+  directory, so a re-run would have interleaved two runs' rows and the metrics would
+  have paired episodes against duplicates of themselves. Truncated at episode start.
+- **Resume keyed on `logs.json` existing**, but that file is written on the *first*
+  replan. An interrupted unit looked finished and would be skipped forever. Now keyed
+  on `final_eval/success_rate`, which is written once, at the end.
+- **AdaJEPA's selection grid was mis-sized.** It topped out at `lr=5e-3`, an order of
+  magnitude below where this method's correction becomes comparable to the weights it
+  corrects (`lr × steps × replans ≈ 4e-2`). It would have found a plausible best cell
+  while hiding that a bad hyperparameter reverses the adaptation signal — the single
+  most important thing to know about the method. Re-derived from that scaling rather
+  than copied.
+- **The reset guarantee is now enforced per method** against a real world model, not
+  just unit-tested. See below.
+
+The acceptance criterion of reproducing the predecessor's exact distance spans is
+**dropped** by owner decision: exact replication is no longer a goal now that the port
+is validated.
+
+### The reset test found a contract error — in the test
+
+`paarbench/world_model.py` factors model loading out of `plan.py` (which now imports it,
+so there is one implementation), which finally let the cross-episode bit-identity check
+run for real. Its first version perturbed *every* weight and demanded the adapter restore
+them. AdaJEPA passed; HyperJEPA failed on 173 tensors.
+
+That was the test being wrong. HyperJEPA declares **zero** trainable base parameters — it
+freezes the model and keeps its correction in LoRA wrapper slots, which `clear()` does
+reset. Demanding it repair damage it cannot see would have forced every method to carry a
+400 MB full-model snapshot for nothing.
+
+The contract is now stated precisely — *undo everything you can reach* — and the test
+perturbs exactly that surface: parameters the adapter marked trainable, plus the
+correction slots it installed. Both methods pass, along with an idempotence check. 5
+integration tests, opt-in with `-m integration` so the default suite stays GPU-free.
 
 ### Note for M0
 

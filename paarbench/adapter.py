@@ -60,11 +60,19 @@ class TestTimeAdapter(Protocol):
     """
 
     def on_episode_start(self, obs_0: ObsDict, goal: ObsDict) -> Mapping[str, Any]:
-        """Reset all per-episode state and restore the base model.
+        """Reset all per-episode state and undo everything this adapter changed.
 
-        After this returns, the base world model's weights must be bit-identical to
-        what they were before the first episode ran — ``BaseWeightGuard`` below does
-        this for you. Without it, cross-episode leakage silently changes results.
+        After this returns, nothing the adapter can reach may differ from its state
+        before the episode: **base weights it marked trainable** must be restored
+        (``BaseWeightGuard`` below does that), and **any correction it installed**
+        must be cleared. It is not responsible for changes it did not make.
+
+        Without this, cross-episode leakage silently changes results — an episode
+        inheriting the previous one's correction produces a number that looks real.
+        ``tests/test_adapter_reset.py`` enforces it per method against a real world
+        model: it perturbs the adapter's whole reachable surface, calls this hook, and
+        requires bit-identity. Resetting only the part touched this episode passes a
+        realistic rollout and fails that test.
 
         May also apply an initial correction, for methods conditioned only on the
         initial observation.

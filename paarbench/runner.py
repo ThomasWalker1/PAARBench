@@ -84,7 +84,11 @@ class ColumnResult:
 
 
 def read_success(logs_json: Path) -> Optional[float]:
-    """Pull ``final_eval/success_rate`` out of a finished shape's logs."""
+    """Pull ``final_eval/success_rate`` out of a finished shape's logs.
+
+    ``None`` means the unit did not finish: the key is written once, after planning
+    completes, so its absence is the completion marker.
+    """
     if not logs_json.is_file():
         return None
     value = None
@@ -100,6 +104,17 @@ def read_success(logs_json: Path) -> Optional[float]:
             if "final_eval/success_rate" in row:
                 value = row["final_eval/success_rate"]
     return value
+
+
+def unit_complete(out_dir: Path) -> bool:
+    """Did this unit run to completion?
+
+    Resume must key on *completion*, not on the existence of ``logs.json``: that file
+    is created on the first replan, so an interrupted unit would otherwise look
+    finished and be skipped forever, leaving a truncated episode in the record.
+    ``final_eval/success_rate`` is written once, at the end, so it is the real marker.
+    """
+    return read_success(Path(out_dir) / "logs.json") is not None
 
 
 def _worker_env(gpu: str) -> Dict[str, str]:
@@ -237,7 +252,7 @@ def run_column(
                 units.append((shape, i, column_dir / safe / f"ep{i:03d}", f"{safe}_ep{i:03d}"))
         else:
             units.append((shape, None, column_dir / safe, safe))
-    pending = [u for u in units if not (resume and (u[2] / "logs.json").exists())]
+    pending = [u for u in units if not (resume and unit_complete(u[2]))]
 
     slot_list = [g for _ in range(max(1, per_gpu)) for g in gpus]
     if verbose:

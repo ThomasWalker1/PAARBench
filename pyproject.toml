@@ -98,3 +98,12 @@ explicit = true
 [tool.uv.sources]
 torch = { index = "pytorch-cu121" }
 torchvision = { index = "pytorch-cu121" }
+
+[tool.pytest.ini_options]
+# The default run is the GPU-free suite: a couple of seconds, safe for CI on any
+# machine.  Integration tests load a real base world model and need a staged
+# checkpoint, so they are opt-in with `-m integration`.
+addopts = "-m 'not integration'"
+markers = [
+    "integration: needs a staged base checkpoint (and usually a GPU)",
+]

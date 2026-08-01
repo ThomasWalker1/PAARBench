@@ -75,14 +75,15 @@ def render(records, setting_id: str) -> str:
 
     detail = _metric_detail(setting_id)
 
-    out.append("| method | success | ±1 SE | vs frozen | median dist Δ | catastrophe | "
-               "compounding | adapt s/replan | n | selection cost |")
-    out.append("|---|---|---|---|---|---|---|---|---|---|")
+    out.append("| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | "
+               "catastrophe [95% CI] | compounding [95% CI] | regret | "
+               "adapt s/replan | peak MB | n | selection cost |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         s = r.get("success")
         n = r.get("n", 0)
         if not r.get("complete", False):
-            out.append(f"| {r['display_name']} | *incomplete* | | | | | | | {n} | |")
+            out.append(f"| {r['display_name']} | *incomplete* | | | | | | | | | {n} | |")
             continue
         se = binomial_se(s, n)
         delta = "—" if baseline is None or r["method"] == "frozen" else f"{s - baseline:+.3f}"
@@ -101,7 +102,8 @@ def render(records, setting_id: str) -> str:
         out.append(
             f"| {r['display_name']} | {s:.3f} | {se:.3f} | {delta} | "
             f"{d.get('distance', '—')} | {d.get('catastrophe', '—')} | "
-            f"{d.get('compounding', '—')} | {d.get('adapt_s', '—')} | {n} | {cost_s} |"
+            f"{d.get('compounding', '—')} | {d.get('regret', '—')} | "
+            f"{d.get('adapt_s', '—')} | {d.get('peak_mb', '—')} | {n} | {cost_s} |"
         )
 
     out.append("")
@@ -119,11 +121,21 @@ def render(records, setting_id: str) -> str:
         "comparison). Negative is better.\n"
         "- **catastrophe** — fraction of episodes ending more than 2× further from the "
         "goal than the frozen model. How often adapting actively hurts.\n"
-        "- **compounding** — slope of the paired distance gap against replan index. "
-        "Positive means the correction degrades as it accumulates; ~0 means it is "
-        "recomputed rather than accumulated.\n"
-        "- **adapt s/replan** — median adaptation time, separated from planner time.\n"
+        "- **compounding** — slope of the paired distance gap against replan index, in "
+        "distance units per replan. Positive means the correction degrades as it "
+        "accumulates; ~0 means it is recomputed rather than accumulated.\n"
+        "- **regret** — fraction of episodes where adapting ended further from the goal "
+        "than not adapting, and the 90th-percentile size of that loss. A method that can "
+        "be worse than doing nothing has to show it.\n"
+        "- **adapt s/replan** and **peak MB** — adaptation cost, separated from planner "
+        "cost and measured around the adapter hooks only.\n"
         "- **selection cost** — evaluation columns the method's selection rule consumed."
+    )
+    out.append("")
+    out.append(
+        "Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed "
+        "seed so a row does not move between renders). Episodes are the unit of "
+        "independence: replans within an episode are a trajectory, not independent draws."
     )
     out.append("")
     out.append(
@@ -161,19 +173,33 @@ def _metric_detail(setting_id: str) -> dict:
         cost = s.get("cost") or {}
         if cost.get("adapt_s_per_replan") is not None:
             row["adapt_s"] = f"{cost['adapt_s_per_replan']:.3f}"
+        if cost.get("adapt_peak_mb") is not None:
+            row["peak_mb"] = f"{cost['adapt_peak_mb']:.0f}"
         dist = s.get("distance") or {}
         if dist.get("median_paired_delta") is not None:
-            p = dist.get("wilcoxon_p")
-            star = "" if p is None else ("*" if p < 0.05 else "")
-            row["distance"] = f"{dist['median_paired_delta']:+.0f}{star}"
+            row["distance"] = f"{dist['median_paired_delta']:+.0f}{_ci(dist.get('ci95'))}"
         cat = s.get("catastrophe") or {}
         if cat.get("catastrophe_rate") is not None:
-            row["catastrophe"] = f"{cat['catastrophe_rate']:.1%}"
+            row["catastrophe"] = (f"{cat['catastrophe_rate']:.1%}"
+                                  f"{_ci(cat.get('ci95'), pct=True)}")
         comp = s.get("compounding") or {}
         if comp.get("slope_per_replan") is not None:
-            row["compounding"] = f"{comp['slope_per_replan']:+.1f}/replan"
+            row["compounding"] = (f"{comp['slope_per_replan']:+.2f}"
+                                  f"{_ci(comp.get('ci95'), places=2)}")
+        reg = s.get("regret") or {}
+        if reg.get("worse_fraction") is not None:
+            row["regret"] = f"{reg['worse_fraction']:.0%} / {reg['p90_regret']:+.0f}"
         detail[method] = row
     return detail
+
+
+def _ci(bounds, pct: bool = False, places: int = 0) -> str:
+    """Render a bootstrap interval compactly, or nothing when it is unavailable."""
+    if not bounds or bounds[0] is None or bounds[1] is None:
+        return ""
+    if pct:
+        return f" [{bounds[0]:.0%}, {bounds[1]:.0%}]"
+    return f" [{bounds[0]:+.{places}f}, {bounds[1]:+.{places}f}]"
 
 
 def main() -> int:

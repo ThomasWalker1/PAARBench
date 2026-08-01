@@ -261,3 +261,40 @@ def test_isolated_commands_score_one_episode_of_the_cohort():
     assert "n_evals=1" in isolated
     assert "eval_episode_index=7" in isolated
     assert "eval_episode_total=50" in isolated
+
+
+# -- resume and record hygiene -----------------------------------------------
+
+
+def test_resume_keys_on_completion_not_on_the_log_file_existing(tmp_path):
+    """logs.json appears on the FIRST replan, so its presence is not completion.
+
+    Keying resume on it would skip an interrupted unit forever, leaving a truncated
+    episode in the record while the column looked done.
+    """
+    from paarbench.runner import unit_complete
+
+    unit = tmp_path / "T"
+    unit.mkdir()
+    assert not unit_complete(unit)                       # nothing written yet
+
+    logs = unit / "logs.json"
+    logs.write_text('{"step": 1, "mpc/success_rate": 0.0}\n')
+    assert not unit_complete(unit)                       # started, not finished
+
+    with logs.open("a") as fh:
+        fh.write('{"final_eval/success_rate": 0.5}\n')
+    assert unit_complete(unit)                           # the completion marker
+
+
+def test_episode_record_is_truncated_not_appended():
+    """A re-run into an existing directory must not interleave two runs' rows."""
+    import inspect
+
+    from planning.mpc import MPCPlanner
+
+    source = inspect.getsource(MPCPlanner.plan)
+    assert 'open("episodes.jsonl", "w")' in source, (
+        "MPCPlanner.plan must truncate episodes.jsonl at episode start; Hydra does "
+        "not clear a reused run directory and the file is appended to per replan"
+    )

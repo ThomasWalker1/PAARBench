@@ -40,6 +40,35 @@ from paarbench.schema import episode_key, final_replan
 CATASTROPHE_MULTIPLE = 2.0
 """An episode ends >2x further from the goal than the frozen model did."""
 
+N_BOOTSTRAP = 2000
+BOOTSTRAP_SEED = 0
+"""Fixed, so a leaderboard row does not move between renders of the same data."""
+
+
+def bootstrap_ci(values: np.ndarray, statistic, n_boot: int = N_BOOTSTRAP,
+                 alpha: float = 0.05, seed: int = BOOTSTRAP_SEED):
+    """Percentile bootstrap CI for a statistic of paired per-episode values.
+
+    Resamples *episodes*, which is the unit of independence here -- the replans within
+    an episode are anything but independent, and the shapes within a cohort are
+    evaluated on the same model. Used instead of a closed form because the statistics
+    that matter (a median, a rate, a regression slope on medians) either have no
+    convenient standard error or have one that assumes a distribution this data does
+    not have.
+    """
+    values = np.asarray(values)
+    n = len(values)
+    if n < 10:
+        return (None, None)
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, n, size=(n_boot, n))
+    draws = np.array([statistic(values[row]) for row in idx])
+    draws = draws[np.isfinite(draws)]
+    if not len(draws):
+        return (None, None)
+    lo, hi = np.percentile(draws, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    return (float(lo), float(hi))
+
 
 @dataclass
 class Paired:
@@ -107,6 +136,7 @@ def median_distance(paired: Paired, both_fail: bool = True) -> dict:
         return {"n": 0, "median": None, "frozen_median": None,
                 "median_paired_delta": None, "wilcoxon_p": None}
     delta = m - f
+    lo, hi = bootstrap_ci(delta, np.median)
     return {
         "n": int(len(m)),
         "median": float(np.median(m)),
@@ -114,6 +144,7 @@ def median_distance(paired: Paired, both_fail: bool = True) -> dict:
         # The median of the paired differences, not the difference of medians:
         # the pairing is the whole point and the two are not the same number.
         "median_paired_delta": float(np.median(delta)),
+        "ci95": (lo, hi),
         "wilcoxon_p": _wilcoxon_p(delta),
         "both_fail_only": both_fail,
     }
@@ -144,9 +175,11 @@ def catastrophe_rate(paired: Paired, multiple: float = CATASTROPHE_MULTIPLE,
     if not len(m):
         return {"n": 0, "catastrophe_rate": None, "n_catastrophes": 0}
     hit = m > multiple * f
+    lo, hi = bootstrap_ci(hit.astype(float), np.mean)
     return {
         "n": int(len(m)),
         "catastrophe_rate": float(hit.mean()),
+        "ci95": (lo, hi),
         "n_catastrophes": int(hit.sum()),
         "multiple": multiple,
         "both_fail_only": both_fail,
@@ -200,11 +233,32 @@ def compounding_slope(frame: pd.DataFrame, method: str, setting: str,
     if len(by_replan) >= 2:
         slope = float(np.polyfit(by_replan.index.to_numpy(float),
                                  by_replan.to_numpy(float), 1)[0])
+
+    # For the CI, resample *episodes* and refit -- the replans within an episode are
+    # a trajectory, not independent draws, so bootstrapping rows would badly
+    # understate the interval.
+    wide = merged.pivot_table(index="_key", columns="replan", values="_delta")
+    ci = (None, None)
+    if slope is not None and len(wide) >= 10:
+        replans = wide.columns.to_numpy(float)
+        matrix = wide.to_numpy(float)
+
+        def _slope(rows):
+            medians = np.nanmedian(rows, axis=0)
+            ok = np.isfinite(medians)
+            if ok.sum() < 2:
+                return np.nan
+            return np.polyfit(replans[ok], medians[ok], 1)[0]
+
+        ci = bootstrap_ci(matrix, _slope)
+
     return {
         "by_replan": {int(k): float(v) for k, v in by_replan.items()},
         "slope_per_replan": slope,
+        "ci95": ci,
         "final_replan_delta": float(by_replan.iloc[-1]),
         "n_pairs": int(len(merged)),
+        "n_episodes": int(len(wide)),
     }
 
 

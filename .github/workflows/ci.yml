@@ -1,0 +1,45 @@
+name: CI
+
+# Everything here runs without a GPU, a checkpoint, or the datasets, so a pull
+# request adding a method gets an answer in under a minute. The expensive parts --
+# evaluation columns, and the integration tests that load a real world model -- need
+# hardware this runner does not have; a submission brings its result record with it,
+# and the maintainers re-run it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # torch is a ~2 GB cu121 wheel and nothing here needs CUDA, so install the
+      # small CPU build instead of resolving the project's pinned GPU stack.
+      - name: Install test dependencies
+        run: |
+          uv venv --python 3.9
+          uv pip install --index-url https://download.pytorch.org/whl/cpu torch==2.3.0
+          uv pip install pytest pyyaml numpy pandas scipy omegaconf
+
+      # Every method directory must be well-formed: adapter class importable, hooks
+      # present, declared settings real, selection rule callable, description written.
+      # This is the gate that stops a submission failing an hour into an evaluation.
+      - name: Validate methods
+        run: uv run python scripts/validate_method.py
+
+      - name: Tests
+        run: uv run python -m pytest tests/ -q
+
+      # A selection rule must not be able to reach a test cohort. Enforced in code
+      # and covered by the suite above; called out separately so a failure here is
+      # unmistakable in the log rather than one line among sixty.
+      - name: Cohort separation
+        run: uv run python -m pytest tests/test_methods.py -q -k "cohort or selection or budget"

@@ -7,18 +7,21 @@ Multi-objective on purpose: sort by whichever column you care about.
 
 Test cohorts: seeds [100, 200, 400], 4 shapes, n=50 per shape per cohort. Selection cohort: seed 300 (never scored here).
 
-| method | success | ±1 SE | vs frozen | median dist Δ | catastrophe | compounding | adapt s/replan | n | selection cost |
-|---|---|---|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.193 | +13* | 14.0% | +0.9/replan | 0.568 | 600 | unknown |
-| HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | -6* | 8.3% | +0.0/replan | 0.147 | 600 | unknown |
-| Frozen base model (no adaptation) | 0.485 | 0.020 | — | — | — | — | 0.000 | 600 | 0 |
+| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.193 | +13 [+7, +22] | 14.0% [9%, 19%] | +0.91 [+0.40, +1.68] | 62% / +196 | 0.568 | 177 | 600 | unknown |
+| HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | -6 [-14, -1] | 8.3% [5%, 12%] | +0.01 [-0.16, +0.09] | 43% / +93 | 0.147 | 977 | 600 | unknown |
+| Frozen base model (no adaptation) | 0.485 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
 - **median dist Δ** — median *paired* change in final distance-to-goal against the frozen model on the same episodes, restricted to episodes both arms fail (success is absorbing, so including successes makes this partly a success comparison). Negative is better.
 - **catastrophe** — fraction of episodes ending more than 2× further from the goal than the frozen model. How often adapting actively hurts.
-- **compounding** — slope of the paired distance gap against replan index. Positive means the correction degrades as it accumulates; ~0 means it is recomputed rather than accumulated.
-- **adapt s/replan** — median adaptation time, separated from planner time.
+- **compounding** — slope of the paired distance gap against replan index, in distance units per replan. Positive means the correction degrades as it accumulates; ~0 means it is recomputed rather than accumulated.
+- **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
+- **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed.
+
+Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
 Sort by whichever column matters for your use. There is deliberately no overall rank: a method can be worse on success and better on catastrophe rate and latency, and collapsing that to one number destroys the comparison.

@@ -135,6 +135,12 @@ class MPCPlanner(BasePlanner):
         cur_obs_0 = obs_0
         memo_actions = actions
 
+        # Truncate the per-episode record. It is appended to per replan, and Hydra
+        # does not clear a reused run directory, so without this a re-run into the
+        # same directory would silently interleave two runs' rows and the metrics
+        # would pair episodes against duplicates of themselves.
+        open("episodes.jsonl", "w").close()
+
         # Reset all per-episode adapter state and restore the base model.  Adaptation
         # cost is measured from here on, separately from planner cost.
         episode_start = time.perf_counter()

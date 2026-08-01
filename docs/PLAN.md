@@ -381,6 +381,16 @@ mpc.py's two branches. Add the reset test from §5.
 *Accept:* frozen 0.485, HyperJEPA 0.610, tuned online 0.678 reproduced on PushObj test seeds
 (n=600); base weights bit-identical across episode boundaries.
 
+> **Owner decision (2026-08-01): stop chasing exact replication.** The port is validated
+> — frozen 0.4850, HyperJEPA 0.6100, AdaJEPA 0.6783 all landed on their targets — so the
+> reproduce-exactly criteria above have done their job. From here the predecessor is a
+> sanity reference, not a specification. Concretely this retires M2's
+> `safety_span.tex` criterion, and frees method definitions (grids, epoch ranges) to be
+> chosen on their own merits rather than copied. *Reason:* replication was only ever
+> instrumental — it was how we knew the harness was sound. Continuing to target it would
+> constrain the benchmark to the predecessor's design choices, several of which were
+> one-off experiment scaffolding.
+
 *Sequencing (added 2026-08-01).* Split the acceptance into **M1a: reproduce before
 refactoring.** Run both methods through the *unmodified* ported code first, via the configs in
 `docs/reference/`, and land those numbers in `RESULTS.md`. Only then write the protocol
