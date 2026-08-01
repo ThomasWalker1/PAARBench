@@ -154,6 +154,11 @@ class HyperJEPAAdapter:
         if self.transition_buffer_size < 1:
             raise ValueError("transition_buffer_size must be positive")
 
+        # Protocol state: how many executed chunks this episode has observed, and the
+        # most recent hook's logs.  Both reset in on_episode_start.
+        self._observed = 0
+        self._last_logs = {}
+
     def _prepare_obs(self, obs):
         obs_t = self.preprocessor.transform_obs(obs)
         return move_to_device(obs_t, self.device)
@@ -507,9 +512,64 @@ class HyperJEPAAdapter:
         self.transition_buffer.clear()
 
 
-def build_hyper_adapter(adapter_cfg, wm, preprocessor):
-    if adapter_cfg is None or not adapter_cfg.get("enabled", False):
-        return None
-    cfg = dict(adapter_cfg)
-    cfg.pop("enabled", None)
-    return HyperJEPAAdapter(wm=wm, preprocessor=preprocessor, **cfg)
+    # -- TestTimeAdapter protocol ---------------------------------------------
+    #
+    # This method has TWO independent switches, and the protocol has to keep them
+    # independent or the port silently becomes a different method:
+    #
+    #   context_mode  -- what the correction is conditioned on.  Under
+    #                    'transition_buffer' the frozen model is deliberately left
+    #                    alone until an action has produced feedback, so there is
+    #                    nothing to apply at episode start.
+    #   refresh       -- how often the correction is recomputed.  'episode_start'
+    #                    emits once; 'every_mpc' regenerates before each replan,
+    #                    always from the frozen weights, never by accumulation.
+    #
+    # The planner sees only their product, which is why both stay in here.
+
+    def on_episode_start(self, obs_0, goal):
+        """Restore the base model, drop the buffer, and apply if this mode applies.
+
+        ``clear()`` is the restoration: it drops the emitted LoRA tensors and, in
+        fold mode, copies the snapshotted base weights back over the predictor.  In
+        non-fold mode the base weights are never mutated at all -- the correction
+        rides in a wrapper -- so bit-identity holds trivially there.
+        """
+        self.clear()
+        self._observed = 0
+        self._last_logs = {}
+        logs = dict(self.maybe_apply_episode_start(obs_0))
+        self._last_logs = logs
+        return logs
+
+    def on_transition(self, obs_0, actions, rollout_obs, frameskip):
+        """Append one aligned context feature per executed action.
+
+        This is why the protocol hands over the whole rollout rather than just its
+        final frame: each planner action spans ``frameskip`` simulator steps, and the
+        feature for that action is built from the observations at its own boundaries.
+        """
+        logs = dict(self.append_executed_transitions(
+            obs_0, actions, rollout_obs, frameskip=frameskip
+        ))
+        self._observed += 1
+        self._last_logs = logs
+        return logs
+
+    def before_plan(self, obs):
+        """Regenerate the correction from frozen weights, if this replan is due one.
+
+        Gated on having observed something, so the first solve of an episode keeps
+        whatever ``on_episode_start`` decided.  Indexing matches the predecessor: it
+        called ``maybe_refresh_after_mpc`` at the END of every replan, so call *n*
+        there is call *n* here, one replan later, and the internal
+        ``_mpc_refresh_calls`` counter is untouched.
+        """
+        if self._observed == 0:
+            return {}
+        logs = dict(self.maybe_refresh_after_mpc(obs))
+        self._last_logs = logs
+        return logs
+
+    def metrics(self):
+        return dict(self._last_logs)

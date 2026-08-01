@@ -68,6 +68,8 @@ class SelectionHarness:
         out_root=None,
         data_path=None,
         budget: Optional[int] = None,
+        episode_isolation: bool = False,
+        per_gpu: int = 1,
         verbose: bool = True,
     ):
         self._setting = setting
@@ -78,6 +80,8 @@ class SelectionHarness:
         self._out_root = out_root
         self._data_path = data_path
         self._budget = budget
+        self._episode_isolation = episode_isolation
+        self._per_gpu = per_gpu
         self._verbose = verbose
         self._history: List[ColumnResult] = []
 
@@ -103,6 +107,8 @@ class SelectionHarness:
             n_evals=self._n_evals,
             out_root=self._out_root,
             data_path=self._data_path,
+            episode_isolation=self._episode_isolation,
+            per_gpu=self._per_gpu,
             verbose=self._verbose,
         )
         self._history.append(result)

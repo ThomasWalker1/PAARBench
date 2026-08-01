@@ -45,6 +45,9 @@ def parse_args() -> argparse.Namespace:
                     help="evaluate the built-in do-nothing baseline instead of a method")
     ap.add_argument("--setting", default="pushobj")
     ap.add_argument("--gpus", default="0,1,2,3")
+    ap.add_argument("--per-gpu", type=int, default=1,
+                    help="concurrent processes per GPU; raise it for episode-isolated "
+                         "methods, where each process plans a single episode")
     ap.add_argument("--n-evals", type=int, default=None)
     ap.add_argument("--selection-budget", type=int, default=None,
                     help="refuse to let the selection rule run more than N columns")
@@ -88,12 +91,14 @@ def main() -> int:
 
     common = dict(
         gpus=gpus, n_evals=args.n_evals, out_root=args.out_root, data_path=data_path,
+        per_gpu=args.per_gpu,
     )
 
     # ---- 1. selection -----------------------------------------------------------
     if args.frozen:
         name, display = "frozen", "Frozen base model (no adaptation)"
         params, selection_cost, selection_rule = {}, 0, "none (no hyperparameters)"
+        isolation = False
     else:
         method = methods.load(args.method)
         problems = methods.validate(method)
@@ -109,6 +114,11 @@ def main() -> int:
             )
 
         name, display = method.name, method.display_name
+        isolation = method.requires_episode_isolation
+        if isolation:
+            print(f'[isolate] {name} declares requires_episode_isolation: one process '
+                  f'per episode ({setting.n_evals} per shape). A batched cohort would '
+                  f'average unrelated episodes into one shared update.', flush=True)
         rule = method.load_selection_rule() or FixedParams(method.params)
         if isinstance(rule, type):
             rule = rule()
@@ -121,7 +131,8 @@ def main() -> int:
             print(f"[select] {name}: using method.yaml params {params}", flush=True)
         else:
             harness = SelectionHarness(
-                setting, name, tag=name, budget=args.selection_budget, **common
+                setting, name, tag=name, budget=args.selection_budget,
+                episode_isolation=isolation, **common
             )
             print(f"[select] {name}: running {method.selection_ref} on the "
                   f"selection cohort (seed {setting.selection_seed})", flush=True)
@@ -143,7 +154,8 @@ def main() -> int:
     results = {}
     for cohort in test_cohorts:
         result = run_column(
-            setting, cohort, tag=name, method_name=method_name, params=params, **common
+            setting, cohort, tag=name, method_name=method_name, params=params,
+            episode_isolation=isolation, **common
         )
         results[cohort] = result.to_dict()
         score = "incomplete" if result.success is None else f"{result.success:.3f}"
@@ -160,6 +172,7 @@ def main() -> int:
         "params": params,
         "selection_rule": selection_rule,
         "selection_cost_columns": selection_cost,
+        "episode_isolated": isolation,
         "selection_cohort_seed": setting.selection_seed,
         "test_cohorts": results,
         "success": pooled,

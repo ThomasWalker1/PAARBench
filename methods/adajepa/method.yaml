@@ -11,15 +11,29 @@ reference: "Predecessor project ~/HyperJEPA, planning/adaptation.py @ 628dff7"
 adapter: adapter:AdaJEPAAdapter
 settings: [pushobj, pushobj_shift, pusht]
 
+# This method owns mutable shared state -- world-model parameters and an AdamW
+# trajectory -- so it cannot be evaluated as a batched cohort: one gradient step would
+# average 50 unrelated episodes into a single correction, which is a different method.
+# The harness fans out one process per episode instead. Expensive, and necessary.
+requires_episode_isolation: true
+
 # The tuned configuration: grid cell (steps=10, pred_lr=5e-4) on rank-2 predlast,
-# which is the arm that scores 0.678 on the PushObj test cohorts.
+# which is the arm that scores ~0.678 on the PushObj test cohorts. The remaining
+# values are the predecessor's plan_gd_mpc_ada_local.yaml defaults -- in particular
+# grad_clip_norm, without which 10 steps/replan over 20 replans diverges.
 params:
   steps: 10
   pred_lr: 5.0e-4
   update_scope: lora_predlast_all
   lora_rank: 2
+  lora_scale: 1.0
   buffer_size: 5
+  buffer_strategy: recent
   refresh_interval: 1
+  enc_lr: 1.0e-5
+  action_lr: 5.0e-4
   stop_grad: true
+  grad_clip_norm: 1.0
+  require_single_episode: true
 
 selection: selection:StepSizeGrid

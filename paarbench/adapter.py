@@ -25,10 +25,19 @@ declared and reported.
 Batching
 --------
 
-The planner evaluates a whole cohort as one batch: every observation below carries a
-leading batch dimension of ``n_evals`` and all episodes step in lockstep. "Episode"
-hooks are therefore per-batch-of-episodes, and a method that adapts per-episode must
-keep its state batched rather than scalar.
+By default the planner evaluates a whole cohort as one batch: every observation below
+carries a leading batch dimension of ``n_evals`` and all episodes step in lockstep.
+"Episode" hooks are therefore per-batch-of-episodes.
+
+That is fine for a method whose correction is naturally per-episode. It is **wrong**
+for a method holding mutable shared state -- model weights and an optimizer -- because
+one gradient step then averages unrelated episodes into a single correction. Such a
+method declares ``requires_episode_isolation: true`` in its ``method.yaml`` and the
+harness gives each episode its own process and its own adapter instance.
+
+The failure mode this prevents is silent: batching such a method produces a plausible
+number rather than an error. AdaJEPA scored 0.553 batched against 0.677 isolated on the
+same cohort, with nothing in the logs to indicate a problem.
 """
 
 from __future__ import annotations

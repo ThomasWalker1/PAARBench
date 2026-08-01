@@ -41,6 +41,33 @@ class MethodError(Exception):
     """A method directory is malformed. Always names the file and the fix."""
 
 
+def resolve_repo_paths(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Make relative ``*_path`` / ``*_dir`` params repo-relative.
+
+    Hydra chdirs into the run directory before the planner is built, so a relative
+    path written in ``method.yaml`` -- the obvious thing to write -- resolves against
+    somewhere under ``eval_outputs/`` and fails. Every method shipping a checkpoint
+    would hit this, so it is fixed once here rather than in each method.
+
+    Only rewrites when the key looks like a path, the value is a relative string, and
+    the repo-relative interpretation actually exists on disk. A value that does not
+    name a real file is left alone, so this cannot mangle an arbitrary string that
+    happens to end in ``_path``.
+    """
+    resolved = {}
+    for key, value in params.items():
+        if (
+            isinstance(value, str)
+            and (key.endswith("_path") or key.endswith("_dir"))
+            and not Path(value).is_absolute()
+            and (REPO_ROOT / value).exists()
+        ):
+            resolved[key] = str(REPO_ROOT / value)
+        else:
+            resolved[key] = value
+    return resolved
+
+
 @dataclass
 class Method:
     """A loaded method definition. Metadata only -- nothing is instantiated yet."""
@@ -60,6 +87,20 @@ class Method:
     selection_ref: Optional[str] = None
     """``"<module>:<attr>"`` of a SelectionRule, or None for no hyperparameters."""
 
+    requires_episode_isolation: bool = False
+    """Must each episode get its own process, with its own adapter instance?
+
+    The planner evaluates a whole cohort as one batch, so by default an adapter sees
+    a batched observation and all episodes step in lockstep. A method that owns
+    *mutable shared state* -- model weights and an optimizer, say -- cannot work that
+    way: one gradient step would average unrelated episodes into a single correction,
+    which is a different method from per-episode adaptation.
+
+    Setting this makes the harness fan out one process per episode instead of one per
+    shape. It is much more expensive (n_evals x the processes), so declare it only if
+    batching genuinely changes what the method computes.
+    """
+
     description: str = ""
     reference: str = ""
 
@@ -78,7 +119,7 @@ class Method:
         evaluates a candidate configuration without rewriting the file.
         """
         cls = self.load_adapter_class()
-        params = {**self.params, **overrides}
+        params = resolve_repo_paths({**self.params, **overrides})
         try:
             return cls(wm=wm, preprocessor=preprocessor, **params)
         except TypeError as exc:
@@ -192,6 +233,7 @@ def load(name: str, methods_dir: Optional[Path] = None) -> Method:
         settings=[str(s) for s in declared],
         params=params,
         selection_ref=(str(raw["selection"]) if raw.get("selection") else None),
+        requires_episode_isolation=bool(raw.get("requires_episode_isolation", False)),
         description=str(raw.get("description", "")),
         reference=str(raw.get("reference", "")),
     )

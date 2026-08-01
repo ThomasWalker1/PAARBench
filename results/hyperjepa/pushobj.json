@@ -1,0 +1,131 @@
+{
+  "method": "hyperjepa",
+  "display_name": "HyperJEPA \u2014 amortized hypernetwork",
+  "setting": "pushobj",
+  "params": {
+    "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+    "rank": 2,
+    "target_scope": "predlast_all",
+    "context_mode": "transition_buffer",
+    "context_feature_kind": "residual_action",
+    "context_aggregator": "transformer_query",
+    "transition_buffer_size": 5,
+    "adapter_gate": false,
+    "freeze_lora_A": false,
+    "generator": "mlp",
+    "refresh": "every_mpc",
+    "refresh_interval": 1,
+    "fold_weights": false
+  },
+  "selection_rule": "selection:EpochSelection (SKIPPED via --skip-selection)",
+  "selection_cost_columns": null,
+  "selection_cohort_seed": 300,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pushobj",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "T": 0.68,
+        "L": 0.6,
+        "Z": 0.6,
+        "+": 0.62
+      },
+      "success": 0.625,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 149.4,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj/test100"
+    },
+    "test200": {
+      "setting": "pushobj",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "T": 0.7,
+        "L": 0.58,
+        "Z": 0.58,
+        "+": 0.6
+      },
+      "success": 0.615,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 146.0,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj/test200"
+    },
+    "test400": {
+      "setting": "pushobj",
+      "cohort": "test400",
+      "seed": 400,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "T": 0.58,
+        "L": 0.56,
+        "Z": 0.62,
+        "+": 0.6
+      },
+      "success": 0.5900000000000001,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 149.5,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj/test400"
+    }
+  },
+  "success": 0.61,
+  "n": 600,
+  "complete": true,
+  "frozen_reference": 0.485
+}

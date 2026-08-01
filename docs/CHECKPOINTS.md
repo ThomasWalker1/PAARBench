@@ -41,7 +41,7 @@ episode and its "weights" are its hyperparameters.
 
 | path | arm | notes |
 |---|---|---|
-| `pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_4.pth` | HyperJEPA on `pushobj` | **this is the 0.610 checkpoint** — rank-2, epoch 4 (`~/HyperJEPA/RESULTS.md` §15, lines 542 and 831). `sha256 bd9fdb02f238b904` |
+| `pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth` | HyperJEPA on `pushobj` | **this is the 0.610 checkpoint** — rank-2, **epoch 2**, confirmed by reproducing 0.6100 on the test cohorts |
 | `pushobj_adapters/static_r2/` | unconditioned static correction on `pushobj` | epoch checkpoints; the control that asks whether conditioning buys anything |
 | `pvs_adapters/hyper_r2_distill0/` | HyperJEPA on `pusht` | |
 | `pvs_adapters/static_r2/baked_ep*/` | static control on `pusht` | **baked** full weights, evaluated through the ordinary planner config so the control pays no adapter-wrapper overhead (that overhead is real: +0.80 s/replan) |
@@ -65,9 +65,19 @@ adapter_gate: false                     static_lora: false
 
 Do **not** pick an adapter epoch on a test cohort. Epoch selection is a
 hyperparameter-selection decision and belongs on the selection cohort, priced in the
-submission's declared selection cost (§3). The 0.610 figure comes from epoch 4 selected
-that way; `~/HyperJEPA/RESULTS.md` line 873 notes the selection cohort gives 0.605 for the
-same checkpoint against 0.610 on test, so the split is behaving as intended.
+submission's declared selection cost (§3). On the selection cohort (seed 300),
+`hyper_r2_distill0` scores 0.560 / **0.605** / 0.595 / 0.570 / 0.570 across epochs 1–5, so
+epoch 2 is selected, and epoch 2 is what scores 0.610 on the test cohorts.
+
+> **This is worth reading before you trust an epoch number.** The first port of this
+> method used **epoch 4** and scored 0.588 on test instead of 0.610 — a plausible-looking
+> number, no error, nothing to notice. Epoch 4 had been misread out of a three-column
+> table in the predecessor's results where 0.610 appears in row 4 of the *distill1*
+> column, not distill0's. The fix was not a better reading; it was running
+> `methods/hyperjepa/selection.py:EpochSelection`, which evaluates all five epochs on the
+> selection cohort and picks epoch 2 for five columns of cost. A declared selection rule
+> is not bureaucracy — it is the thing that stops a transcription error from becoming a
+> published number.
 
 ## Reproducing these
 

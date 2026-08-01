@@ -61,11 +61,32 @@ Three rules that the harness enforces rather than trusts:
 - **You never see episode outcome.** No hook is passed success or distance-to-goal, and
   there is no back channel. An episode's outcome is only knowable once it is over;
   a method that needs outcomes to tune belongs in `selection.py`, below.
-- **Everything is batched.** The whole cohort is planned as one batch, so every
-  observation has a leading batch dimension and all episodes step in lockstep. If your
-  method adapts per-episode, keep its state batched.
+- **Everything is batched — unless you say otherwise.** The whole cohort is planned as
+  one batch, so every observation has a leading batch dimension and all episodes step in
+  lockstep. That is fine for a method whose state is naturally batched (a per-episode
+  correction emitted from a per-episode context, say).
+
+  It is **wrong** for a method that owns mutable shared state — model weights plus an
+  optimizer. One gradient step would average 50 unrelated episodes into a single
+  correction, which is a different method from per-episode adaptation, and it fails
+  quietly: you get a plausible number that is simply not what you meant to measure. If
+  that describes your method, set
+
+  ```yaml
+  requires_episode_isolation: true
+  ```
+
+  and the harness fans out one process per episode instead of one per shape. It costs
+  `n_evals`× the processes, so use `--per-gpu 4` or similar; do not set it unless
+  batching genuinely changes what your method computes.
 
 ## 2. Declare it
+
+**Shipping a checkpoint?** Write its path relative to the repository root. Any param key
+ending in `_path` or `_dir` whose value names a real repo-relative file is resolved for
+you before your adapter is constructed. This exists because Hydra chdirs into the run
+directory before the planner is built, so the obvious relative path would otherwise
+resolve somewhere under `eval_outputs/` and fail.
 
 `method.yaml`:
 

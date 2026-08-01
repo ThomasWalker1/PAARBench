@@ -134,12 +134,17 @@ def build_command(
     data_path: Optional[Path] = None,
     config_name: str = "eval",
     extra: Optional[List[str]] = None,
+    episode_index: Optional[int] = None,
 ) -> List[str]:
-    """The ``plan.py`` invocation for one shape.
+    """The ``plan.py`` invocation for one shape, or for one episode of one shape.
 
     A method is selected with ``planner.adapter.method=<name>`` and configured with
     ``planner.adapter.params.<k>=<v>``. The planner resolves the name through
     ``paarbench.methods``; it has no knowledge of any specific method.
+
+    With ``episode_index``, this scores episode ``i`` of the ``n_evals``-episode
+    cohort in isolation, using that episode's own environment seed. That is what
+    ``requires_episode_isolation`` methods get.
     """
     cmd = [
         str(REPO_ROOT / ".venv/bin/python"), "plan.py",
@@ -151,11 +156,18 @@ def build_command(
         "+wandb_logging=false",
         f"hydra.run.dir={out_dir}",
         f"seed={seed}",
-        f"n_evals={n_evals}",
         "goal_H=25",
         "planner.sub_planner.opt_steps=100",
         "decode_for_viz=false",
     ]
+    if episode_index is None:
+        cmd.append(f"n_evals={n_evals}")
+    else:
+        cmd += [
+            "n_evals=1",
+            f"eval_episode_index={episode_index}",
+            f"eval_episode_total={n_evals}",
+        ]
     if data_path is not None:
         cmd.append(f"dataset_data_path={data_path}")
     if method_name is not None:
@@ -192,10 +204,17 @@ def run_column(
     extra: Optional[List[str]] = None,
     resume: bool = True,
     verbose: bool = True,
+    episode_isolation: bool = False,
+    per_gpu: int = 1,
 ) -> ColumnResult:
-    """Run every shape of ``setting`` at ``cohort``, one shape per GPU slot.
+    """Run every shape of ``setting`` at ``cohort``.
 
-    Resumable: a shape whose ``logs.json`` already exists is skipped unless
+    By default one process per shape, each planning the whole cohort as a batch.
+    With ``episode_isolation``, one process per *episode* instead -- required by
+    methods that own mutable shared state, since a batched gradient step would
+    average unrelated episodes into a single correction.
+
+    Resumable: a unit whose ``logs.json`` already exists is skipped unless
     ``resume=False``.
     """
     seed = setting.cohort_seed(cohort)
@@ -209,45 +228,52 @@ def run_column(
     log_dir = column_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    pending = []
+    # A unit is (shape, episode_index_or_None, output dir, log name).
+    units = []
     for shape in setting.shapes:
         safe = shape.replace("+", "plus")
-        out_dir = column_dir / safe
-        if resume and (out_dir / "logs.json").exists():
-            continue
-        pending.append((shape, safe, out_dir))
+        if episode_isolation:
+            for i in range(n_evals):
+                units.append((shape, i, column_dir / safe / f"ep{i:03d}", f"{safe}_ep{i:03d}"))
+        else:
+            units.append((shape, None, column_dir / safe, safe))
+    pending = [u for u in units if not (resume and (u[2] / "logs.json").exists())]
 
+    slot_list = [g for _ in range(max(1, per_gpu)) for g in gpus]
     if verbose:
+        mode = (f"episode-isolated, {n_evals} processes/shape" if episode_isolation
+                else "batched cohort")
         print(f"[column] {setting.id}/{cohort} seed={seed} tag={tag} n_evals={n_evals} "
-              f"({len(pending)}/{len(setting.shapes)} shapes to run on {len(gpus)} gpus)",
+              f"({mode}; {len(pending)}/{len(units)} units on {len(slot_list)} slots)",
               flush=True)
 
     slots: "queue.Queue[str]" = queue.Queue()
-    for g in gpus:
+    for g in slot_list:
         slots.put(g)
     work: "queue.Queue" = queue.Queue()
     for item in pending:
         work.put(item)
 
     failures: List[str] = []
+    done = {"n": 0}
     lock = threading.Lock()
     t0 = time.time()
 
     def worker() -> None:
         while True:
             try:
-                shape, safe, out_dir = work.get_nowait()
+                shape, episode_index, out_dir, log_name = work.get_nowait()
             except queue.Empty:
                 return
             gpu = slots.get()
             cmd = build_command(
                 setting, seed, shape, out_dir, n_evals,
                 method_name=method_name, params=params, data_path=data_path,
-                config_name=config_name, extra=extra,
+                config_name=config_name, extra=extra, episode_index=episode_index,
             )
             try:
                 # Tee to disk: session interruptions lose captured stdout.
-                with open(log_dir / f"{safe}.log", "w") as fh:
+                with open(log_dir / f"{log_name}.log", "w") as fh:
                     fh.write(" ".join(cmd) + "\n\n")
                     fh.flush()
                     rc = subprocess.call(cmd, cwd=REPO_ROOT, env=_worker_env(gpu),
@@ -256,22 +282,37 @@ def run_column(
                 slots.put(gpu)
                 work.task_done()
             with lock:
+                done["n"] += 1
                 if rc != 0:
-                    failures.append(f"{shape} (rc={rc}, see {log_dir / (safe + '.log')})")
-                if verbose:
-                    print(f"[done] {setting.id}/{cohort} {shape} rc={rc} gpu{gpu} "
+                    failures.append(f"{log_name} (rc={rc}, see {log_dir / (log_name + '.log')})")
+                # One line per shape is readable; one per episode is not.
+                if verbose and (episode_index is None or done["n"] % 25 == 0
+                                or done["n"] == len(pending)):
+                    print(f"[done] {setting.id}/{cohort} {done['n']}/{len(pending)} "
                           f"({(time.time() - t0) / 60:.1f} min)", flush=True)
 
-    threads = [threading.Thread(target=worker, daemon=True) for _ in gpus]
+    threads = [threading.Thread(target=worker, daemon=True) for _ in slot_list]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
 
-    success_by_shape = {
-        shape: read_success(column_dir / shape.replace("+", "plus") / "logs.json")
-        for shape in setting.shapes
-    }
+    if episode_isolation:
+        success_by_shape = {}
+        for shape in setting.shapes:
+            safe = shape.replace("+", "plus")
+            scores = [read_success(column_dir / safe / f"ep{i:03d}" / "logs.json")
+                      for i in range(n_evals)]
+            got = [s for s in scores if s is not None]
+            # Only report a shape whose every episode landed: a mean over the
+            # subset that happened to finish is a different, biased quantity.
+            success_by_shape[shape] = (sum(got) / len(got)
+                                       if len(got) == n_evals else None)
+    else:
+        success_by_shape = {
+            shape: read_success(column_dir / shape.replace("+", "plus") / "logs.json")
+            for shape in setting.shapes
+        }
     result = ColumnResult(
         setting=setting.id, cohort=cohort, seed=seed, tag=tag, n_evals=n_evals,
         success_by_shape=success_by_shape, out_dir=column_dir,

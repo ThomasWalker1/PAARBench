@@ -199,3 +199,65 @@ def test_fixed_params_costs_nothing():
     h = _RecordingHarness(get_setting("pushobj"))
     assert FixedParams({"lr": 1e-3}).select(h) == {"lr": 1e-3}
     assert h.columns_used == 0
+
+
+# -- repo-relative path resolution -------------------------------------------
+
+
+def test_relative_checkpoint_paths_resolve_against_the_repo_root():
+    """Hydra chdirs before the planner is built, so relative paths must be fixed up."""
+    from paarbench.methods import REPO_ROOT, resolve_repo_paths
+
+    out = resolve_repo_paths({"checkpoint_path": "pyproject.toml"})
+    assert out["checkpoint_path"] == str(REPO_ROOT / "pyproject.toml")
+
+
+def test_absolute_paths_are_left_alone():
+    from paarbench.methods import resolve_repo_paths
+
+    assert resolve_repo_paths({"ckpt_path": "/tmp"})["ckpt_path"] == "/tmp"
+
+
+def test_non_path_values_are_never_mangled():
+    """A string that only looks like a path key, or names nothing, is untouched."""
+    from paarbench.methods import resolve_repo_paths
+
+    params = {
+        "update_scope": "lora_predlast_all",   # not a *_path key
+        "context_path": "residual_action",     # *_path key, but names no file
+        "steps": 10,
+    }
+    assert resolve_repo_paths(params) == params
+
+
+# -- episode isolation -------------------------------------------------------
+
+
+def test_isolation_is_opt_in_and_defaults_off():
+    assert methods.load("toy", FIXTURES).requires_episode_isolation is False
+
+
+def test_adajepa_declares_isolation_and_hyperjepa_does_not():
+    """The two shipped methods differ exactly here, which is the point of the flag.
+
+    AdaJEPA owns an optimizer trajectory over shared weights; HyperJEPA emits a
+    per-episode correction from a per-episode context and batches correctly.
+    """
+    shipped = {m.name: m for m in methods.discover()}
+    assert shipped["adajepa"].requires_episode_isolation is True
+    assert shipped["hyperjepa"].requires_episode_isolation is False
+
+
+def test_isolated_commands_score_one_episode_of_the_cohort():
+    from paarbench.runner import build_command
+    from paarbench.settings import get
+
+    setting = get("pushobj")
+    batched = " ".join(build_command(setting, 300, "T", Path("/tmp/x"), 50))
+    assert "n_evals=50" in batched and "eval_episode_index" not in batched
+
+    isolated = " ".join(build_command(setting, 300, "T", Path("/tmp/x"), 50,
+                                      episode_index=7))
+    assert "n_evals=1" in isolated
+    assert "eval_episode_index=7" in isolated
+    assert "eval_episode_total=50" in isolated
