@@ -1,0 +1,28 @@
+name: pusht
+args: []
+kwargs: 
+  with_velocity: true
+  with_target: true
+
+dataset:
+  _target_: "datasets.pusht_dset.load_pusht_slice_train_val"
+  with_velocity: true
+  n_rollout: null
+  normalize_action: ${normalize_action}
+  data_path: ${oc.env:DATASET_DIR}/pusht_noise
+  split_ratio: 0.9
+  use_hdf5: false
+  hdf5_path_train: null
+  hdf5_path_val: null
+  hdf5_cache_mb: 256
+  hdf5_cache_nslots: 200003
+  hdf5_cache_w0: 0.75
+  shuffle_slices: true
+  shuffle_block_size: 0
+  transform:
+    _target_: "datasets.img_transforms.default_transform"
+    img_size: ${img_size}
+
+decoder_path: null
+num_workers: 16
+prefetch_factor: 4

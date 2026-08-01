@@ -1,0 +1,8 @@
+name: toy
+display_name: "Toy method (test fixture)"
+description: "A do-nothing adapter used to test discovery, loading and validation."
+adapter: adapter:ToyAdapter
+settings: [pushobj]
+params:
+  scale: 2.0
+selection: selection:ToyRule

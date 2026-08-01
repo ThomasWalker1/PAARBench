@@ -1,0 +1,25 @@
+name: adajepa
+display_name: "AdaJEPA — online gradient TTA"
+description: >
+  Takes gradient steps on the world model's own prediction loss over a buffer of
+  transitions the controller has actually executed. The correction is an optimizer
+  trajectory: it accumulates across replans and is never recomputed from the frozen
+  weights. Rank-2 LoRA on the predictor's last block, which the predecessor found
+  sufficient to match a dense update.
+reference: "Predecessor project ~/HyperJEPA, planning/adaptation.py @ 628dff7"
+
+adapter: adapter:AdaJEPAAdapter
+settings: [pushobj, pushobj_shift, pusht]
+
+# The tuned configuration: grid cell (steps=10, pred_lr=5e-4) on rank-2 predlast,
+# which is the arm that scores 0.678 on the PushObj test cohorts.
+params:
+  steps: 10
+  pred_lr: 5.0e-4
+  update_scope: lora_predlast_all
+  lora_rank: 2
+  buffer_size: 5
+  refresh_interval: 1
+  stop_grad: true
+
+selection: selection:StepSizeGrid

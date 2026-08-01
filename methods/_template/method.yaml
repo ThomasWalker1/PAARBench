@@ -1,0 +1,28 @@
+# Copy this directory to methods/<your_method>/ and edit.
+# Directories starting with "_" are templates and are never discovered as methods.
+
+name: _template                 # must equal the directory name
+display_name: "Template (replace me)"
+description: >
+  One paragraph: what this method adapts, and what failure it is trying to fix.
+  Required -- validate_method.py rejects an empty description, because a leaderboard
+  row with no explanation is not usable by anyone reading it later.
+
+# Optional. A paper, a repo, anything that lets a reader find the original.
+reference: ""
+
+# <module>:<attribute>, resolved inside this directory.
+adapter: adapter:TemplateAdapter
+
+# Setting ids you claim to support. See paarbench/settings.py for the suite.
+settings: [pushobj]
+
+# Adapter constructor kwargs. These are the FROZEN hyperparameters -- what your
+# selection rule chose, and what gets run on the test cohorts.
+params:
+  scale: 1.0
+
+# Optional. "<module>:<attribute>" of a selection rule. Omit it entirely if your
+# method has no hyperparameters: `params` above are then used as-is, at a declared
+# selection cost of zero columns.
+# selection: selection:TemplateRule

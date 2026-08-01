@@ -1,0 +1,100 @@
+[project]
+name = "paarbench"
+version = "0.0.1"
+description = "PlanActAdaptRepeatBench - a benchmark for test-time adaptation of latent world models"
+readme = "README.md"
+# Pinned to 3.9 to match the predecessor (~/HyperJEPA) so that ported evaluation
+# numbers are comparable.  Upgrade deliberately, after M1/M2 reproduce.
+requires-python = "==3.9.*"
+
+dependencies = [
+    # --- torch: see [tool.uv.sources] below.  Do NOT unpin without reading the
+    # CUDA note in docs/PLAN.md §9: default resolution picks a build for a newer
+    # CUDA than this machine's driver, and torch.cuda.is_available() then
+    # silently returns False rather than erroring.
+    "torch==2.3.0+cu121",
+    "torchvision==0.18.0+cu121",
+
+    # config / experiment plumbing
+    "hydra-core==1.2.0",
+    "omegaconf==2.3.0",
+    "antlr4-python3-runtime==4.9.3",
+    "submitit==1.5.1",
+    "hydra-submitit-launcher==1.2.0",
+    "wandb==0.17.0",
+
+    # numerics
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "scikit-learn==1.5.0",
+    "einops==0.4.1",
+
+    # PushT / PushObj simulation
+    "gym==0.23.1",
+    "pygame==2.5.2",
+    "pymunk==6.8.0",
+    "shapely==2.0.3",
+    "opencv-python==4.6.0.66",
+    "scikit-image==0.19.3",
+    "Pillow==10.3.0",
+
+    # data / IO
+    "h5py>=3.14.0",
+    "decord==0.6.0",
+    "imageio==2.34.1",
+    "imageio-ffmpeg==0.4.9",
+    "moviepy==1.0.3",
+    "matplotlib==3.5.3",
+    "PyYAML==6.0.1",
+    "tqdm==4.67.1",
+    "psutil==5.9.8",
+    "accelerate==0.26.1",
+    "PyOpenGL==3.1.7",
+
+    # metrics / harness output schema
+    "pandas>=2.0.0",
+    "pyarrow>=15.0.0",
+]
+
+[project.optional-dependencies]
+# PointMaze only.  Kept out of the default install because mujoco-py compiles at
+# import time and needs MUJOCO_PY_MUJOCO_PATH + a system GL toolchain; the
+# PushObj/PushT settings do not touch any of it.  See docs/PLAN.md §2.3 -
+# PointMaze may yet be dropped from the suite entirely.
+pointmaze = [
+    "Cython==0.29.37",
+    # Left unpinned between the floor mujoco-py/d4rl need and the floor
+    # dm-control asks for; the predecessor's venv resolved to 2.3.7.
+    "mujoco>=2.3.7",
+    "mujoco-py==2.1.2.14",
+    "d4rl==1.1",
+    "gymnasium==0.29.1",
+    "gymnasium-robotics==1.2.4",
+    "minari==0.4.3",
+    # dm-control comes in transitively via d4rl.  Left unpinned on purpose: the
+    # predecessor's venv has dm-control 1.0.28 (wants mujoco>=3.2.7) installed
+    # next to mujoco 2.3.7 and gymnasium-robotics 1.2.4 (wants mujoco<3.0),
+    # which is an unsatisfiable set that only survives because pip was told to
+    # ignore it.  Letting the resolver choose keeps the extra installable.
+]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.uv]
+# The repo is run in place (`.venv/bin/python plan.py ...`), not installed, so
+# there is nothing to build for the root project.
+package = false
+# Linux/x86_64 only: the cu121 torch wheels, mujoco-py and d4rl exist nowhere
+# else.  Declaring this keeps the resolver from failing on platforms the
+# benchmark does not target.
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+torchvision = { index = "pytorch-cu121" }

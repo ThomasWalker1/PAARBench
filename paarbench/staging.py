@@ -1,0 +1,121 @@
+"""Stage training datasets onto tmpfs before a fan-out.
+
+The datasets live on an SMB mount that goes down under a large fan-out (one eval
+process per GPU slot, each reading normalization statistics at startup).  The
+predecessor project worked around this with per-config ``dataset_data_path``
+overrides; docs/PLAN.md §9 asks for it in the harness instead, so every driver
+gets the same behaviour without remembering to pass a flag.
+
+A stage is validated against a manifest of the source tree -- relative path, size
+and mtime per file -- rather than a hash of 2 GB of tensors, because a full hash
+costs more than the copy it is trying to avoid.  A stale stage is therefore
+possible if someone rewrites a dataset in place while keeping every file's size
+and mtime, which does not happen for these frozen artifacts.
+
+A directory that already holds the right content but carries no manifest (staged
+by hand, or copied without preserving mtimes) is *adopted* rather than re-copied,
+after checking the path set and every file size.  Adoption deliberately ignores
+mtime: a plain ``cp -r`` does not preserve it, and re-copying 2 GB over the slow
+mount to fix a timestamp is exactly the cost this module exists to avoid.
+"""
+
+from __future__ import annotations
+
+import getpass
+import json
+import os
+import shutil
+from pathlib import Path
+
+DEFAULT_TMPFS = Path("/dev/shm") / getpass.getuser() / "paarbench" / "data"
+
+_MANIFEST_NAME = ".paarbench_stage.json"
+
+
+def _manifest(root: Path) -> dict:
+    """A cheap fingerprint of a directory tree: relative path -> (size, mtime_ns)."""
+    entries = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_file():
+            st = path.stat()
+            entries[str(path.relative_to(root))] = [st.st_size, st.st_mtime_ns]
+    return {"n_files": len(entries), "entries": entries}
+
+
+def _sizes_match(want: dict, have: dict) -> bool:
+    """Do two manifests agree on the path set and every file size, ignoring mtime?
+
+    ``have`` may carry the stage's own manifest file, which the source cannot have.
+    """
+    a = {k: v[0] for k, v in want["entries"].items()}
+    b = {k: v[0] for k, v in have["entries"].items() if k != _MANIFEST_NAME}
+    return a == b
+
+
+def stage_dataset(
+    source: os.PathLike | str,
+    tmpfs_root: os.PathLike | str | None = None,
+    *,
+    force: bool = False,
+    adopt: bool = True,
+    verbose: bool = True,
+) -> Path:
+    """Copy ``source`` under tmpfs and return the staged path.
+
+    Re-staging is skipped when the existing stage's manifest already matches the
+    source, so this is cheap to call unconditionally at the top of a driver.  With
+    ``adopt`` (the default), a manifest-less directory whose path set and file
+    sizes already match the source is claimed as the stage instead of re-copied.
+    """
+    source = Path(source).resolve()
+    if not source.is_dir():
+        raise FileNotFoundError(f"dataset source is not a directory: {source}")
+
+    root = Path(tmpfs_root) if tmpfs_root is not None else DEFAULT_TMPFS
+    dest = root / source.name
+    manifest_path = dest / _MANIFEST_NAME
+
+    want = _manifest(source)
+    if not force and manifest_path.is_file():
+        try:
+            have = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            have = None
+        if have == want:
+            if verbose:
+                print(f"[stage] reusing {dest} ({want['n_files']} files)", flush=True)
+            return dest
+
+    if not force and adopt and dest.is_dir() and _sizes_match(want, _manifest(dest)):
+        if verbose:
+            print(f"[stage] adopting existing {dest} ({want['n_files']} files, "
+                  f"sizes match source)", flush=True)
+        manifest_path.write_text(json.dumps(want))
+        return dest
+
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if verbose:
+        print(f"[stage] copying {source} -> {dest} ({want['n_files']} files)", flush=True)
+    shutil.copytree(source, dest)
+    manifest_path.write_text(json.dumps(want))
+    return dest
+
+
+def checkpoint_dataset_path(ckpt_base_path: os.PathLike | str) -> Path | None:
+    """Read the training dataset path baked into a checkpoint's ``hydra.yaml``.
+
+    Returns ``None`` when the checkpoint does not record one, which is the signal
+    to leave ``dataset_data_path`` unset and let the config decide.
+    """
+    hydra_yaml = Path(ckpt_base_path) / "hydra.yaml"
+    if not hydra_yaml.is_file():
+        return None
+    # Read with omegaconf rather than yaml so that the file's own interpolations
+    # do not have to be resolved -- we only want one leaf string.
+    from omegaconf import OmegaConf
+
+    cfg = OmegaConf.load(hydra_yaml)
+    path = OmegaConf.select(cfg, "env.dataset.data_path")
+    return Path(path) if path else None

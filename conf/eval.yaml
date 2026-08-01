@@ -1,0 +1,64 @@
+defaults:
+  - _self_
+
+hydra:
+  run:
+    dir: plan_outputs_gd_mpc/${replace_slash:${model_name}}_gH${goal_H}_${goal_source}/${ckpt_base_path}_gd_lr${planner.sub_planner.lr}_an${planner.sub_planner.action_noise}_opt${planner.sub_planner.opt_steps}_obj${objective.mode}_init${planner.sub_planner.sample_type}
+  sweep:
+    dir: plan_outputs_gd_mpc/${replace_slash:${model_name}}_gH${goal_H}_${goal_source}/${ckpt_base_path}_gd_lr${planner.sub_planner.lr}_an${planner.sub_planner.action_noise}_opt${planner.sub_planner.opt_steps}_obj${objective.mode}_init${planner.sub_planner.sample_type}
+    subdir: ${hydra.job.num}
+
+ckpt_base_path: ./checkpoints
+model_name: null
+model_epoch: latest
+# Optional: read the training dataset from somewhere other than the path baked into the
+# checkpoint's hydra.yaml (e.g. a local/tmpfs stage instead of a slow network mount).
+# null => use the checkpoint's own path.
+dataset_data_path: null
+
+seed: 100
+n_evals: 50
+# Episode-isolated evaluation of one member of a batched cohort (see
+# PlanWorkspace): with eval_episode_index=i / eval_episode_total=N and
+# n_evals=1, this process scores episode i of the N-episode cohort that
+# `seed` selects, using that episode's environment seed.  null => batched.
+eval_episode_index: null
+eval_episode_total: null
+goal_source: dset
+goal_H: 25
+point_maze_min_cell_distance: 3.0
+point_maze_cell_jitter: 0.25
+n_plot_samples: 10
+decode_for_viz: true
+num_start_frames: 1
+
+debug_dset_init: false
+# Eval-time observation shift (OOD), applied to the visual stream the model
+# encodes (goal + closed-loop obs); success stays state-based. null => clean.
+# ood_corruption: null | blur | snp1 | snp5 | dark ; ood_level overrides default.
+ood_corruption: null
+ood_level: null
+# Optional evaluator-only environment override.  The checkpoint's saved
+# training environment remains the source of model and dataset settings.
+evaluation_env_name: null
+
+objective:
+  _target_: planning.objectives.create_objective_fn
+  alpha: 0
+  base: 2
+  mode: all
+
+planner:
+  _target_: planning.mpc.MPCPlanner
+  max_iter: 20
+  n_taken_actions: 5
+  sub_planner:
+    target: planning.gd.GDPlanner
+    lr: 0.1
+    sample_type: zero
+    action_noise: 0
+    horizon: 25
+    var_scale: 1
+    opt_steps: 100
+    eval_every: -1
+  name: mpc_gd

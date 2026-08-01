@@ -1,0 +1,32 @@
+defaults:
+  - plan_gd_mpc_local
+  - _self_
+
+hydra:
+  run:
+    dir: plan_outputs_gd_mpc_ada/${replace_slash:${model_name}}_gH${goal_H}_${goal_source}/${ckpt_base_path}_gd_lr${planner.sub_planner.lr}_an${planner.sub_planner.action_noise}_opt${planner.sub_planner.opt_steps}_ada${planner.adaptation.update_scope}_u${planner.adaptation.steps}_buf${planner.adaptation.buffer_size}
+  sweep:
+    dir: plan_outputs_gd_mpc_ada/${replace_slash:${model_name}}_gH${goal_H}_${goal_source}/${ckpt_base_path}_gd_lr${planner.sub_planner.lr}_an${planner.sub_planner.action_noise}_opt${planner.sub_planner.opt_steps}_ada${planner.adaptation.update_scope}_u${planner.adaptation.steps}_buf${planner.adaptation.buffer_size}
+
+planner:
+  name: mpc_gd_ada
+  adaptation:
+    enabled: true
+    steps: 1
+    buffer_size: 5
+    buffer_strategy: recent
+    # Match the deployment assumption used by HyperJEPA: only predictor
+    # parameters are available during planning. `predlast` includes the
+    # predictor's final Transformer LayerNorm.
+    update_scope: predlast_encfrozen
+    lora_rank: 4
+    lora_scale: 1.0
+    refresh_interval: 1
+    pred_lr: 5e-4
+    enc_lr: 1e-5
+    action_lr: 5e-4
+    stop_grad: true
+    grad_clip_norm: 1.0
+    # AdaJEPA owns mutable parameters and optimizer state. A vectorized batch
+    # would otherwise average unrelated episodes into one shared update.
+    require_single_episode: true

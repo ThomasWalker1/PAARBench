@@ -1,6 +1,8 @@
 # PlanActAdaptRepeatBench — a benchmark for test-time adaptation of latent world models
 
-**Status:** greenfield. Nothing implemented yet. This document is the whole project.
+**Status:** **M0 complete** (2026-08-01) — scaffold up, frozen PushObj column reproduces
+0.490 per-shape-exactly. See `RESULTS.md` for the acceptance record, `PROVENANCE.md` for
+what was copied from where, and `docs/ADAPTER_PROTOCOL.md` for the M1 design. **M1 is next.**
 **Predecessor:** `~/HyperJEPA/` — the source of the findings below. **Treat it as read-only.**
 It is actively maintained by a separate session, so pin your reads to commit **`628dff7`** rather
 than to whatever `HEAD` happens to be; later commits may revise the paper's tables.
@@ -75,10 +77,30 @@ HyperJEPAAdapter  .maybe_apply_episode_start(obs), .append_executed_transitions(
 Designing one protocol and porting both is Milestone 1. Roughly a day. Low risk, high value —
 worth doing even if the benchmark is abandoned.
 
-### 2.2 Three methods is not a leaderboard  *(largest risk)*
+### 2.2 Three methods is not a leaderboard  *(resolved 2026-08-01: descoped)*
+
+> **Owner decision.** The deliverable is **infrastructure that makes proposing,
+> implementing and evaluating a method easy** — not a populated leaderboard on day one.
+> The leaderboard fills in over time.
+>
+> *Reason this is the right call:* the original framing made M4 (4+ method ports, 1–3
+> weeks) the gate on everything, and it was rated the project's largest risk. But the
+> contribution was never the entries — §1 already says "the contribution is the protocol".
+> A harness that makes the 7th method cheap to add is worth more than six methods bolted
+> onto a harness nobody else can extend. It also inverts the risk: M1–M3 are each
+> independently useful, whereas M4 was all-or-nothing.
+>
+> *What this changes:* M1–M3 become the deliverable and their quality bar goes **up** —
+> specifically the ease of adding a method is now a thing to design for and test, not a
+> side effect. M4 becomes ongoing. The "if you cannot land 4+ new methods, this is not a
+> benchmark paper" gate below no longer applies.
+>
+> *What this does not change:* the honesty requirements. A leaderboard with three entries
+> must still report per-metric CIs and must still not display unresolvable orderings as
+> real (§2.5).
 
 Existing arms: frozen, online gradient TTA, an unconditioned (static) correction, HyperJEPA.
-A credible benchmark needs **6–8**. Candidates, best first:
+Candidates to add over time, best first:
 
 - **PAD** (Hansen et al., policy adaptation during deployment) — closest fit, already cited in
   the HyperJEPA bibliography.
@@ -89,8 +111,10 @@ A credible benchmark needs **6–8**. Candidates, best first:
   and there isn't one. *That awkwardness is itself a reportable finding* — the dominant TTA
   family does not transfer to latent world models. Say so rather than forcing it.
 
-**If you cannot land 4+ new methods, this is not a benchmark paper.** Revisit with the owner
-before committing weeks.
+~~**If you cannot land 4+ new methods, this is not a benchmark paper.**~~ Superseded by the
+decision above. Add methods opportunistically; each one is also a test of whether the
+interface is actually easy to implement against, so treat friction encountered while
+porting as a bug in §5, not as a cost of the port.
 
 ### 2.3 The setting suite is thin, and one setting is broken as configured
 
@@ -99,6 +123,15 @@ before committing weeks.
 - **PointMaze is unusable as configured**: frozen sits at 0.880 on its selection cohort, which
   compresses everything (distance span 1.4× against PushObj's 12.7×), and n=50 gives SE ≈ 0.045.
   Either re-cohort to the harder distribution (its *test* cohort is frozen 0.733) or drop it.
+  > **Owner decision (2026-08-01): defer.** Build the infrastructure so PointMaze *can* be
+  > added; decide re-cohort-vs-drop later. It is registered in `paarbench/settings.py` with
+  > `enabled=False` and its blocking reason recorded there, so `settings.get("pointmaze")`
+  > raises rather than silently returning a compressed setting. Its base checkpoints (5.9 GB,
+  > three variants) are deliberately **not staged** — which variant to take depends on how the
+  > re-cohorting resolves. *Reason to defer rather than drop:* the harness work is identical
+  > either way, and given how thin the suite is, a second task family is worth keeping
+  > reachable. This also keeps the `pointmaze` dependency extra (mujoco-py, d4rl) off the
+  > default install path, which is worth something on its own.
 - Held-out-shape PushObj is a distribution-shift *condition* on an existing base, not a new
   environment. It is valuable (the span *widens* to 14.7× there) but should not be counted as a
   fourth environment.
@@ -107,13 +140,32 @@ Realistically: **2 environments + 1 shift condition**. Adding a genuinely differ
 (deformable manipulation is already in `~/HyperJEPA/env/deformable_env/`, and the dataset is at
 `/mnt/richb/tw78/data/datasets/deformable.zip`) would materially strengthen it.
 
-### 2.4 Base checkpoints are not distributable as-is  *(hard blocker for adoption)*
+### 2.4 Base checkpoints are not distributable as-is  *(deferred 2026-08-01, not resolved)*
 
 `~/HyperJEPA/` uses released third-party base world models and its own Limitations section
 concedes the phase-two pool is "a contact-rich reconstruction rather than the base's own
 training data." A benchmark must ship pinned, downloadable base models or submissions are not
-comparable. **Resolve this before any public release.** Options: retrain bases from scratch on
-data you own and can distribute.
+comparable.
+
+> **Owner decision.** Keep the inherited checkpoints in a subdirectory and **develop the
+> benchmark against them as they stand.** The training code that reproduces them is added
+> later.
+>
+> *Reason:* this is a packaging problem, not a design problem. Nothing in §3–§5 depends on
+> where the weights came from, so blocking the harness on retraining would serialize two
+> independent pieces of work for no benefit. Staged inventory and provenance are in
+> `docs/CHECKPOINTS.md`.
+>
+> *What is still true, and must not get lost:* until the bases are retrained on owned data,
+> **a third party cannot reproduce a submission's numbers.** That caps external adoption
+> however good the harness is, so this is deferred rather than solved. Two constraints
+> follow, both recorded in `docs/CHECKPOINTS.md`:
+> - Retraining **invalidates every reproduction target** (frozen 0.485, HyperJEPA 0.610,
+>   tuned online 0.678, the §4 distance spans), because all of them are defined against
+>   these specific weights. It therefore has to come *after* M1/M2 validate the port, and
+>   it implies a second full evaluation sweep to re-baseline.
+> - `train.py`, `train_hyper_lora.py` and `conf/train.yaml` were left off the §7 take list.
+>   Re-extract them from `628dff7` when the training work starts; do not reconstruct them.
 
 ### 2.5 n is too small to order a success-rate leaderboard
 
@@ -304,14 +356,44 @@ scripts/paired_indist_test.py  paired McNemar / bootstrap
 
 Each has an acceptance criterion. Do not advance without it.
 
-**M0 — scaffold (0.5 d).** `git init`; uv project; copy §7 "take" list; `.venv` per §9; smoke-run
-one frozen evaluation column.
+**M0 — scaffold (0.5 d).** ✅ **Done 2026-08-01.** `git init`; uv project; copy §7 "take" list;
+`.venv` per §9; smoke-run one frozen evaluation column.
 *Accept:* a frozen PushObj column runs end to end and reports success 0.490 ± noise on seed 300.
+*Result:* **0.4900** (T 0.500 / L 0.440 / Z 0.600 / + 0.420) — matches the predecessor
+per-shape, not merely on the mean. `RESULTS.md` §M0.
+
+Also landed, ahead of their milestones because M0 needed them: `paarbench/settings.py` (the §6
+suite with the cohort split declared as data, `pointmaze` registered but disabled per §2.3),
+`paarbench/staging.py` (§9 tmpfs staging in the harness rather than per-config overrides), and
+`paarbench/adapter.py` + `docs/ADAPTER_PROTOCOL.md` (the §5 protocol specified, with the
+call-site analysis M1 must satisfy; the port itself is not started).
+
+One finding worth carrying into M1, recorded in `docs/ADAPTER_PROTOCOL.md`: `AdaJEPAAdapter`
+has **no episode-reset method at all**, so §5's "must fully restore the base model" is new
+work for the online method rather than a port. Two further asymmetries the §5 sketch does not
+yet cover — `on_transition` must carry the *full* rollout plus `frameskip` (the amortized
+method aligns one feature per executed action; the online method was handed only the chunk's
+final observation), and refresh scheduling must move inside the method (the planner gates one
+and not the other, which *is* the branch M1 removes).
 
 **M1 — the interface (1–2 d).** Define `TestTimeAdapter`. Port both existing methods. Collapse
 mpc.py's two branches. Add the reset test from §5.
 *Accept:* frozen 0.485, HyperJEPA 0.610, tuned online 0.678 reproduced on PushObj test seeds
 (n=600); base weights bit-identical across episode boundaries.
+
+*Sequencing (added 2026-08-01).* Split the acceptance into **M1a: reproduce before
+refactoring.** Run both methods through the *unmodified* ported code first, via the configs in
+`docs/reference/`, and land those numbers in `RESULTS.md`. Only then write the protocol
+implementations and re-run. *Reason:* the single-step version conflates a broken port with a
+PAARBench environment that differs from the predecessor in some way the frozen column never
+exercised — the frozen arm touches no adapter code at all. With a pre-refactor baseline
+measured *in this repo*, any later disagreement is unambiguously the port. Costs one extra
+evaluation round; buys a clean bisect on the one milestone whose whole premise is "anything
+else means the port changed semantics".
+
+*Artifacts pinned for this.* HyperJEPA 0.610 is `pushobj_adapters/hyper_r2_distill0`
+**epoch 4**; tuned online 0.678 is the grid cell `(steps=10, lr=5e-4)`, rank-2 `predlast`.
+Both staged — see `docs/CHECKPOINTS.md`.
 
 **M2 — output schema + metrics (1–2 d).** One canonical per-episode/per-replan output. Implement
 all seven §4 metrics against it, with CIs.
@@ -323,15 +405,36 @@ submission is a method + selection rule; selection cost recorded; leaderboard ge
 *Accept:* a deliberately cheating submission that peeks at test seeds is *rejected by the
 harness*, not by review.
 
-**M4 — baselines (the long pole, 1–3 weeks).** Port 4+ methods from §2.2.
-*Accept:* ≥6 total entries, each with a declared selection rule and reported selection cost.
+*Reshaped 2026-08-01 by §10 Q2/Q5.* This is now the **primary deliverable**, and its target is
+contributor ergonomics rather than leaderboard polish. Concretely: a submission is a directory
+containing one `TestTimeAdapter` implementation, one selection rule, and one config; it is
+proposed as a pull request; CI runs the declared columns and rejects any rule that reads a test
+cohort. Static generated leaderboard page, since there is nothing to serve.
+*Additional accept:* a newcomer can add a trivial method (e.g. T3A, or a no-op with a
+one-line selection rule) end to end **without editing anything outside their own submission
+directory**. If that requires touching the planner, the harness, or a registry by hand, §5 is
+not done — this is the bar §2.2's descoping raises.
 
-**M5 — settings (parallel with M4).** Resolve PointMaze; resolve base-model distribution (§2.4);
-consider adding the deformable domain.
-*Accept:* every base model pinned by hash and downloadable by a third party.
+**M4 — baselines (ongoing, no longer a gate).** Port methods from §2.2 opportunistically.
+*Accept (per method):* one declared selection rule, one reported selection cost, one
+leaderboard row. Each port is also a usability test of M1/M3 — friction is a bug in the
+interface, not a cost of the port. Order: whatever is cheapest next.
+
+**M5 — settings (deferred, see §2.3/§2.4).** PointMaze and base-model distribution are both
+explicitly deferred by owner decision; deformable is a yes but not started. What remains
+schedulable now is **adding the deformable domain**, which is the cheapest route to genuine
+task diversity since `env/deformable_env/` is already ported and the dataset exists.
+*Accept (deformable):* a frozen column runs end to end and the setting is registered in
+`paarbench/settings.py` with a declared cohort split.
+*Accept (distribution, when it happens):* every base model pinned by hash and downloadable by
+a third party — and the whole suite re-baselined, since retraining invalidates every
+reproduction target.
 
 **Then, and only then:** decide venue. NeurIPS Datasets & Benchmarks is the natural track, and it
-is a *different deadline and bar* from the predecessor's target.
+is a *different deadline and bar* from the predecessor's target. Note that §2.4's deferral bears
+directly on this: a D&B submission whose base models a reviewer cannot download is a weak one,
+so the training work has to be done *before* a venue, even though it is not needed before the
+harness.
 
 **Scope boundary: this project is PAARBench only.** `~/HyperJEPA/` is owned by a separate session
 and needs nothing from you. Do not run its experiments, edit its paper, or wait on its results.
@@ -377,17 +480,34 @@ wrong, not the number.
 
 ## 10. Open questions for the owner
 
+All five are answered. The three settled on 2026-08-01 reshaped the project enough that
+§2.2, §2.3 and §2.4 were rewritten to match; this section is the short record.
+
 1. **Is §2.4 solvable?** If base world models cannot be distributed, the benchmark cannot be
-   adopted externally and should be scoped as an internal evaluation suite instead. This is the
-   single most important question and it is not a technical one.
-   - A: Train own models from scratch.
+   adopted externally and should be scoped as an internal evaluation suite instead.
+   - A: Train own models from scratch — but **later**. *(2026-08-01)* Keep the inherited
+     checkpoints in a subdirectory and develop against them; add the training code that
+     reproduces them afterwards. See §2.4 and `docs/CHECKPOINTS.md`. Note this leaves the
+     external-adoption limitation standing in the meantime — deferred, not solved.
 2. **Appetite for M4?** 4+ method ports is the difference between a benchmark and a protocol
-   section. If the answer is no, the better move is to strengthen §3 inside the predecessor paper.
+   section.
    - A: Ensure HyperJEPA and AdaJEPA are implemented, then we can think about other protocols.
+   - A *(2026-08-01, superseding the framing)*: **it does not have to be a full leaderboard
+     yet.** The goal is infrastructure that makes proposing, implementing and evaluating a
+     method easy; the leaderboard populates over time. See §2.2 — this raises the bar on
+     M1–M3 and turns M4 into ongoing work rather than a gate.
 3. **PointMaze: re-cohort or drop?** Re-cohorting costs eval time; dropping leaves 2 environments.
+   - A *(2026-08-01)*: **neither yet — defer.** Set the infrastructure up so it can be added,
+     decide later. Registered but disabled; base checkpoints not staged. See §2.3.
 4. **Does the deformable domain get added?** It is the cheapest route to genuine task diversity
    since the env code and data already exist.
-   - A: Yes.
+   - A: Yes. *(Not started; `env/deformable_env/` is ported and the dataset is at
+     `/mnt/richb/tw78/data/datasets/deformable.zip`.)*
 5. **Public leaderboard hosting** — static generated page, or something with submissions? Affects
    M3's scope considerably.
    - A: Maybe as a github repository where new methods are introduced as pull requests?
+   - Consistent with Q2's answer: a PR-based repo is exactly the "easy to propose a method"
+     shape, and it means M3's real deliverable is a **submission format plus a CI check**, not
+     a web app. What a contributor writes is one `TestTimeAdapter` subclass, one selection
+     rule, and one config; what CI does is run the declared columns and refuse anything that
+     reads a test cohort.

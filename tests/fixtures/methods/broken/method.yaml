@@ -1,0 +1,5 @@
+name: broken
+display_name: "Broken method"
+description: "Declares a setting that does not exist and an adapter missing hooks."
+adapter: adapter:BrokenAdapter
+settings: [nonexistent_setting]

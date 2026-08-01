@@ -1,0 +1,75 @@
+defaults:
+  - plan_gd_mpc_local
+  - _self_
+
+# Transition-buffer adaptation is frozen until the first executed action chunk,
+# so additional initial frames are unused. Keep the common MPC initialization
+# identical to frozen and AdaJEPA planning.
+num_start_frames: 1
+
+hydra:
+  run:
+    dir: plan_outputs_gd_mpc_hyper/${replace_slash:${model_name}}_gH${goal_H}_${goal_source}/${ckpt_base_path}_scope${planner.hyper_adaptation.target_scope}_ctx${planner.hyper_adaptation.context_mode}_r${planner.hyper_adaptation.rank}_refresh${planner.hyper_adaptation.refresh}
+  sweep:
+    dir: plan_outputs_gd_mpc_hyper/${replace_slash:${model_name}}_gH${goal_H}_${goal_source}/${ckpt_base_path}_scope${planner.hyper_adaptation.target_scope}_ctx${planner.hyper_adaptation.context_mode}_r${planner.hyper_adaptation.rank}_refresh${planner.hyper_adaptation.refresh}
+
+planner:
+  _target_: planning.mpc.MPCPlanner
+  max_iter: 20
+  n_taken_actions: 5
+  sub_planner:
+    target: planning.gd.GDPlanner
+    lr: 0.1
+    sample_type: zero
+    action_noise: 0
+    horizon: 25
+    var_scale: 1
+    opt_steps: 100
+    eval_every: -1
+  hyper_adaptation:
+    enabled: true
+    context_mode: transition_buffer
+    context_feature_kind: residual_action
+    # The current PointMaze champion: ordered transition features queried by
+    # the current frozen observation latent.
+    context_aggregator: transformer_query
+    context_model_dim: 128
+    context_depth: 2
+    context_heads: 4
+    context_dropout: 0.0
+    adapter_gate: false
+    gate_hidden_dim: 64
+    gate_init_bias: 0.0
+    target_scope: predlast_all
+    rank: 4
+    lora_scale: 1.0
+    freeze_lora_A: false
+    fixed_a_scale: 1.0
+    hidden_dim: 512
+    depth: 2
+    init_scale: 0.0
+    # Generator family; 'chunked' is what makes high and full rank affordable.
+    # These must match the adapter checkpoint's metadata.json or loading fails.
+    generator: mlp
+    chunk_size: 512
+    chunk_embed_dim: 64
+    head_hidden_dim: 128
+    checkpoint_path: null
+    refresh: every_mpc
+    refresh_interval: 1
+    transition_buffer_size: 5
+    freeze_base: true
+    # Mechanism ablation of the transition evidence (the "in-context system
+    # identification" pathway): none | swap (another episode's transitions) |
+    # mean (evidence removed, kept in-distribution) | zero. See HyperJEPAAdapter.
+    context_perturb: none
+    # Independent ablation of the state-query pathway; perturbing BOTH makes the
+    # emitted correction constant across episodes (hypernet reduced to static LoRA).
+    query_perturb: none
+    # Deployment mode: fold the emitted LoRA into the predictor weights once per
+    # replan so the 100-step planner runs at frozen-model speed instead of paying the
+    # wrapper's extra matmuls on every rollout (RESULTS §12/§14). Numerically
+    # equivalent, but single-episode only -- keep false for batched eval columns.
+    fold_weights: false
+    log_prefix: hyperjepa
+  name: mpc_gd_hyper
