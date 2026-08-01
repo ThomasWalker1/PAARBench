@@ -33,7 +33,6 @@ datasets/   traj_dset.py pusht_dset.py point_maze_dset.py wall_dset.py
 metrics/    image_metrics.py lpipsPyTorch/
 distributed_fn/
 conf/       action_encoder/ decoder/ encoder/ env/ planner/ predictor/ proprio_encoder/
-scripts/    episode_outcomes.py rescore_distance.py paired_indist_test.py
 ```
 
 Verify any of these against the source with:
@@ -77,9 +76,14 @@ Adam's moment estimates go with it.
 
 Per docs/PLAN.md §7 "Do not take", plus the pruning it asks for:
 
-- `eval_outputs/` — 14 directories in three incompatible layouts. M2 defines one output
-  schema instead; only the *metric definitions* in `rescore_distance.py` were ported, not
-  its loader.
+- `eval_outputs/` — 14 directories in three incompatible layouts. `paarbench/schema.py`
+  defines one output schema instead.
+- `scripts/{episode_outcomes,rescore_distance,paired_indist_test}.py` — extracted at M0 as
+  the reference for the metric definitions, then **removed** once `paarbench/metrics.py`
+  implemented them against the new schema. They only ever read the predecessor's output
+  layouts, which this repo does not produce, and leaving two metrics implementations in
+  the tree invites using the wrong one. Recover from `628dff7` if the derivations are
+  needed again.
 - `scripts/ablation_grid.py`, `run_ablation_*`, `objrelfull_*`, `pvs_matrix_jobs.py`,
   and the other one-off drivers — HyperJEPA design-space sweeps; nothing generalizes.
 - `checkpoints/pushobj_ablations*`, `*_adapters`, `pvs_adapters` — ablation artifacts.
