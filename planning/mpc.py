@@ -1,3 +1,4 @@
+import json
 import time
 
 import hydra
@@ -83,6 +84,36 @@ class MPCPlanner(BasePlanner):
         masked_actions = rearrange(masked_actions, "... f d -> ... (f d)")
         actions[mask] = masked_actions.to(device)
         return actions
+
+    def _dump_episode_rows(self, planner_seconds, adapt_seconds, adapt_peak_mb):
+        """Append one row per episode for this replan to ``episodes.jsonl``.
+
+        The canonical per-episode/per-replan record.  Everything the §4 metrics need
+        lives here and nowhere else: ``logs.json`` keeps only means, and a mean is the
+        one summary that must not be used on a heavy-tailed distance.
+
+        Timing and memory are per *replan*, shared by every episode in a batched
+        cohort; they are repeated on each row rather than averaged, so a consumer can
+        deduplicate on ``(replan,)`` when reporting cost.
+        """
+        per_episode = getattr(self.evaluator, "last_per_episode", None)
+        if not per_episode:
+            return
+        n = len(next(iter(per_episode.values())))
+        rows = []
+        for i in range(n):
+            row = {"replan": self.iter, "episode_local": i}
+            for key, values in per_episode.items():
+                value = values[i]
+                row[key] = bool(value) if key == "success" else float(value)
+            row["cumulative_success"] = bool(self.is_success[i])
+            row["planner_s"] = planner_seconds
+            row["adapt_s"] = adapt_seconds
+            row["adapt_peak_mb"] = adapt_peak_mb
+            rows.append(row)
+        with open("episodes.jsonl", "a") as fh:
+            for row in rows:
+                fh.write(json.dumps(row) + "\n")
 
     @staticmethod
     def _peak_memory_mb():
@@ -211,6 +242,11 @@ class MPCPlanner(BasePlanner):
             )
             self.wandb_run.log(logs)
             self.dump_logs(logs)
+            self._dump_episode_rows(
+                planner_seconds=planner_seconds,
+                adapt_seconds=adapt_seconds,
+                adapt_peak_mb=adapt_peak_mb,
+            )
             self.iter += 1
             self.sub_planner.logging_prefix = f"plan_{self.iter}"
 

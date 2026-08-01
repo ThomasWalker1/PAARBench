@@ -63,6 +63,36 @@ interrupted column resumes. The training dataset is staged onto tmpfs first — 
 mount drops connections under a fan-out (§9). Results land in
 `eval_outputs/<tag>/<setting>/<cohort>/`.
 
+To evaluate a submission properly — selection rule, frozen parameters, all test cohorts,
+a result record — use `scripts/evaluate.py`, which enforces the cohort separation that
+`eval_column.py` does not:
+
+```bash
+.venv/bin/python scripts/evaluate.py adajepa --setting pushobj --gpus 0,1,2,3
+.venv/bin/python scripts/leaderboard.py --out LEADERBOARD.md
+```
+
+## What gets measured
+
+Each run writes `episodes.jsonl` — one row per episode per replan — and the metrics are
+computed from that, never from a summary. `paarbench/metrics.py`:
+
+| metric | what it answers |
+|---|---|
+| success rate | conventional; low power at these n (SE ≈ 0.02) |
+| median distance Δ | paired against frozen on the same episodes. The discriminating metric |
+| catastrophe rate | how often adapting leaves you >2× further from the goal than not adapting |
+| compounding slope | does the correction degrade as it accumulates, or is it recomputed? |
+| regret vs frozen | can this method be worse than doing nothing, and by how much |
+| latency / peak memory | adaptation cost, separated from planner cost |
+
+**Do not summarize distance with a mean.** It is heavy-tailed — distances of 10⁴ occur
+under the frozen model — so a mean is a statement about two or three episodes. The
+metrics module uses medians and rank tests, conditions on a fixed episode set rather than
+each method's own outcomes, and restricts distance comparisons to episodes both arms fail
+(success is absorbing). Those three choices are each a mistake that produced a plausible
+wrong answer in the predecessor project; `tests/test_metrics.py` pins them.
+
 ## Settings
 
 Declared in `paarbench/settings.py`; cohort seeds are fixed by the benchmark, never by a

@@ -7,10 +7,18 @@ Multi-objective on purpose: sort by whichever column you care about.
 
 Test cohorts: seeds [100, 200, 400], 4 shapes, n=50 per shape per cohort. Selection cohort: seed 300 (never scored here).
 
-| method | success | ±1 SE | vs frozen | n | selection cost | selection rule |
-|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.193 | 600 | unknown | selection:StepSizeGrid (SKIPPED via --skip-selection) |
-| HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | 600 | unknown | selection:EpochSelection (SKIPPED via --skip-selection) |
-| Frozen base model (no adaptation) | 0.485 | 0.020 | — | 600 | 0 | none (no hyperparameters) |
+| method | success | ±1 SE | vs frozen | median dist Δ | catastrophe | compounding | adapt s/replan | n | selection cost |
+|---|---|---|---|---|---|---|---|---|---|
+| AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.193 | +13* | 14.0% | +0.9/replan | 0.568 | 600 | unknown |
+| HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | -6* | 8.3% | +0.0/replan | 0.147 | 600 | unknown |
+| Frozen base model (no adaptation) | 0.485 | 0.020 | — | — | — | — | 0.000 | 600 | 0 |
 
-At these n the binomial SE is around 0.02, so **adjacent rows are usually not separable on success rate alone**. Treat the ordering as indicative and read the interval; a benchmark that displays unresolvable orderings as if they were real is worse than no benchmark.
+**Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
+
+- **median dist Δ** — median *paired* change in final distance-to-goal against the frozen model on the same episodes, restricted to episodes both arms fail (success is absorbing, so including successes makes this partly a success comparison). Negative is better.
+- **catastrophe** — fraction of episodes ending more than 2× further from the goal than the frozen model. How often adapting actively hurts.
+- **compounding** — slope of the paired distance gap against replan index. Positive means the correction degrades as it accumulates; ~0 means it is recomputed rather than accumulated.
+- **adapt s/replan** — median adaptation time, separated from planner time.
+- **selection cost** — evaluation columns the method's selection rule consumed.
+
+Sort by whichever column matters for your use. There is deliberately no overall rank: a method can be worse on success and better on catastrophe rate and latency, and collapsing that to one number destroys the comparison.

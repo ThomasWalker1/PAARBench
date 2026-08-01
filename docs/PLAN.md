@@ -400,6 +400,20 @@ all seven §4 metrics against it, with CIs.
 *Accept:* every distance number in `~/HyperJEPA/paper/floats/safety_span.tex` reproduced from the
 new schema (12.7× / 8.8× / 14.7× / 1.4× spans; catastrophe 18–178).
 
+*Why this came before more baselines (2026-08-01).* Until it landed, the harness recorded
+**only means** — `mpc/mean_state_dist` and nothing per-episode. That is the one summary §4
+says never to use on distance, since the metric is heavy-tailed, and it makes every
+discriminating metric uncomputable: median paired distance, catastrophe rate and
+compounding slope all need the distribution. A benchmark whose whole premise is "success
+rate hides what TTA does" was reporting success rate and nothing else.
+
+Landed: `planning/evaluator.py` emits per-episode values instead of collapsing them,
+`planning/mpc.py` writes `episodes.jsonl` (one row per episode per replan),
+`paarbench/schema.py` reads it identically for batched and episode-isolated runs, and
+`paarbench/metrics.py` implements the metrics with the three traps from §7 designed in
+rather than left to the caller. Still outstanding: the `safety_span.tex` reproduction
+itself, and CIs on the continuous metrics.
+
 **M3 — harness + protocol (2–3 d).** Selection/test cohort separation enforced in code; a
 submission is a method + selection rule; selection cost recorded; leaderboard generation.
 *Accept:* a deliberately cheating submission that peeks at test seeds is *rejected by the

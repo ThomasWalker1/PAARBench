@@ -73,32 +73,107 @@ def render(records, setting_id: str) -> str:
         )
         out.append("")
 
-    out.append("| method | success | ±1 SE | vs frozen | n | selection cost | selection rule |")
-    out.append("|---|---|---|---|---|---|---|")
+    detail = _metric_detail(setting_id)
+
+    out.append("| method | success | ±1 SE | vs frozen | median dist Δ | catastrophe | "
+               "compounding | adapt s/replan | n | selection cost |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         s = r.get("success")
         n = r.get("n", 0)
         if not r.get("complete", False):
-            out.append(f"| {r['display_name']} | *incomplete* | | | {n} | | |")
+            out.append(f"| {r['display_name']} | *incomplete* | | | | | | | {n} | |")
             continue
         se = binomial_se(s, n)
         delta = "—" if baseline is None or r["method"] == "frozen" else f"{s - baseline:+.3f}"
         cost = r.get("selection_cost_columns")
         cost_s = "unknown" if cost is None else str(cost)
+        d = detail.get(r["method"], {})
+        # The continuous metrics come from the per-episode record on disk, the
+        # success rate from the stored result record. If a re-run is in flight they
+        # can disagree, and a row mixing a complete success with partial distance
+        # data would be quietly wrong. Drop the continuous columns in that case.
+        if d and d.get("_n", 0) != n:
+            print(f"warning: {r['method']} has {d.get('_n', 0)} episodes on disk but "
+                  f"n={n} in its result record; per-episode metrics suppressed "
+                  f"(re-run in progress?)", file=sys.stderr)
+            d = {}
         out.append(
-            f"| {r['display_name']} | {s:.3f} | {se:.3f} | {delta} | {n} | "
-            f"{cost_s} | {r.get('selection_rule', '—')} |"
+            f"| {r['display_name']} | {s:.3f} | {se:.3f} | {delta} | "
+            f"{d.get('distance', '—')} | {d.get('catastrophe', '—')} | "
+            f"{d.get('compounding', '—')} | {d.get('adapt_s', '—')} | {n} | {cost_s} |"
         )
 
     out.append("")
     out.append(
-        "At these n the binomial SE is around 0.02, so **adjacent rows are usually not "
-        "separable on success rate alone**. Treat the ordering as indicative and read "
-        "the interval; a benchmark that displays unresolvable orderings as if they were "
-        "real is worse than no benchmark."
+        "**Success rate is the weakest column here.** At these n its binomial SE is "
+        "around 0.02, so adjacent rows are usually not separable on it, and it is the "
+        "metric the benchmark exists to argue past. The continuous columns carry far "
+        "more information:"
+    )
+    out.append("")
+    out.append(
+        "- **median dist Δ** — median *paired* change in final distance-to-goal against "
+        "the frozen model on the same episodes, restricted to episodes both arms fail "
+        "(success is absorbing, so including successes makes this partly a success "
+        "comparison). Negative is better.\n"
+        "- **catastrophe** — fraction of episodes ending more than 2× further from the "
+        "goal than the frozen model. How often adapting actively hurts.\n"
+        "- **compounding** — slope of the paired distance gap against replan index. "
+        "Positive means the correction degrades as it accumulates; ~0 means it is "
+        "recomputed rather than accumulated.\n"
+        "- **adapt s/replan** — median adaptation time, separated from planner time.\n"
+        "- **selection cost** — evaluation columns the method's selection rule consumed."
+    )
+    out.append("")
+    out.append(
+        "Sort by whichever column matters for your use. There is deliberately no "
+        "overall rank: a method can be worse on success and better on catastrophe rate "
+        "and latency, and collapsing that to one number destroys the comparison."
     )
     out.append("")
     return "\n".join(out)
+
+
+def _metric_detail(setting_id: str) -> dict:
+    """Compute the continuous metrics from the per-episode record, if it exists.
+
+    Degrades to an empty dict rather than failing: a result record written before the
+    per-episode schema landed still produces a (thinner) leaderboard row.
+    """
+    try:
+        from paarbench import metrics, schema
+
+        frame = schema.load(setting=setting_id)
+    except Exception as exc:  # noqa: BLE001 - the leaderboard must still render
+        print(f"warning: per-episode metrics unavailable: {exc}", file=sys.stderr)
+        return {}
+    if frame.empty:
+        return {}
+
+    detail = {}
+    for method in sorted(frame["method"].unique()):
+        try:
+            s = metrics.summarize(frame, method, setting_id)
+        except Exception:  # noqa: BLE001
+            continue
+        row = {"_n": s.get("n", 0)}
+        cost = s.get("cost") or {}
+        if cost.get("adapt_s_per_replan") is not None:
+            row["adapt_s"] = f"{cost['adapt_s_per_replan']:.3f}"
+        dist = s.get("distance") or {}
+        if dist.get("median_paired_delta") is not None:
+            p = dist.get("wilcoxon_p")
+            star = "" if p is None else ("*" if p < 0.05 else "")
+            row["distance"] = f"{dist['median_paired_delta']:+.0f}{star}"
+        cat = s.get("catastrophe") or {}
+        if cat.get("catastrophe_rate") is not None:
+            row["catastrophe"] = f"{cat['catastrophe_rate']:.1%}"
+        comp = s.get("compounding") or {}
+        if comp.get("slope_per_replan") is not None:
+            row["compounding"] = f"{comp['slope_per_replan']:+.1f}/replan"
+        detail[method] = row
+    return detail
 
 
 def main() -> int:

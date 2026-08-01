@@ -53,7 +53,7 @@
       "success": 0.6950000000000001,
       "complete": true,
       "failures": [],
-      "wall_seconds": 416.0,
+      "wall_seconds": 429.3,
       "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test100"
     },
     "test200": {
@@ -87,7 +87,7 @@
       "success": 0.7,
       "complete": true,
       "failures": [],
-      "wall_seconds": 422.1,
+      "wall_seconds": 420.4,
       "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test200"
     },
     "test400": {
@@ -121,7 +121,7 @@
       "success": 0.64,
       "complete": true,
       "failures": [],
-      "wall_seconds": 454.5,
+      "wall_seconds": 452.0,
       "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test400"
     }
   },

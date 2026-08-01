@@ -127,6 +127,59 @@ is the argument for the protocol in a sentence.
   `unknown`, not 0. Running the real rules (16 columns for AdaJEPA, 5 for HyperJEPA) is
   what a genuine submission does.
 
+---
+
+## M2 — output schema and metrics
+
+**Status: schema and metrics landed; `safety_span.tex` reproduction still outstanding.**
+2026-08-01.
+
+Before this, the harness recorded only `mpc/mean_state_dist` — a mean, which is the one
+summary §4 says never to use on distance, and which makes every discriminating metric
+uncomputable. `planning/evaluator.py` now emits per-episode values,
+`planning/mpc.py` writes `episodes.jsonl` (one row per episode per replan),
+`paarbench/schema.py` reads it identically for batched and episode-isolated runs, and
+`paarbench/metrics.py` computes the metrics.
+
+All three arms were re-run under the new schema and reproduce **exactly**: frozen 0.4850,
+HyperJEPA 0.6100, AdaJEPA 0.6783, per-cohort identical. The schema change is inert.
+
+### The leaderboard is a frontier, not a ranking
+
+| method | success | median dist Δ | catastrophe | compounding | adapt s/replan |
+|---|---|---|---|---|---|
+| AdaJEPA (online) | **0.678** | **+13** | **14.0%** | +0.9/replan | 0.568 |
+| HyperJEPA (amortized) | 0.610 | **−6** | **8.3%** | +0.0/replan | **0.147** |
+| Frozen | 0.485 | — | — | — | 0.000 |
+
+**The ordering reverses depending on the metric.** AdaJEPA wins on success by +0.068 and
+loses on everything else: its median paired distance is *worse than not adapting at all*
+(+13, Wilcoxon p<0.05), it leaves an episode >2× further from the goal 14.0% of the time
+against HyperJEPA's 8.3%, and it costs 3.9× the adaptation time per replan.
+
+This is exactly why §4 refuses a single collapsed score. Ranked on success rate alone the
+table says "online gradient TTA wins"; the same 600 episodes also say it more often makes
+things much worse and pays more to do it.
+
+The compounding slope separates the mechanism cleanly, as designed: **+0.9/replan** for
+the optimizer trajectory that accumulates, **+0.0/replan** for the correction regenerated
+from frozen weights each replan.
+
+### One thing this shook out
+
+The leaderboard initially rendered AdaJEPA's continuous columns from a *partially
+complete* re-run while taking its success rate from the previous complete record — giving
+median dist Δ −18 and catastrophe 4.5%, both flattering and both wrong (the true values
+are +13 and 14.0%). `scripts/leaderboard.py` now checks that the episode count on disk
+matches the result record's `n` and suppresses the continuous columns when they disagree.
+Mixing a complete summary with partial detail is a quiet way to publish a wrong number.
+
+### Still outstanding
+
+- The M2 acceptance criterion proper — reproducing the predecessor's distance spans
+  (12.7× / 8.8× / 14.7× / 1.4×; catastrophe 18–178) from the new schema.
+- Confidence intervals on the continuous metrics; only success rate carries an SE today.
+
 ### Note for M0
 
 `AdaJEPAAdapter` has **no episode-reset method at all** — it is constructed once per

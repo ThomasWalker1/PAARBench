@@ -147,11 +147,12 @@ class PlanEvaluator:  # evaluator for planning
         ]  # reduce dim back
 
         # compute eval metrics
-        logs, successes = self._compute_rollout_metrics(
+        logs, successes, per_episode = self._compute_rollout_metrics(
             e_state=e_final_state,
             e_obs=e_final_obs,
             i_z_obs=i_final_z_obs,
         )
+        self.last_per_episode = per_episode
 
         # plot trajs
         if self.decode_for_viz and self.wm.decoder is not None:
@@ -198,6 +199,17 @@ class PlanEvaluator:  # evaluator for planning
         proprio_dists = np.linalg.norm(e_obs["proprio"] - self.obs_g["proprio"], axis=1)
         mean_proprio_dist = np.mean(proprio_dists)
 
+        # One value per episode, reducing over every non-batch axis.  The norms above
+        # reduce axis=1 only, which is fine for the scalar means the logs want but is
+        # not per-episode -- for the visual stream it leaves (B, W, C).  Computed here,
+        # before e_obs is moved to the device and re-bound below.
+        def _per_episode_norm(key):
+            diff = np.asarray(e_obs[key]) - np.asarray(self.obs_g[key])
+            return np.linalg.norm(diff.reshape(diff.shape[0], -1), axis=1)
+
+        per_episode_visual = _per_episode_norm("visual")
+        per_episode_proprio = _per_episode_norm("proprio")
+
         e_obs = move_to_device(self.preprocessor.transform_obs(e_obs), self.device)
         with torch.no_grad():
             e_z_obs = self.wm.encode_obs(e_obs)
@@ -211,7 +223,24 @@ class PlanEvaluator:  # evaluator for planning
             "mean_div_proprio_emb": div_proprio_emb,
         })
 
-        return logs, successes
+        # Per-episode values, kept rather than collapsed.  Every metric that
+        # actually discriminates between adaptation methods -- median distance
+        # paired against frozen, catastrophe rate, compounding slope -- needs the
+        # distribution, not its mean.  The mean is in fact the one summary the
+        # design says not to use on distance, because the metric is heavy-tailed:
+        # distances of 1e4 occur under the frozen model.  See paarbench/metrics.py.
+        batch = len(np.asarray(successes).reshape(-1))
+        per_episode = {}
+        for key, value in eval_results.items():
+            array = np.asarray(value).reshape(-1)
+            # Anything not shaped one-per-episode is dropped rather than misaligned:
+            # silently writing the wrong episode's number is worse than omitting it.
+            if len(array) == batch:
+                per_episode[key] = array
+        per_episode["visual_dist"] = per_episode_visual
+        per_episode["proprio_dist"] = per_episode_proprio
+
+        return logs, successes, per_episode
 
     def _plot_rollout_compare(
         self, e_visuals, i_visuals, successes, save_video=False, filename=""
