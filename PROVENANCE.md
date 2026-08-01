@@ -59,7 +59,7 @@ apart from the protocol surface at the bottom of each file:
 | from (`628dff7`) | to | change |
 |---|---|---|
 | `planning/adaptation.py` | `methods/adajepa/adapter.py` | internals unchanged; added the four protocol hooks and an episode reset (the original had none — see below) |
-| `planning/hyper_adapter.py` | `methods/hyperjepa/adapter.py` | **moved only; not yet ported to the protocol** |
+| `planning/hyper_adapter.py` | `methods/hyperjepa/adapter.py` | internals unchanged; added the four protocol hooks, keeping its two independent switches (what conditions the correction, how often it is recomputed) inside the method |
 
 `models/hyper_lora.py` and `models/lora.py` stay in the core: LoRA installation,
 generators and weight snapshot/restore are reusable model surgery that any method may
