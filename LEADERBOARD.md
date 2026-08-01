@@ -9,6 +9,7 @@ Test cohorts: seeds [100, 200, 400], 4 shapes, n=50 per shape per cohort. Select
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+| Restore TTA — online gradient TTA with stochastic restoration | 0.687 | 0.019 | +0.202 | +7 [-0, +15] | 13.6% [9%, 19%] | +0.58 [+0.11, +1.25] | 57% / +260 | 0.659 | 177 | 600 | 4 |
 | AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.193 | +13 [+7, +22] | 14.0% [9%, 19%] | +0.91 [+0.40, +1.68] | 62% / +196 | 0.568 | 177 | 600 | unknown |
 | HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | -6 [-14, -1] | 8.3% [5%, 12%] | +0.01 [-0.16, +0.09] | 43% / +93 | 0.147 | 977 | 600 | unknown |
 | Static LoRA — unconditioned correction | 0.567 | 0.020 | +0.082 | -5 [-9, +1] | 6.2% [3%, 10%] | -0.08 [-0.24, +0.04] | 46% / +73 | 0.000 | 157 | 600 | unknown |
@@ -35,6 +36,7 @@ Test cohorts: seeds [200, 400], 3 shapes, n=50 per shape per cohort. Selection c
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | HyperJEPA — amortized hypernetwork | 0.430 | 0.029 | +0.080 | -7 [-22, +6] | 10.0% [6%, 15%] | -0.05 [-0.44, +0.26] | 46% / +154 | 0.137 | 977 | 300 | unknown |
 | AdaJEPA — online gradient TTA | 0.397 | 0.028 | +0.047 | +3 [-9, +16] | 13.9% [9%, 19%] | +0.65 [+0.07, +1.16] | 54% / +237 | 0.558 | 177 | 300 | unknown |
+| Restore TTA — online gradient TTA with stochastic restoration | 0.377 | 0.028 | +0.027 | +11 [+1, +27] | 12.3% [8%, 18%] | +0.58 [-0.02, +1.12] | 57% / +186 | 0.661 | 177 | 300 | 4 |
 | Static LoRA — unconditioned correction | 0.363 | 0.028 | +0.013 | +8 [-3, +17] | 6.6% [3%, 11%] | +0.27 [-0.01, +0.58] | 57% / +181 | 0.000 | 157 | 300 | unknown |
 | Frozen base model (no adaptation) | 0.350 | 0.028 | — | — | — | — | — | 0.000 | 157 | 300 | 0 |
 

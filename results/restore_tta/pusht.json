@@ -1,0 +1,99 @@
+{
+  "method": "restore_tta",
+  "display_name": "Restore TTA \u2014 online gradient TTA with stochastic restoration",
+  "setting": "pusht",
+  "params": {
+    "steps": 10,
+    "pred_lr": 0.0005,
+    "update_scope": "lora_predlast_all",
+    "lora_rank": 2,
+    "lora_scale": 1.0,
+    "buffer_size": 5,
+    "buffer_strategy": "recent",
+    "refresh_interval": 1,
+    "enc_lr": 1e-05,
+    "action_lr": 0.0005,
+    "stop_grad": true,
+    "grad_clip_norm": 1.0,
+    "require_single_episode": true,
+    "restore_probability": 0.001
+  },
+  "selection_rule": "selection:RestorationGrid",
+  "selection_cost_columns": 4,
+  "episode_isolated": true,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "restore_tta",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 10,
+        "pred_lr": 0.0005,
+        "update_scope": "lora_predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "buffer_size": 5,
+        "buffer_strategy": "recent",
+        "refresh_interval": 1,
+        "enc_lr": 1e-05,
+        "action_lr": 0.0005,
+        "stop_grad": true,
+        "grad_clip_norm": 1.0,
+        "require_single_episode": true,
+        "restore_probability": 0.001
+      },
+      "success_by_shape": {
+        "T": 0.6,
+        "L": 0.32,
+        "Z": 0.16
+      },
+      "success": 0.35999999999999993,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 478.6,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/restore_tta/pusht/test200"
+    },
+    "test400": {
+      "setting": "pusht",
+      "cohort": "test400",
+      "seed": 400,
+      "tag": "restore_tta",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 10,
+        "pred_lr": 0.0005,
+        "update_scope": "lora_predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "buffer_size": 5,
+        "buffer_strategy": "recent",
+        "refresh_interval": 1,
+        "enc_lr": 1e-05,
+        "action_lr": 0.0005,
+        "stop_grad": true,
+        "grad_clip_norm": 1.0,
+        "require_single_episode": true,
+        "restore_probability": 0.001
+      },
+      "success_by_shape": {
+        "T": 0.52,
+        "L": 0.46,
+        "Z": 0.2
+      },
+      "success": 0.3933333333333333,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 468.5,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/restore_tta/pusht/test400"
+    }
+  },
+  "success": 0.37666666666666665,
+  "n": 300,
+  "complete": true,
+  "frozen_reference": 0.35
+}
