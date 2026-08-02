@@ -24,7 +24,10 @@ params:
 # arm goes through the ordinary adapter path like every other method.
 params_by_setting:
   pusht:
-    checkpoint_path: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_2.pth
+    # Epoch 1, chosen by EpochSelection on the pusht selection cohort (0.380 over
+    # 0.347/0.367/0.340/0.347). It read epoch 2 before -- carried across from pushobj,
+    # where epoch 2 is correct, rather than selected here.
+    checkpoint_path: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_1.pth
 
 # Same hyperparameter as hyperjepa: which training epoch to deploy. Selected on the
 # selection cohort, not hand-picked.

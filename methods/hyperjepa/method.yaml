@@ -38,4 +38,8 @@ selection: selection:EpochSelection
 # its own hypernetwork, trained on the pusht_visual_shift base.
 params_by_setting:
   pusht:
-    checkpoint_path: checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_best.pth
+    # Epoch 3, chosen by EpochSelection on the pusht selection cohort (0.460 over
+    # 0.413/0.440/0.447). This previously read hyper_lora_best.pth -- a checkpoint the
+    # declared rule never considers and whose "best" was decided somewhere outside this
+    # benchmark. Running the rule for real is what surfaced that.
+    checkpoint_path: checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_3.pth

@@ -1,5 +1,6 @@
 {
   "method": "static_lora",
+  "method_dir": "static_lora",
   "display_name": "Static LoRA \u2014 unconditioned correction",
   "setting": "pushobj",
   "params": {
@@ -8,8 +9,10 @@
     "rank": 2,
     "lora_scale": 1.0
   },
-  "selection_rule": "selection:EpochSelection (SKIPPED via --skip-selection)",
-  "selection_cost_columns": null,
+  "submission": true,
+  "selection_rule": "selection:EpochSelection",
+  "selection_cost_columns": 5,
+  "selection_cost_basis": "selected",
   "episode_isolated": false,
   "selection_cohort_seed": 300,
   "test_cohorts": {
@@ -35,8 +38,9 @@
       "success": 0.605,
       "complete": true,
       "failures": [],
-      "wall_seconds": 138.0,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test100"
+      "wall_seconds": 137.7,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test100",
+      "paired_metrics": null
     },
     "test200": {
       "setting": "pushobj",
@@ -60,8 +64,9 @@
       "success": 0.535,
       "complete": true,
       "failures": [],
-      "wall_seconds": 142.2,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test200"
+      "wall_seconds": 148.0,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test200",
+      "paired_metrics": null
     },
     "test400": {
       "setting": "pushobj",
@@ -85,8 +90,9 @@
       "success": 0.56,
       "complete": true,
       "failures": [],
-      "wall_seconds": 143.7,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test400"
+      "wall_seconds": 148.6,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test400",
+      "paired_metrics": null
     }
   },
   "success": 0.5666666666666667,

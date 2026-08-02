@@ -1,9 +1,10 @@
 {
   "method": "hyperjepa",
+  "method_dir": "hyperjepa",
   "display_name": "HyperJEPA \u2014 amortized hypernetwork",
   "setting": "pusht",
   "params": {
-    "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_best.pth",
+    "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_3.pth",
     "rank": 2,
     "target_scope": "predlast_all",
     "context_mode": "transition_buffer",
@@ -17,8 +18,10 @@
     "refresh_interval": 1,
     "fold_weights": false
   },
-  "selection_rule": "selection:EpochSelection (SKIPPED via --skip-selection)",
-  "selection_cost_columns": null,
+  "submission": true,
+  "selection_rule": "selection:EpochSelection",
+  "selection_cost_columns": 4,
+  "selection_cost_basis": "selected",
   "episode_isolated": false,
   "selection_cohort_seed": 100,
   "test_cohorts": {
@@ -30,7 +33,7 @@
       "n_evals": 50,
       "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_best.pth",
+        "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_3.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -45,15 +48,16 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "T": 0.48,
-        "L": 0.52,
-        "Z": 0.48
+        "T": 0.54,
+        "L": 0.48,
+        "Z": 0.38
       },
-      "success": 0.49333333333333335,
+      "success": 0.4666666666666666,
       "complete": true,
       "failures": [],
-      "wall_seconds": 147.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pusht/test200"
+      "wall_seconds": 142.9,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pusht/test200",
+      "paired_metrics": null
     },
     "test400": {
       "setting": "pusht",
@@ -63,7 +67,7 @@
       "n_evals": 50,
       "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_best.pth",
+        "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_3.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -78,19 +82,20 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "T": 0.42,
-        "L": 0.42,
-        "Z": 0.26
+        "T": 0.5,
+        "L": 0.44,
+        "Z": 0.3
       },
-      "success": 0.3666666666666667,
+      "success": 0.41333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 153.2,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pusht/test400"
+      "wall_seconds": 143.4,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pusht/test400",
+      "paired_metrics": null
     }
   },
-  "success": 0.43,
+  "success": 0.44,
   "n": 300,
   "complete": true,
-  "frozen_reference": null
+  "frozen_reference": 0.35
 }

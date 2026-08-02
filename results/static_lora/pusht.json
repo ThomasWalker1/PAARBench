@@ -1,15 +1,18 @@
 {
   "method": "static_lora",
+  "method_dir": "static_lora",
   "display_name": "Static LoRA \u2014 unconditioned correction",
   "setting": "pusht",
   "params": {
-    "checkpoint_path": "checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_2.pth",
+    "checkpoint_path": "checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_1.pth",
     "target_scope": "predlast_all",
     "rank": 2,
     "lora_scale": 1.0
   },
-  "selection_rule": "selection:EpochSelection (SKIPPED via --skip-selection)",
-  "selection_cost_columns": null,
+  "submission": true,
+  "selection_rule": "selection:EpochSelection",
+  "selection_cost_columns": 5,
+  "selection_cost_basis": "selected",
   "episode_isolated": false,
   "selection_cohort_seed": 100,
   "test_cohorts": {
@@ -21,21 +24,22 @@
       "n_evals": 50,
       "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_1.pth",
         "target_scope": "predlast_all",
         "rank": 2,
         "lora_scale": 1.0
       },
       "success_by_shape": {
         "T": 0.54,
-        "L": 0.4,
+        "L": 0.34,
         "Z": 0.26
       },
-      "success": 0.4000000000000001,
+      "success": 0.38000000000000006,
       "complete": true,
       "failures": [],
-      "wall_seconds": 156.0,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pusht/test200"
+      "wall_seconds": 139.5,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pusht/test200",
+      "paired_metrics": null
     },
     "test400": {
       "setting": "pusht",
@@ -45,24 +49,25 @@
       "n_evals": 50,
       "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_1.pth",
         "target_scope": "predlast_all",
         "rank": 2,
         "lora_scale": 1.0
       },
       "success_by_shape": {
-        "T": 0.42,
-        "L": 0.38,
-        "Z": 0.18
+        "T": 0.38,
+        "L": 0.44,
+        "Z": 0.22
       },
-      "success": 0.32666666666666666,
+      "success": 0.3466666666666667,
       "complete": true,
       "failures": [],
-      "wall_seconds": 140.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pusht/test400"
+      "wall_seconds": 137.2,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pusht/test400",
+      "paired_metrics": null
     }
   },
-  "success": 0.3633333333333334,
+  "success": 0.36333333333333334,
   "n": 300,
   "complete": true,
   "frozen_reference": 0.35

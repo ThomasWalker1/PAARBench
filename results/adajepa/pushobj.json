@@ -1,5 +1,6 @@
 {
   "method": "adajepa",
+  "method_dir": "adajepa",
   "display_name": "AdaJEPA \u2014 online gradient TTA",
   "setting": "pushobj",
   "params": {
@@ -17,8 +18,10 @@
     "grad_clip_norm": 1.0,
     "require_single_episode": true
   },
-  "selection_rule": "selection:StepSizeGrid (SKIPPED via --skip-selection)",
-  "selection_cost_columns": null,
+  "submission": true,
+  "selection_rule": "selection:StepSizeGrid",
+  "selection_cost_columns": 16,
+  "selection_cost_basis": "selected",
   "episode_isolated": true,
   "selection_cohort_seed": 300,
   "test_cohorts": {
@@ -53,8 +56,9 @@
       "success": 0.6950000000000001,
       "complete": true,
       "failures": [],
-      "wall_seconds": 429.3,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test100"
+      "wall_seconds": 0.0,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test100",
+      "paired_metrics": null
     },
     "test200": {
       "setting": "pushobj",
@@ -87,8 +91,9 @@
       "success": 0.7,
       "complete": true,
       "failures": [],
-      "wall_seconds": 420.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test200"
+      "wall_seconds": 0.0,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test200",
+      "paired_metrics": null
     },
     "test400": {
       "setting": "pushobj",
@@ -121,8 +126,9 @@
       "success": 0.64,
       "complete": true,
       "failures": [],
-      "wall_seconds": 452.0,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test400"
+      "wall_seconds": 0.0,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/adajepa/pushobj/test400",
+      "paired_metrics": null
     }
   },
   "success": 0.6783333333333333,

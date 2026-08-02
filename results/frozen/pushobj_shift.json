@@ -1,0 +1,39 @@
+{
+  "method": "frozen",
+  "method_dir": "frozen",
+  "display_name": "Frozen base model (no adaptation)",
+  "setting": "pushobj_shift",
+  "params": {},
+  "submission": true,
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
+  "episode_isolated": false,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pushobj_shift",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 150,
+      "params": {},
+      "success_by_shape": {
+        "I": 0.2,
+        "small_tee": 0.52,
+        "square": 0.16
+      },
+      "success": 0.29333333333333333,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 126.9,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pushobj_shift/test100",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.29333333333333333,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": 0.293
+}

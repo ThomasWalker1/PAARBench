@@ -1,0 +1,49 @@
+{
+  "method": "static_lora",
+  "method_dir": "static_lora",
+  "display_name": "Static LoRA \u2014 unconditioned correction",
+  "setting": "pushobj_shift",
+  "params": {
+    "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth",
+    "target_scope": "predlast_all",
+    "rank": 2,
+    "lora_scale": 1.0
+  },
+  "submission": true,
+  "selection_rule": "inherited from pushobj (selection:EpochSelection, 5 column(s) there)",
+  "selection_cost_columns": 5,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": false,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pushobj_shift",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "I": 0.24,
+        "small_tee": 0.48,
+        "square": 0.14
+      },
+      "success": 0.2866666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 151.4,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj_shift/test100",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.2866666666666667,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": 0.293
+}

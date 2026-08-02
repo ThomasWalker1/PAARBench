@@ -1,12 +1,21 @@
 # PlanActAdaptRepeatBench — a benchmark for test-time adaptation of latent world models
 
-**Status (2026-08-01):** **M0–M3 done, M4/M5 ongoing.** The harness works: a method is a
+**Status (2026-08-02):** **M0–M3 done, M4/M5 ongoing.** The harness works: a method is a
 self-contained directory under `methods/`, the planner has no per-method branch, cohort
 separation is enforced in code, and the per-episode record feeds the §4 metrics with
 bootstrap CIs. Five arms (frozen, `static_lora`, `hyperjepa`, `adajepa`,
-`restore_tta`) run on two settings (`pushobj`, `pusht`); all three reproduction targets
-were hit before the predecessor was retired as a reference. PAD's PushObj evaluation is
-complete as the first adapter that owns an auxiliary trainable module.
+`restore_tta`) run on two settings (`pushobj`, `pusht`) plus the `pushobj_shift`
+condition; all three reproduction targets were hit before the predecessor was retired as
+a reference. PAD's PushObj evaluation is complete as the first adapter that owns an
+auxiliary trainable module.
+
+**Every submission is now scored under its own declared rule** — no row reports `unknown`
+selection cost. Running those rules for the first time corrected three of four PushT
+parameter declarations, which had been copied from PushObj rather than selected
+(`RESULTS.md`). `pushobj_shift` also turned out to declare one cohort as both selection
+and test, which would have let a rule tune on the test set; a setting in that position
+now refuses to build a `SelectionHarness` and must name where its parameters are
+inherited from.
 
 Read `RESULTS.md` first — it is the running record, including several findings that only
 appeared once the harness was exercised. Then `LEADERBOARD.md` for current numbers,
@@ -146,6 +155,13 @@ porting as a bug in §5, not as a cost of the port.
 - Held-out-shape PushObj is a distribution-shift *condition* on an existing base, not a new
   environment. It is valuable (the span *widens* to 14.7× there) but should not be counted as a
   fourth environment.
+  > **Run 2026-08-02, and it settles one thing.** All five arms now have a `pushobj_shift`
+  > row. The condition **reproduces PushObj's ordering, not PushT's inversion** — so
+  > whatever inverts the ranking on PushT belongs to that setting, not to distribution
+  > shift in general. A shift condition therefore does *not* substitute for a second
+  > environment, which raises rather than lowers the value of resolving PointMaze. Note
+  > n=150 here: only AdaJEPA's +0.093 clears two SE and no continuous interval excludes
+  > zero, so this is consistent-with rather than established. Raising n is cheap.
 
 Realistically: **2 environments + 1 shift condition**. Adding a genuinely different domain
 (deformable manipulation is already in `~/HyperJEPA/env/deformable_env/`, and the dataset is at

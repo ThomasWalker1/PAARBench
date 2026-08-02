@@ -1,0 +1,67 @@
+{
+  "method": "hyperjepa",
+  "method_dir": "hyperjepa",
+  "display_name": "HyperJEPA \u2014 amortized hypernetwork",
+  "setting": "pushobj_shift",
+  "params": {
+    "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+    "rank": 2,
+    "target_scope": "predlast_all",
+    "context_mode": "transition_buffer",
+    "context_feature_kind": "residual_action",
+    "context_aggregator": "transformer_query",
+    "transition_buffer_size": 5,
+    "adapter_gate": false,
+    "freeze_lora_A": false,
+    "generator": "mlp",
+    "refresh": "every_mpc",
+    "refresh_interval": 1,
+    "fold_weights": false
+  },
+  "submission": true,
+  "selection_rule": "inherited from pushobj (selection:EpochSelection, 5 column(s) there)",
+  "selection_cost_columns": 5,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": false,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pushobj_shift",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "I": 0.28,
+        "small_tee": 0.46,
+        "square": 0.22
+      },
+      "success": 0.32,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 150.7,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj_shift/test100",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.32,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": 0.293
+}

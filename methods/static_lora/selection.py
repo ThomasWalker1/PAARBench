@@ -42,9 +42,17 @@ class EpochSelection:
             ) from None
 
     def candidates(self, setting_id):
+        """``(epoch, repo-relative path)`` for every staged epoch checkpoint.
+
+        Repo-relative, not absolute, because that is the form ``method.yaml``
+        declares and the form the harness resolves at adapter construction. Handing
+        back an absolute path would make a selected checkpoint compare unequal to the
+        identical declared one, so a rule that reconfirms the current choice would
+        still look like a configuration change and force a needless re-run.
+        """
         directory = self.adapter_dir(setting_id)
         found = [(e, directory / f"hyper_lora_epoch_{e}.pth") for e in self.epochs]
-        found = [(e, p) for e, p in found if p.is_file()]
+        found = [(e, p.relative_to(REPO_ROOT)) for e, p in found if p.is_file()]
         if not found:
             raise FileNotFoundError(
                 f"no hyper_lora_epoch_*.pth under {directory}; "
