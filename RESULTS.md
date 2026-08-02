@@ -263,6 +263,14 @@ arm exactly.
 
 ### pusht (n=300) — the ordering flips
 
+> **Superseded 2026-08-02.** Every PushT arm in this section was evaluated with
+> `--skip-selection`. Running the declared rules moved three of them: HyperJEPA
+> 0.430 -> 0.440 (its checkpoint was undeclared), AdaJEPA 0.397 -> 0.420 (its step size
+> is not what its own grid picks), and Static LoRA's per-cohort numbers. The qualitative
+> reading below survives and in fact sharpens; the numbers are stale. See *Running the
+> skipped selection rules found two wrong checkpoints* and *What the corrected board
+> says*.
+
 | method | success | median dist Δ | catastrophe | compounding | adapt s |
 |---|---|---|---|---|---|
 | HyperJEPA | **0.430** | −7 [−22, +6] | 10.0% [6%, 15%] | −0.05 [−0.44, +0.26] | 0.137 |
@@ -373,9 +381,10 @@ paired compounding slope over the identical four already-declared columns instea
 | 0.1 | 0.535 | −0.46 | 1.1% | −0.051 |
 
 So the selection target, not just the method, materially changes the chosen amount of
-restoration. The committed held-out Restore TTA result remains the prior success-selected
-submission; this is deliberately reported as a **selection-cohort protocol finding**,
-not silently substituted into its test row.
+restoration. At the time this was written the committed held-out Restore TTA result was
+still the prior success-selected submission and this was reported as a selection-cohort
+finding only. It has since been carried through to held-out data — see *The
+slope-selected submission on held-out data*, below.
 
 ## PAD — inverse-dynamics adaptation during deployment
 
@@ -402,3 +411,426 @@ catastrophe is promising, but its interval overlaps the static control. PAD is t
 a fair, documented baseline here rather than evidence for a broad deployment-adaptation
 claim; it is evaluated only on PushObj because that is the domain for which the offline
 head was pretrained.
+
+---
+
+## The failed p=0.01 columns were a method fault, not an interrupted launcher
+
+2026-08-02. The first attempt at the slope-selected held-out columns left
+`eval_outputs/restore_tta/pushobj/test100` with all 200 units at rc=1 after 172.9 s
+against a healthy column's ~432 s, and a sampled episode log that showed planning
+running to completion. The working hypothesis was an interrupted launcher. It was not.
+
+Sorting the 200 unit logs by content and by mtime separates two runs cleanly:
+
+| | 19:12:12 → 19:15:04 | 19:16:05 → 19:23:09 |
+|---|---:|---:|
+| died with a traceback | 66 | 0 |
+| planned to completion | 3 | 115 |
+| truncated mid-run | 0 | 16 |
+
+Every traceback is the same one:
+
+```
+File "methods/restore_tta/adapter.py", line 419, in _stochastic_restore
+    reference = self._guard._snapshot[name].to(
+AttributeError: 'BaseWeightGuard' object has no attribute '_snapshot'
+```
+
+`restore_tta` reached into `BaseWeightGuard._snapshot`, a private dict. Extending the
+guard to cover PAD's owned trainable module turned it into `_snapshots`, a list of
+dicts, one per guarded module. Nothing referenced the old name except this one line, in
+a different method, so nothing failed until the next Restore TTA column ran — and then
+every unit of it failed, because `_stochastic_restore` is called after every optimizer
+step regardless of `p`. **The p=0.001 rows are unaffected only because they were run
+before the rename**, not because the low probability kept the branch cold.
+
+The rest of the wreckage follows from that. A crashing unit costs ~25 s rather than
+~65 s, which is why the column finished in 172.9 s — a column failing everything is
+*faster* than a healthy one, so wall clock read as good news. The second band is a
+relaunch after a `_snapshot = self._snapshots[0]` alias was added, killed by hand
+partway through; the 115 clean logs and the "looks fine" sampled episode belong to
+that repaired run, which is why sampling a log did not show the fault.
+
+Confirmed the current tree is sound by running one p=0.01 episode end to end: rc=0,
+20 replans, `total_planning_main_s=49.9`.
+
+### What was actually wrong, beyond the one line
+
+The `_snapshot` alias made the symptom go away and left the coupling in place, so the
+fix here is a public `BaseWeightGuard.reference(name)`. Stochastic restoration needs
+the pretrained value of an individual weight, which is a legitimate thing for a method
+to want and was simply missing from the interface; a method that has to reach into a
+private attribute to do its job will break again the next time the harness changes.
+
+Three harness problems the failure exposed, all fixed:
+
+1. **Resume could splice two configurations into one column.** `run_column` skipped any
+   unit with a completion marker, and that marker records that a unit *finished*, not
+   *what it ran*. Pointing p=0.01 at the p=0.001 column — which is exactly what the
+   default `--out-root` does — would have kept the finished p=0.001 units and reported
+   the mean of two configurations as one. It survived only because the earlier data had
+   been moved aside by hand first. `check_resumable` now refuses on a parameter
+   mismatch and names the offending key.
+2. **A failing column was not loud.** The driver printed `[done] N/M` and nothing else;
+   the 197 failures were visible only inside a JSON file. Failure counts now ride the
+   progress line, and a column with failures prints a `[FAIL]` summary with examples.
+3. **`rc` could be unbound.** If the launch itself raised, the `if rc != 0` check raised
+   `UnboundLocalError`, killing that worker thread and leaving the rest of the queue
+   unrun while the column still wrote a summary.
+
+`evaluate.py --tag` now exists so a variant can be evaluated without pointing at a
+committed submission's evidence at all. Its selection sweep stays keyed to the method,
+so a variant that differs only in which objective is read off the same columns reuses
+them rather than paying twice.
+
+Verified before re-running: all 600 pushobj and 300 pusht `.hydra` overrides under the
+p=0.001 columns record `restore_probability=0.001`, and every `logs.json` is stamped
+16:44–17:05, before the 19:12 incident. That data is intact and is retained as an
+ablation.
+
+---
+
+## The slope-selected submission on held-out data
+
+2026-08-02. The declared Restore TTA rule now optimizes the paired compounding slope, so
+the submission is whatever that rule freezes. Both settings were re-run end to end. The
+four selection columns were cached, so this is test compute; the p=0.001 evidence is
+retained untouched as an explicitly labelled ablation (`restore_tta_success_selected`),
+and the leaderboard renders it in a separate *Ablations (not submissions)* table rather
+than as a second entry.
+
+### PushObj (n=600, frozen 0.485)
+
+| | success | median dist Δ | catastrophe | compounding | regret |
+|---|---:|---:|---:|---:|---:|
+| success-selected, p=0.001 *(ablation)* | 0.687 | +7.5 [−0.2, +15.1] | 13.6% [9%, 19%] | +0.58 [+0.11, +1.25] | 57% / +260 |
+| **slope-selected, p=0.01** *(submission)* | 0.678 | +5.1 [−0.2, +8.8] | **7.0%** [4%, 11%] | +0.32 [+0.01, +0.67] | 57% / **+138** |
+
+### PushT (n=300, frozen 0.350)
+
+| | success | median dist Δ | catastrophe | compounding | regret |
+|---|---:|---:|---:|---:|---:|
+| success-selected, p=0.001 *(ablation)* | 0.377 | +10.9 [+0.7, +27.3] | 12.3% [8%, 18%] | +0.58 [−0.02, +1.12] | 57% / +186 |
+| **slope-selected, p=0.1** *(submission)* | 0.347 | **−2.6** [−4.7, −0.4] | **3.2%** [1%, 6%] | −0.06 [−0.20, +0.05] | 41% / **+51** |
+
+**The finding replicates on held-out data, and the two settings say different things
+about what it costs.** On PushObj the trade is mild: 0.9 pp of success for roughly half
+the catastrophe rate and half the tail regret. On PushT it is total. The slope-selected
+arm is the only entry anywhere on this benchmark whose paired distance interval excludes
+zero *on the good side* — −2.6 [−4.7, −0.4], against every other arm's overlapping or
+positive interval — and it has the lowest catastrophe rate on the board at 3.2%. It pays
+for that with the entire success gain: 0.347 against frozen's 0.350, which is to say the
+method no longer beats doing nothing on the conventional metric at all.
+
+So a single method, one declared rule apart, occupies two ends of the frontier. That is
+the benchmark's thesis stated as a measurement rather than as an argument, and it is the
+reason §4 refuses a collapsed score: no scalar ranking can hold both of these rows.
+
+### The selection cohort over-promises, on a safety objective too
+
+`RESULTS.md`'s earlier selection-cohort table is not what held-out data shows.
+
+| setting | selected p | slope on selection cohort | slope on held-out cohorts |
+|---|---|---:|---:|
+| pushobj | 0.01 | **−0.316** | **+0.323** |
+| pusht | 0.1 | +0.059 | −0.061 |
+
+On PushObj the objective's own value changes sign between selection and test. PLAN.md §7
+trap 4 — "grid maxima are optimistic; never quote a selection-cohort maximum as a score"
+— was recorded for success rate; it applies just as forcefully to a paired safety metric,
+and this is the first measurement of that in the repo. What *does* transfer is the
+**ordering**: on both settings the slope-selected p beats the success-selected p on every
+safety metric held out, even though the magnitude does not survive.
+
+That is the right way to read a selection rule, and it is why the protocol re-runs the
+selected configuration instead of reporting the cell.
+
+### PushT's selection cohort is where the objectives disagree most
+
+| p | selection success | median dist Δ | catastrophe | compounding slope |
+|---|---:|---:|---:|---:|
+| 0.001 | 0.427 | +20.58 | 24.1% | +1.276 |
+| 0.01 | 0.420 | +0.49 | 12.2% | +0.229 |
+| 0.05 | 0.380 | +8.38 | 11.5% | +0.490 |
+| **0.1** | 0.413 | +0.75 | **7.0%** | **+0.059** |
+
+Success spans 0.047 across these four columns — inside one SE — while the compounding
+slope spans 22× and catastrophe spans 3.4×. A success-only rule choosing between p=0.001
+and p=0.1 here is choosing on noise, and it picked the cell with 24% catastrophe.
+
+---
+
+## Running the skipped selection rules found two wrong checkpoints
+
+2026-08-02. Three of six leaderboard rows carried `unknown` in the selection-cost
+column because they had been evaluated with `--skip-selection`. That column exists to
+make tuning burden comparable, and it could not, for half the board. All three rules
+were run for real.
+
+### The two `EpochSelection` rules
+
+| method | setting | epochs on the selection cohort | declared in `method.yaml` | rule picks |
+|---|---|---|---|---|
+| hyperjepa | pushobj | 0.560 / **0.605** / 0.595 / 0.570 / 0.570 | epoch 2 | epoch 2 ✓ |
+| hyperjepa | pusht | 0.413 / 0.440 / **0.460** / 0.447 | `hyper_lora_best.pth` | **epoch 3** |
+| static_lora | pushobj | 0.520 / **0.530** / 0.525 / 0.520 / 0.480 | epoch 2 | epoch 2 ✓ |
+| static_lora | pusht | **0.380** / 0.347 / 0.367 / 0.340 / 0.347 | epoch 2 | **epoch 1** |
+
+**Both PushObj declarations were right and both PushT declarations were wrong.** The two
+PushObj rows re-ran to *bit-identical* per-cohort numbers (hyperjepa 0.625/0.615/0.590 →
+0.6100; static_lora 0.605/0.535/0.560 → 0.5667), which is the expected behaviour of a
+deterministic planner and confirms the re-run itself is inert.
+
+The two PushT rows moved:
+
+| | before (undeclared choice) | after (declared rule) |
+|---|---|---|
+| hyperjepa pusht | 0.4300 — `hyper_lora_best.pth`, cost unknown | **0.4400** — epoch 3, cost 4 |
+| static_lora pusht | 0.3633 — epoch 2, cost unknown | **0.3633** — epoch 1, cost 5 |
+
+`hyper_lora_best.pth` is a checkpoint the declared rule never considers, whose "best" was
+decided outside this benchmark; static_lora's PushT entry had epoch 2 carried across from
+PushObj, where epoch 2 *is* correct, rather than selected on PushT. Both `method.yaml`
+files now record what their own rule selects.
+
+static_lora's pooled PushT score is unchanged at 0.3633 while its per-cohort numbers
+moved (0.400/0.327 → 0.380/0.347). A pooled match is not evidence that nothing changed —
+worth remembering when checking a re-run.
+
+The precedent held: `EpochSelection` caught a transcription error once before
+(`docs/CHECKPOINTS.md`, epoch 4 vs epoch 2), and running it caught two more. The pattern
+in all three is the same — the second setting inherits the first setting's answer.
+
+### AdaJEPA's 16-cell grid: worth the compute, and it caught the third
+
+`StepSizeGrid` is 16 columns on an episode-isolated method: 3,200 planning processes on
+PushObj and 2,400 on PushT, 2h05 and 1h55 wall on 8 idle A6000s. That was judged worth
+paying, on three grounds: it is the one method the cost column exists to price, so
+leaving it `unknown` empties the column of its purpose; the rule re-derives a declared
+cell rather than trusting it, which had already caught two errors elsewhere the same
+day; and the grid is itself the benchmark's headline measurement, previously inherited
+from the predecessor and never made natively here.
+
+**PushObj — success on the selection cohort, n=200 per cell**
+
+| lr \ steps | 1 | 3 | 5 | 10 |
+|---|---:|---:|---:|---:|
+| 5e-4 | 0.515 | 0.630 | 0.670 | **0.680** |
+| 2e-3 | 0.625 | 0.650 | 0.660 | 0.675 |
+| 1e-2 | 0.670 | 0.620 | 0.640 | 0.645 |
+| 5e-2 | 0.525 | 0.500 | 0.500 | 0.450 |
+
+Selects `(steps=10, lr=5e-4)` — the declared cell, confirmed. Its test columns were
+already on disk under identical parameters, so they resumed and the row is unchanged at
+**0.6783**, now priced at **16 columns** instead of `unknown`.
+
+**PushT** selects `(steps=10, lr=2e-3)`, **not** the declared `5e-4` — the third
+mis-declared parameter of the day, and again on the second setting.
+
+*The harness refused to report it.* `evaluate.py` stopped with
+
+```
+[refused] eval_outputs/adajepa/pusht/test200 already holds a column run with
+    different parameters:  pred_lr: 0.0005 -> 0.002
+```
+
+which is the resume guard added this morning doing exactly its job: the committed PushT
+columns were run at `5e-4`, resume would have kept them, and the reported mean would
+have been two configurations averaged together. Those columns were archived and the row
+re-run at the selected cell.
+
+### What the grid measures natively
+
+The predecessor's central claim is that the hyperparameter dominates the method. Over
+this grid, on the PushObj selection cohort:
+
+| quantity | range across the 16 cells |
+|---|---|
+| success | 0.450 → 0.680 |
+| catastrophe rate | **2.1% → 23.0%** |
+| compounding slope | −0.51 → +1.70 |
+| median paired distance Δ vs frozen | −10 → +34 |
+| median **absolute** final distance | 121 → 148 (**1.2×**) |
+
+The first four reproduce the claim natively: one hyperparameter choice, inside a grid a
+submitter would plausibly search, moves catastrophe rate by 11× and flips the compounding
+slope's sign. Catastrophe rate is again the most discriminative single number, as §4
+predicts.
+
+The last row does **not** reproduce the predecessor's 12.7× median-distance span, and
+should not be expected to. That figure comes from a *full-weight* sweep; this grid
+confines the correction to a rank-2 LoRA subspace, and the predecessor's own measurement
+for that case is a bounded +25 against the full-weight +1156. So the two agree: rank-2
+bounds how far a bad hyperparameter can push the state, and the span collapses
+accordingly. What it does not bound is the *outcome* — success still spans 0.230 and
+catastrophe still spans 11× inside that subspace. A method can be well-behaved in weight
+space and still be dominated by its step size.
+
+### The cost column now says something
+
+| method | before | after |
+|---|---|---|
+| adajepa | unknown | 16 |
+| hyperjepa | unknown | 5 (pushobj) / 4 (pusht) |
+| static_lora | unknown | 5 |
+| restore_tta | 4 | 4 |
+| pad | 0 | **0 (authored)** |
+| frozen | 0 | 0 |
+
+PAD's zero and frozen's zero were rendering identically while meaning different things:
+frozen has no hyperparameters, while PAD's `encoder_lr`, `head_lr`, `steps` and
+`buffer_size` were authored and never selected. Records now carry
+`selection_cost_basis`, the leaderboard renders `0` / `0 (authored)` / `N` / `unknown` /
+`N (inherited)`, and `methods/README.md` documents which zero a contributor is claiming.
+PAD keeps its `FixedParams` rule rather than acquiring a fabricated one: authoring the
+values is what actually happened, and the record should say so.
+
+---
+
+## The shift condition preserves PushObj's ordering; PushT's inversion is PushT's
+
+2026-08-02. `pushobj_shift` — held-out shapes {I, small_tee, square} on the PushObj base,
+one declared cohort at seed 100, n=150 — had been registered and enabled since M0 and
+never run for any method. All five arms now have a row.
+
+### It could not be run as configured, and the reason is a protocol violation
+
+The setting declared `selection_seed=100` and `test_seeds=(100,)`. Its episodes are
+held-out by construction, so there is no honest way to split them into a selection half
+and a test half, and the registration recorded that by pointing both at the same cohort.
+For the frozen arm that is harmless. For any of the four methods with a selection rule it
+is not: the rule would have read the cohort the submission is then scored on, which is
+precisely the leak `docs/PLAN.md` §3 says the harness must make structurally impossible.
+
+Nothing caught it because nothing had ever run a method here.
+
+`Setting.has_selection_cohort` is now false whenever the selection seed is also a test
+seed, `SelectionHarness` refuses to be constructed for such a setting at all, and a
+setting in that position must name where its parameters come from
+(`inherits_selection_from`). `pushobj_shift` names `pushobj`, so each submission is
+evaluated here **as it was selected in-distribution** — which is the more interesting
+question about a shift condition anyway, and is priced as `N (inherited)` rather than as
+a free zero.
+
+### Results (n=150, frozen 0.293)
+
+| method | success | ±1 SE | vs frozen | median dist Δ | catastrophe | compounding | regret |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| AdaJEPA | **0.387** | 0.040 | +0.093 | +3.3 [−9, +20] | 14.6% [8%, 22%] | +0.65 [−0.10, +1.48] | 51% / +158 |
+| Restore TTA | 0.340 | 0.039 | +0.047 | +0.1 [−12, +20] | 8.4% [3%, 14%] | +0.18 [−0.69, +0.95] | 51% / +106 |
+| HyperJEPA | 0.320 | 0.038 | +0.027 | −2.0 [−11, +17] | 7.5% [3%, 13%] | +0.06 [−0.42, +0.56] | 46% / **+81** |
+| Frozen | 0.293 | 0.037 | — | — | — | — | — |
+| Static LoRA | 0.287 | 0.037 | −0.007 | **−3.6** [−14, +8] | 9.1% [4%, 15%] | −0.45 [−1.01, +0.24] | 48% / +93 |
+
+The frozen arm lands on 0.2933 against the 0.293 registered in `paarbench/settings.py`.
+
+**The ordering is PushObj's, not PushT's.** On PushObj the gradient methods lead; on
+PushT they collapse and only HyperJEPA separates from frozen. Under held-out-shape shift
+the PushObj ordering returns — AdaJEPA on top, then Restore TTA, then HyperJEPA, then
+frozen. So whatever inverts the ranking on PushT is a property **of that setting** — a
+different base checkpoint under visual shift — and not of distribution shift as such.
+That is the question this run was cheap enough to answer, and it is the answer that makes
+PointMaze worth more rather than less: a third *environment* is now the open question,
+and a third *condition* has been shown not to substitute for one.
+
+**What this does not support.** At n=150 the binomial SE is 0.038, so only AdaJEPA's
++0.093 clears two of them; Restore TTA and HyperJEPA are not separated from frozen or
+from each other on success. **No continuous interval on this setting excludes zero** —
+every distance, catastrophe and compounding CI above spans it. The ordering claim rests
+on success rate at small n plus its agreement with the in-distribution result, and should
+be treated as consistent-with rather than established. Raising n here is cheap (the
+batched arms run in ~2.5 min a column) and is the obvious next thing.
+
+One reading that does survive at this n: **Static LoRA is the only arm that goes below
+frozen** (0.287 against 0.293). In distribution its constant correction captured 66% of
+HyperJEPA's PushObj gain for zero adaptation cost. On shapes the correction was never
+fitted to, it captures nothing and costs slightly more than nothing. A correction that
+cannot react also cannot re-aim, which is a cleaner argument for conditioning than
+anything the in-distribution comparison produced.
+
+`pad` is absent by declaration: its inverse-dynamics head was pretrained on PushObj
+transitions and `method.yaml` lists `settings: [pushobj]`. Extending it means pretraining
+another head, which is out of scope here.
+
+---
+
+## What the corrected board says
+
+2026-08-02, after every declared rule was run for real. Numbers below are the current
+`LEADERBOARD.md`.
+
+### PushObj (n=600, frozen 0.485)
+
+| method | success | median dist Δ | catastrophe | compounding | adapt s | cost |
+|---|---:|---:|---:|---:|---:|---:|
+| AdaJEPA | 0.678 | +13 [+7, +22] | 14.0% [9%, 19%] | +0.91 [+0.40, +1.68] | 0.568 | 16 |
+| Restore TTA | 0.678 | +5 [−0, +9] | **7.0%** [4%, 11%] | +0.32 [+0.01, +0.67] | 0.651 | 4 |
+| HyperJEPA | 0.610 | **−6** [−14, −1] | 8.3% [5%, 12%] | **+0.01** [−0.16, +0.09] | 0.147 | 5 |
+| Static LoRA | 0.567 | −5 [−9, +1] | 6.2% [3%, 10%] | −0.08 [−0.24, +0.04] | **0.000** | 5 |
+| PAD | 0.553 | +4 [−2, +9] | 5.8% [3%, 9%] | +0.21 [−0.08, +0.51] | 0.029 | 0 (authored) |
+| Frozen | 0.485 | — | — | — | 0.000 | 0 |
+
+**Restore TTA and AdaJEPA now tie exactly on success at 0.678, and Restore TTA is better
+on every other column** — half the catastrophe rate, a third the compounding slope, half
+the tail regret, at a quarter of AdaJEPA's selection cost. Restoration is not buying
+success here; it is buying everything else at no cost in success. That comparison was
+invisible while Restore TTA sat at the success-selected p=0.001.
+
+### PushT (n=300, frozen 0.350)
+
+| method | success | median dist Δ | catastrophe | compounding | adapt s | cost |
+|---|---:|---:|---:|---:|---:|---:|
+| HyperJEPA | **0.440** | −13 [−30, +7] | 4.7% [2%, 9%] | **−0.55** [−1.16, −0.07] | 0.141 | 4 |
+| AdaJEPA | 0.420 | **+23** [+5, +38] | **21.4%** [15%, 28%] | **+1.45** [+0.37, +2.33] | 0.570 | 16 |
+| Static LoRA | 0.363 | +4 [−10, +13] | 11.2% [7%, 16%] | +0.08 [−0.38, +0.30] | 0.000 | 5 |
+| Frozen | 0.350 | — | — | — | 0.000 | 0 |
+| Restore TTA | 0.347 | **−3** [−5, −0] | **3.2%** [1%, 6%] | −0.06 [−0.20, +0.05] | 0.665 | 4 |
+
+**PushT is where running the real rules changed the story, not just the digits.** Both
+adaptive methods gained success, and in doing so they separated on everything else:
+
+- AdaJEPA at its *own grid's* choice (`lr=2e-3`, up from the hand-carried `5e-4`) buys
+  +0.070 success and pays +23 [+5, +38] distance, a 21.4% catastrophe rate and a
+  +1.45 [+0.37, +2.33] compounding slope. All three intervals exclude zero. It is
+  significantly worse than doing nothing on the metric §4 calls discriminating, while
+  being better on the metric §4 calls weak.
+- HyperJEPA is better than AdaJEPA on **every column at once** here — more success, less
+  distance, a quarter the catastrophe rate, a compounding slope that excludes zero on the
+  *negative* side, and 4× lower latency at 4 selection columns against 16.
+- Restore TTA occupies the far end: the safest row on the board on every safety metric,
+  and no success gain at all.
+
+The earlier reading — "on PushObj the online learner wins on success; here the amortized
+one does, but neither distance interval excludes zero" — was an artifact of both arms
+being scored at parameters their own rules do not pick. With the rules run, the PushT
+distance intervals do separate, and they separate in the direction that makes the
+benchmark's argument: **the method that wins on success is significantly worse than
+frozen on distance, and the method that wins on distance also wins on success here.**
+
+At n=300 the success SE is 0.028, so HyperJEPA 0.440 against AdaJEPA 0.420 is *not*
+separated on success. The separation is entirely in the continuous columns, which is the
+point of reporting them.
+
+### What moved, and why
+
+| row | before | after | cause |
+|---|---|---|---|
+| restore_tta pushobj | 0.687 | 0.678 | declared objective changed to compounding slope |
+| restore_tta pusht | 0.377 | 0.347 | same |
+| adajepa pushobj | 0.678 | 0.678 | grid confirms the declared cell; cost unknown → 16 |
+| adajepa pusht | 0.397 | 0.420 | grid picks `lr=2e-3`, not the declared `5e-4` |
+| hyperjepa pushobj | 0.610 | 0.610 | rule confirms epoch 2; cost unknown → 5 |
+| hyperjepa pusht | 0.430 | 0.440 | rule picks epoch 3, not `hyper_lora_best.pth` |
+| static_lora pushobj | 0.567 | 0.567 | rule confirms epoch 2; cost unknown → 5 |
+| static_lora pusht | 0.363 | 0.363 | rule picks epoch 1; pooled unchanged, per-cohort moved |
+| pad pushobj | 0.553 | 0.553 | unchanged; cost 0 → `0 (authored)` |
+
+**Every PushObj declaration was correct and three of four PushT declarations were not.**
+The common cause is that PushT was added second and inherited PushObj's answers instead
+of running its own selection. That is a specific, cheap failure mode worth naming for
+anyone adding a third setting: *a new setting needs its rule re-run, not its parameters
+copied* — and the harness cannot detect the copy, because a copied parameter is a
+perfectly valid parameter. What detects it is running the rule.
+
+No selection cost column reads `unknown` any more.
