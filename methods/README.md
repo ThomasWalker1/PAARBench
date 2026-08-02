@@ -119,18 +119,24 @@ way to reach a test cohort:
 ```python
 class MyRule:
     def select(self, harness):
-        best, best_score = None, -1.0
+        best, least_harm = None, float("inf")
         for lr in (1e-4, 5e-4, 1e-3):
             result = harness.run(lr=lr)            # one column on the selection cohort
-            if result.success > best_score:
-                best, best_score = {"lr": lr}, result.success
+            if result.median_distance_delta < least_harm:
+                best, least_harm = {"lr": lr}, result.median_distance_delta
         return best                                # frozen, then run once on test
 ```
 
 Every `harness.run` is counted, and the count is reported next to your score as your
 **selection cost**. That is deliberate: a method needing a 16-cell sweep pays for it
 visibly, and a method with no hyperparameters pays nothing. Off-the-shelf rules
-(`GridSearch`, `FixedParams`) are in [`paarbench/selection.py`](../paarbench/selection.py).
+Each result exposes `success` plus paired `median_distance_delta`,
+`catastrophe_rate`, and `compounding_slope` values measured against the harness-owned
+frozen column on that same selection cohort. `GridSearch` accepts one of those names
+as its `objective` (success is the default); the paired-harm objectives are minimized.
+The frozen reference is never handed to the rule and never reaches a test cohort.
+Off-the-shelf rules (`GridSearch`, `FixedParams`) are in
+[`paarbench/selection.py`](../paarbench/selection.py).
 
 **If your method has no hyperparameters, omit `selection` entirely.** The `params` in
 your `method.yaml` are used as-is at a cost of zero columns.

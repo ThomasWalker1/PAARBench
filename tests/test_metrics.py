@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from paarbench import metrics
-from paarbench.schema import final_replan
+from paarbench.schema import final_replan, load
 
 
 def frame(method, dists, successes=None, n_replans=3, setting="pushobj",
@@ -50,6 +50,19 @@ def test_final_replan_keeps_one_row_per_episode():
     assert len(final) == 2
     assert sorted(final["state_dist"]) == [10.0, 20.0]
     assert set(final["replan"]) == {4}
+
+
+def test_schema_load_skips_a_private_frozen_selection_cohort(tmp_path):
+    """The harness-owned baseline is tuning data, not a frozen test result."""
+    record = ('{"episode_local": 0, "replan": 0, "state_dist": 1.0, '
+              '"success": false, "cumulative_success": false}\n')
+    for cohort in ("selection", "test100"):
+        path = tmp_path / "frozen" / "pushobj" / cohort / "T" / "episodes.jsonl"
+        path.parent.mkdir(parents=True)
+        path.write_text(record)
+
+    loaded = load(tmp_path)
+    assert set(loaded["cohort"]) == {"test100"}
 
 
 # -- distance ----------------------------------------------------------------

@@ -348,3 +348,57 @@ the right weights and not enough to reach a test cohort.
 planning process and each process evaluates one batch, so the need never arose. The reset
 that §5 requires is therefore new work for that method, not a port. See
 `docs/ADAPTER_PROTOCOL.md`, which records the full call-site analysis behind the protocol.
+
+---
+
+## Selection can optimize paired safety metrics
+
+2026-08-01. `SelectionHarness.run()` now returns the candidate's conventional success
+score *and* three metrics paired to a harness-owned frozen column on the same selection
+cohort: median final-distance delta, catastrophe rate, and compounding slope. The rule
+still has no setting object, runner, output path, or test-cohort API; only the harness
+can launch/cache the frozen selection reference, and it is not charged as a candidate
+selection column.
+
+This changes Restore TTA's declared choice on PushObj. The original success-only rule
+selected `restore_probability=0.001` (selection success 0.685). Selecting the smallest
+paired compounding slope over the identical four already-declared columns instead picks
+**`p=0.01`**:
+
+| p | selection success | median dist Δ | catastrophe | compounding slope |
+|---|---:|---:|---:|---:|
+| 0.001 | 0.685 | +2.44 | 11.9% | +0.086 |
+| **0.01** | 0.670 | −5.82 | 7.8% | **−0.316** |
+| 0.05 | 0.560 | −1.70 | 2.3% | −0.077 |
+| 0.1 | 0.535 | −0.46 | 1.1% | −0.051 |
+
+So the selection target, not just the method, materially changes the chosen amount of
+restoration. The committed held-out Restore TTA result remains the prior success-selected
+submission; this is deliberately reported as a **selection-cohort protocol finding**,
+not silently substituted into its test row.
+
+## PAD — inverse-dynamics adaptation during deployment
+
+2026-08-02. PAD is the first adapter in the harness that owns a trainable module in
+addition to adapting part of the world model: an inverse-dynamics head predicts the MPC
+action chunk from consecutive encoder latents, and its loss updates the encoder online.
+The reset/weight-guard interface was extended so such owned modules are part of the
+adapter's reachable, restored surface; this is an interface correction, not a PAD-only
+exception.
+
+To give the method a meaningful initialization, the head was pretrained offline on
+PushObj transitions from `pushobj_multishape` before deployment (2,048 pairs, 12 epochs,
+MSE 0.249628). It receives no selection or test data. The resulting checkpoint and exact
+recipe are recorded in `docs/CHECKPOINTS.md`. This is not a bit-identical reproduction of
+Hansen et al.: their auxiliary head is pretrained jointly with a policy, while PAARBench
+uses its MPC planner and a locally pretrained head.
+
+On PushObj (n=600), PAD reaches 0.553 success (+0.068 over frozen, ±0.020 SE) with 0.029
+s/replan adaptation cost. Its paired distance result is +4 [-2, +9], catastrophe is 5.8%
+[3%, 9%], and compounding is +0.21 [-0.08, +0.51]. Thus the success gain is real enough to
+report, but there is no interval-separated evidence that this inverse-dynamics update
+improves the benchmark's primary paired distance mechanism. The low point estimate for
+catastrophe is promising, but its interval overlaps the static control. PAD is therefore
+a fair, documented baseline here rather than evidence for a broad deployment-adaptation
+claim; it is evaluated only on PushObj because that is the domain for which the offline
+head was pretrained.

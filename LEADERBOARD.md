@@ -13,6 +13,7 @@ Test cohorts: seeds [100, 200, 400], 4 shapes, n=50 per shape per cohort. Select
 | AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.193 | +13 [+7, +22] | 14.0% [9%, 19%] | +0.91 [+0.40, +1.68] | 62% / +196 | 0.568 | 177 | 600 | unknown |
 | HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | -6 [-14, -1] | 8.3% [5%, 12%] | +0.01 [-0.16, +0.09] | 43% / +93 | 0.147 | 977 | 600 | unknown |
 | Static LoRA — unconditioned correction | 0.567 | 0.020 | +0.082 | -5 [-9, +1] | 6.2% [3%, 10%] | -0.08 [-0.24, +0.04] | 46% / +73 | 0.000 | 157 | 600 | unknown |
+| PAD — inverse-dynamics encoder adaptation | 0.553 | 0.020 | +0.068 | +4 [-2, +9] | 5.8% [3%, 9%] | +0.21 [-0.08, +0.51] | 54% / +95 | 0.029 | 290 | 600 | 0 |
 | Frozen base model (no adaptation) | 0.485 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:

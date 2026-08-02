@@ -27,9 +27,14 @@ columns.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
-from paarbench.runner import ColumnResult, run_column
+import pandas as pd
+
+from paarbench import metrics
+from paarbench.runner import ColumnResult, PairedSelectionMetrics, run_column
+from paarbench.schema import load_column
 from paarbench.settings import Setting
 
 
@@ -84,6 +89,7 @@ class SelectionHarness:
         self._per_gpu = per_gpu
         self._verbose = verbose
         self._history: List[ColumnResult] = []
+        self._frozen_selection: Optional[ColumnResult] = None
 
     # -- what a rule may use -------------------------------------------------
 
@@ -111,12 +117,74 @@ class SelectionHarness:
             per_gpu=self._per_gpu,
             verbose=self._verbose,
         )
+        result = self._attach_paired_metrics(result)
         self._history.append(result)
         if self._verbose:
             score = "incomplete" if result.success is None else f"{result.success:.3f}"
             print(f"[select] {self._method_name} column {index} {params} -> {score}",
                   flush=True)
         return result
+
+    def _frozen_column(self) -> ColumnResult:
+        """Return the cached frozen reference for this selection cohort.
+
+        This is intentionally private.  A rule can ask only for a candidate via
+        ``run``; the harness, and not submission code, is what is allowed to launch
+        the frozen column required to make the paired metrics meaningful.  It uses
+        the same selection cohort and evaluation cardinality as the candidate and is
+        not charged to the submission's selection sweep.
+        """
+        if self._frozen_selection is None:
+            self._frozen_selection = run_column(
+                self._setting,
+                "selection",
+                "frozen",
+                method_name=None,
+                params={},
+                gpus=self._gpus,
+                n_evals=self._n_evals,
+                out_root=self._out_root,
+                data_path=self._data_path,
+                episode_isolation=False,
+                per_gpu=self._per_gpu,
+                verbose=self._verbose,
+            )
+        return self._frozen_selection
+
+    def _attach_paired_metrics(self, result: ColumnResult) -> ColumnResult:
+        """Attach the declared paired metrics, or leave them unavailable.
+
+        A partially completed candidate must never get metrics computed on a subset
+        of its cohort.  The success-only use case still works for an incomplete
+        result (and GridSearch will skip it), while a paired-metric rule gets ``None``
+        and can make the same choice explicitly.
+        """
+        frozen = self._frozen_column()
+        if not result.complete or not frozen.complete:
+            return result
+        candidate_frame = load_column(result.out_dir, self._method_name,
+                                      self._setting.id, "selection")
+        frozen_frame = load_column(frozen.out_dir, "frozen", self._setting.id,
+                                   "selection")
+        if candidate_frame.empty or frozen_frame.empty:
+            return result
+        summary = metrics.summarize(
+            pd.concat([candidate_frame, frozen_frame], ignore_index=True),
+            self._method_name,
+            self._setting.id,
+        )
+        distance = summary.get("distance", {})
+        catastrophe = summary.get("catastrophe", {})
+        compounding = summary.get("compounding", {})
+        return replace(
+            result,
+            paired_metrics=PairedSelectionMetrics(
+                n_paired=int(summary.get("n_paired", 0)),
+                median_distance_delta=distance.get("median_paired_delta"),
+                catastrophe_rate=catastrophe.get("catastrophe_rate"),
+                compounding_slope=compounding.get("slope_per_replan"),
+            ),
+        )
 
     @property
     def setting_id(self) -> str:
@@ -164,17 +232,22 @@ class FixedParams:
 
 
 class GridSearch:
-    """Exhaustive search over a parameter grid, scored by success on the selection cohort.
+    """Exhaustive search over a parameter grid, scored by success by default.
 
     Costs one column per cell -- which is the point: a method that needs a 16-cell
     sweep to work pays for that sweep in its reported selection cost, and a method with
     no hyperparameters pays nothing.
     """
 
-    def __init__(self, grid: Dict[str, List[Any]]):
+    def __init__(self, grid: Dict[str, List[Any]], objective: str = "success"):
         if not grid:
             raise ValueError("GridSearch needs a non-empty grid")
         self.grid = {k: list(v) for k, v in grid.items()}
+        if objective not in {
+            "success", "median_distance_delta", "catastrophe_rate", "compounding_slope",
+        }:
+            raise ValueError(f"unknown GridSearch objective {objective!r}")
+        self.objective = objective
 
     def cells(self) -> List[Dict[str, Any]]:
         import itertools
@@ -188,12 +261,15 @@ class GridSearch:
         best_score = float("-inf")
         for cell in self.cells():
             result = harness.run(**cell)
-            if result.success is None:
+            value = getattr(result, self.objective)
+            if value is None:
                 continue
+            # Smaller paired harm is better for every non-success objective.
+            score = value if self.objective == "success" else -value
             # Strictly greater, so ties go to the first cell in a deterministic order
             # rather than to whichever finished last.
-            if result.success > best_score:
-                best, best_score = cell, result.success
+            if score > best_score:
+                best, best_score = cell, score
         if best is None:
             raise RuntimeError(
                 "every selection column failed; nothing to select. "

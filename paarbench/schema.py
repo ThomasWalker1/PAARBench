@@ -104,7 +104,9 @@ def load(out_root: Optional[Path] = None, methods=None, setting=None) -> pd.Data
     """Read every column under ``eval_outputs/`` into one frame.
 
     Columns produced by a selection rule live under ``<tag>/select<NN>/`` and are
-    skipped: they are the method's own tuning, not results to report.
+    skipped: they are the method's own tuning, not results to report.  The harness
+    may also cache its private frozen reference under ``frozen/<setting>/selection``;
+    selection cohorts are never reportable regardless of which arm owns them.
     """
     root = Path(out_root) if out_root is not None else REPO_ROOT / "eval_outputs"
     if not root.is_dir():
@@ -119,6 +121,8 @@ def load(out_root: Optional[Path] = None, methods=None, setting=None) -> pd.Data
             if setting is not None and setting_dir.name != setting:
                 continue
             for cohort_dir in sorted(p for p in setting_dir.iterdir() if p.is_dir()):
+                if cohort_dir.name == "selection":
+                    continue
                 frame = load_column(cohort_dir, method_dir.name,
                                     setting_dir.name, cohort_dir.name)
                 if not frame.empty:

@@ -74,6 +74,11 @@ class TestTimeAdapter(Protocol):
         requires bit-identity. Resetting only the part touched this episode passes a
         realistic rollout and fails that test.
 
+        If the adapter owns a trainable auxiliary module, expose it as an
+        ``owned_modules`` tuple and include it in ``BaseWeightGuard(wm, *owned_modules)``.
+        The integration probe uses that declaration to perturb and verify the full
+        reset surface; auxiliary heads are not an untested escape hatch.
+
         May also apply an initial correction, for methods conditioned only on the
         initial observation.
         """
@@ -144,7 +149,7 @@ class NullAdapter:
 
 
 class BaseWeightGuard:
-    """Snapshot base-model weights and restore them exactly.
+    """Snapshot reset-relevant modules and restore them exactly.
 
     Provided by the benchmark rather than left to each method, because "restore the
     base model between episodes" is an invariant the harness depends on, and a method
@@ -155,6 +160,11 @@ class BaseWeightGuard:
     Snapshots are kept on the CPU: a full base is ~400 MB and the GPUs are also
     running the planner.
 
+    ``module`` is normally the world model.  An adapter that owns an auxiliary
+    trainable module must pass it too -- e.g. ``BaseWeightGuard(wm,
+    inverse_dynamics_head)``.  The reset contract is about every tensor an adapter
+    can mutate, not only parameters that happened to originate in the base model.
+
     Usage::
 
         self._guard = BaseWeightGuard(wm)          # in __init__, before any mutation
@@ -162,31 +172,50 @@ class BaseWeightGuard:
         self._guard.restore()                      # in on_episode_start
     """
 
-    def __init__(self, module: torch.nn.Module):
+    def __init__(self, module: torch.nn.Module, *owned_modules: torch.nn.Module):
+        # Kept as a compatibility view for existing adapters that use the frozen
+        # world-model snapshot for a method-specific restoration operation. New code
+        # should rely on restore()/modules rather than reach into this detail.
         self._module = module
-        self._snapshot = {
-            name: tensor.detach().to("cpu", copy=True)
-            for name, tensor in module.state_dict().items()
-        }
+        self._modules = (module,) + tuple(owned_modules)
+        self._snapshots = [
+            {
+                name: tensor.detach().to("cpu", copy=True)
+                for name, tensor in guarded.state_dict().items()
+            }
+            for guarded in self._modules
+        ]
+        self._snapshot = self._snapshots[0]
+
+    @property
+    def modules(self) -> tuple:
+        """Modules this guard will restore, in reset-test probe order."""
+        return self._modules
 
     def restore(self) -> None:
         with torch.no_grad():
-            for name, tensor in self._module.state_dict().items():
-                tensor.copy_(self._snapshot[name])
+            for guarded, snapshot in zip(self._modules, self._snapshots):
+                for name, tensor in guarded.state_dict().items():
+                    tensor.copy_(snapshot[name])
 
     def is_pristine(self) -> bool:
         """Are the live weights bit-identical to the snapshot?"""
         with torch.no_grad():
-            for name, tensor in self._module.state_dict().items():
-                if not torch.equal(tensor.detach().cpu(), self._snapshot[name]):
-                    return False
+            for guarded, snapshot in zip(self._modules, self._snapshots):
+                for name, tensor in guarded.state_dict().items():
+                    if not torch.equal(tensor.detach().cpu(), snapshot[name]):
+                        return False
         return True
 
     def drifted(self) -> list:
         """Names of parameters that differ from the snapshot. For test failure messages."""
         with torch.no_grad():
-            return [
-                name
-                for name, tensor in self._module.state_dict().items()
-                if not torch.equal(tensor.detach().cpu(), self._snapshot[name])
-            ]
+            drifted = []
+            for index, (guarded, snapshot) in enumerate(zip(self._modules, self._snapshots)):
+                prefix = "world_model" if index == 0 else f"owned_module[{index - 1}]"
+                drifted.extend(
+                    f"{prefix}.{name}"
+                    for name, tensor in guarded.state_dict().items()
+                    if not torch.equal(tensor.detach().cpu(), snapshot[name])
+                )
+            return drifted

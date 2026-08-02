@@ -3,9 +3,10 @@
 **Status (2026-08-01):** **M0–M3 done, M4/M5 ongoing.** The harness works: a method is a
 self-contained directory under `methods/`, the planner has no per-method branch, cohort
 separation is enforced in code, and the per-episode record feeds the §4 metrics with
-bootstrap CIs. Four arms (frozen, `static_lora`, `hyperjepa`, `adajepa`) run on two
-settings (`pushobj`, `pusht`); all three reproduction targets were hit before the
-predecessor was retired as a reference.
+bootstrap CIs. Five arms (frozen, `static_lora`, `hyperjepa`, `adajepa`,
+`restore_tta`) run on two settings (`pushobj`, `pusht`); all three reproduction targets
+were hit before the predecessor was retired as a reference. PAD's PushObj evaluation is
+complete as the first adapter that owns an auxiliary trainable module.
 
 Read `RESULTS.md` first — it is the running record, including several findings that only
 appeared once the harness was exercised. Then `LEADERBOARD.md` for current numbers,

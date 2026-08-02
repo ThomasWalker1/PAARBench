@@ -30,6 +30,29 @@ DEFAULT_OUT_ROOT = REPO_ROOT / "eval_outputs"
 
 
 @dataclass
+class PairedSelectionMetrics:
+    """Selection-cohort metrics for one candidate against frozen.
+
+    These values are attached by :class:`SelectionHarness`, not calculated by the
+    generic column runner.  Pairing needs a frozen run on the same cohort, and only
+    the harness is allowed to arrange that reference run.
+    """
+
+    n_paired: int
+    median_distance_delta: Optional[float]
+    catastrophe_rate: Optional[float]
+    compounding_slope: Optional[float]
+
+    def to_dict(self) -> dict:
+        return {
+            "n_paired": self.n_paired,
+            "median_distance_delta": self.median_distance_delta,
+            "catastrophe_rate": self.catastrophe_rate,
+            "compounding_slope": self.compounding_slope,
+        }
+
+
+@dataclass
 class ColumnResult:
     """What one column produced.
 
@@ -48,6 +71,7 @@ class ColumnResult:
     params: Dict[str, Any] = field(default_factory=dict)
     failures: List[str] = field(default_factory=list)
     wall_seconds: float = 0.0
+    paired_metrics: Optional[PairedSelectionMetrics] = None
 
     @property
     def complete(self) -> bool:
@@ -65,6 +89,24 @@ class ColumnResult:
     def n(self) -> int:
         return self.n_evals * len(self.success_by_shape)
 
+    @property
+    def median_distance_delta(self) -> Optional[float]:
+        """Median final-distance shift against frozen on the selection cohort."""
+        return (None if self.paired_metrics is None
+                else self.paired_metrics.median_distance_delta)
+
+    @property
+    def catastrophe_rate(self) -> Optional[float]:
+        """Paired >2x-frozen final-distance rate on the selection cohort."""
+        return (None if self.paired_metrics is None
+                else self.paired_metrics.catastrophe_rate)
+
+    @property
+    def compounding_slope(self) -> Optional[float]:
+        """Slope of median paired degradation per replan on the selection cohort."""
+        return (None if self.paired_metrics is None
+                else self.paired_metrics.compounding_slope)
+
     def to_dict(self) -> dict:
         return {
             "setting": self.setting,
@@ -80,6 +122,8 @@ class ColumnResult:
             "failures": self.failures,
             "wall_seconds": round(self.wall_seconds, 1),
             "out_dir": str(self.out_dir),
+            "paired_metrics": (None if self.paired_metrics is None
+                               else self.paired_metrics.to_dict()),
         }
 
 

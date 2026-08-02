@@ -66,6 +66,18 @@ def test_guard_restores_buffers_not_just_parameters():
     assert guard.is_pristine()
 
 
+def test_guard_restores_an_adapter_owned_module_too():
+    """PAD-like auxiliary heads are part of the reset surface, not an exception."""
+    model = _toy()
+    head = nn.Linear(2, 2)
+    guard = BaseWeightGuard(model, head)
+    with torch.no_grad():
+        head.weight.add_(1.0)
+    assert not guard.is_pristine()
+    guard.restore()
+    assert guard.is_pristine()
+
+
 def test_guard_survives_repeated_restore():
     model = _toy()
     guard = BaseWeightGuard(model)
@@ -134,9 +146,18 @@ def _reachable(wm, adapter):
     method is not responsible for restoring damage it did not cause -- requiring that
     would force every method to carry a full-model snapshot for nothing.
     """
-    names = {n for n, p in wm.named_parameters() if p.requires_grad}
-    names |= {n for n in wm.state_dict() if n.endswith(_CORRECTION_SUFFIXES)}
-    return sorted(names)
+    modules = tuple(getattr(adapter, "owned_modules", ()))
+    guarded = (wm,) + modules
+    reachable = {}
+    for module_index, module in enumerate(guarded):
+        prefix = "world_model" if module_index == 0 else f"owned_module[{module_index - 1}]"
+        for name, parameter in module.named_parameters():
+            if parameter.requires_grad:
+                reachable[id(parameter)] = (f"{prefix}.{name}", parameter)
+        for name, tensor in module.state_dict().items():
+            if name.endswith(_CORRECTION_SUFFIXES):
+                reachable[id(tensor)] = (f"{prefix}.{name}", tensor)
+    return [reachable[key] for key in sorted(reachable)]
 
 
 @pytest.mark.integration
@@ -161,7 +182,7 @@ def test_registered_methods_undo_their_own_mutations(world_model, name):
     adapter.on_episode_start({}, {})
     adapter.before_plan({"visual": torch.zeros(2, 1, 3, 8, 8)})
 
-    guard = BaseWeightGuard(world_model)
+    guard = BaseWeightGuard(world_model, *getattr(adapter, "owned_modules", ()))
     reachable = _reachable(world_model, adapter)
     if not reachable:
         pytest.skip(
@@ -170,10 +191,8 @@ def test_registered_methods_undo_their_own_mutations(world_model, name):
             f"covered only by the idempotence check below."
         )
 
-    state = world_model.state_dict()
     with torch.no_grad():
-        for tensor_name in reachable:
-            tensor = state[tensor_name]
+        for _tensor_name, tensor in reachable:
             if tensor.dtype.is_floating_point:
                 tensor.add_(torch.randn_like(tensor) * 1e-3)
     assert not guard.is_pristine(), "perturbation did not take"

@@ -4,11 +4,14 @@ All GPU-free. This is what CI can run on every pull request.
 """
 
 from pathlib import Path
+from types import SimpleNamespace
 
+import pandas as pd
 import pytest
 
-from paarbench import adapter, methods
+from paarbench import adapter, methods, selection as selection_mod
 from paarbench.planner_hooks import build_adapter
+from paarbench.runner import ColumnResult
 from paarbench.selection import (
     CohortViolation,
     FixedParams,
@@ -193,6 +196,61 @@ def test_grid_search_visits_every_cell_and_picks_the_best():
     chosen = rule.select(h)
     assert h.columns_used == 4                    # one column per cell, all declared
     assert chosen == h.seen[-1]                   # stub scores increase monotonically
+
+
+def test_grid_search_can_minimize_a_paired_harm_metric():
+    class MetricHarness:
+        def __init__(self):
+            self.columns_used = 0
+
+        def run(self, **params):
+            self.columns_used += 1
+            # The second cell has less paired distance harm despite lower success.
+            return SimpleNamespace(success=0.9 - 0.1 * self.columns_used,
+                                   median_distance_delta=3 - 2 * self.columns_used)
+
+    h = MetricHarness()
+    chosen = GridSearch({"p": [0.001, 0.1]}, objective="median_distance_delta").select(h)
+    assert chosen == {"p": 0.1}
+
+
+def test_selection_harness_attaches_paired_metrics_from_its_own_frozen_column(monkeypatch,
+                                                                                tmp_path):
+    """Rules get paired metrics, but cannot launch or name a test cohort."""
+    calls = []
+
+    def fake_run_column(setting, cohort, tag, *, method_name=None, params=None, **kwargs):
+        calls.append((cohort, tag, method_name, params))
+        return ColumnResult(
+            setting=setting.id, cohort=cohort, seed=setting.cohort_seed(cohort), tag=tag,
+            n_evals=2, success_by_shape={"T": 0.5}, out_dir=tmp_path / tag,
+            params=dict(params or {}),
+        )
+
+    def fake_load_column(_out_dir, method, setting, cohort):
+        rows = []
+        for episode in range(2):
+            for replan in range(3):
+                rows.append({
+                    "method": method, "setting": setting, "cohort": cohort,
+                    "shape": "T", "episode": episode, "episode_local": episode,
+                    "replan": replan,
+                    "state_dist": 10.0 if method == "frozen" else 10.0 + replan,
+                    "success": False, "cumulative_success": False,
+                    "planner_s": 1.0, "adapt_s": 0.0, "adapt_peak_mb": 1.0,
+                })
+        return pd.DataFrame(rows)
+
+    monkeypatch.setattr(selection_mod, "run_column", fake_run_column)
+    monkeypatch.setattr(selection_mod, "load_column", fake_load_column)
+    h = SelectionHarness(get_setting("pushobj"), "toy", "toy", verbose=False)
+    result = h.run(lr=1e-4)
+
+    assert result.median_distance_delta == pytest.approx(2.0)
+    assert result.catastrophe_rate == pytest.approx(0.0)
+    assert result.compounding_slope == pytest.approx(1.0)
+    assert [call[0] for call in calls] == ["selection", "selection"]
+    assert calls[1][1:] == ("frozen", None, {})
 
 
 def test_fixed_params_costs_nothing():

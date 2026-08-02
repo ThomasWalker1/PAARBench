@@ -16,14 +16,16 @@ RESTORE_PROBABILITIES = [1.0e-3, 1.0e-2, 5.0e-2, 1.0e-1]
 
 
 class RestorationGrid(GridSearch):
-    """Exhaustive four-cell search over stochastic-restoration probability p."""
+    """Choose the restoration rate that most flattens paired compounding harm."""
 
     def __init__(self, restore_probabilities=None):
-        super().__init__({
-            "restore_probability": list(
-                RESTORE_PROBABILITIES
-                if restore_probabilities is None
-                else restore_probabilities
-            ),
-        })
-
+        super().__init__(
+            {
+                "restore_probability": list(
+                    RESTORE_PROBABILITIES
+                    if restore_probabilities is None
+                    else restore_probabilities
+                ),
+            },
+            objective="compounding_slope",
+        )

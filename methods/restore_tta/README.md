@@ -16,7 +16,9 @@ The question is narrowly useful: AdaJEPA's compounding slope is positive on Push
 Does restoring random parameter elements flatten that slope, and what does it cost in
 success rate? A null result is reported as such; the rule is a four-value selection
 grid for `p` (`0.001, 0.01, 0.05, 0.1`), not repeated tuning until a preferred
-result appears.
+result appears. Its declared selection objective is the paired compounding slope,
+not success: restoration exists to limit the accumulation mechanism, and success was
+too coarse to distinguish the rates on the selection cohort.
 
 Like AdaJEPA, this method owns shared world-model weights and AdamW state, so it
 declares episode isolation. Its base gradient configuration is AdaJEPA's already
@@ -27,4 +29,3 @@ optimizer, preventing cross-episode leakage.
 The implementation shares AdaJEPA's model-specific loss and parameterization closely
 by design. That makes it a focused mechanism comparison, but it is a weaker test of
 the adapter interface's generality than a method with a different update structure.
-

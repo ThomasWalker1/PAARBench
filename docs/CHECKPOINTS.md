@@ -3,10 +3,9 @@
 `checkpoints/` is untracked (too large for git). This file is its manifest: what is
 staged, where it came from, and what each artifact is for.
 
-**These are inherited artifacts, not reproducible ones.** The training code that produced
-them is not in this repo yet — see "Reproducing these" below. That is a deliberate,
-recorded deferral: the benchmark can be developed against them as they stand, and the
-training scripts land later.
+The inherited base and HyperJEPA artifacts are not reproducible here yet — see
+"Reproducing these" below. PAD is the exception: its small inverse-dynamics head is
+generated locally by the checked-in method script, documented below.
 
 Source for everything here: `~/HyperJEPA/checkpoints/` (read-only, pinned `628dff7`).
 Layout deliberately mirrors the predecessor's so the mapping stays one-to-one.
@@ -45,6 +44,23 @@ episode and its "weights" are its hyperparameters.
 | `pushobj_adapters/static_r2/` | unconditioned static correction on `pushobj` | epoch checkpoints; the control that asks whether conditioning buys anything |
 | `pvs_adapters/hyper_r2_distill0/` | HyperJEPA on `pusht` | |
 | `pvs_adapters/static_r2/baked_ep*/` | static control on `pusht` | **baked** full weights, evaluated through the ordinary planner config so the control pays no adapter-wrapper overhead (that overhead is real: +0.80 s/replan) |
+| `pad/pushobj_inverse_dynamics.pth` | PAD on `pushobj` | 0.79 MB, SHA-256 `252fae5fb2727534`; pretrained for 12 epochs on 2,048 PushObj training transition pairs with frozen base latents. Produced by `methods/pad/train_inverse_head.py`, not inherited from `~/HyperJEPA/`. |
+
+### PAD inverse-dynamics head
+
+PAD's original auxiliary head is jointly pretrained with its policy. This benchmark
+uses MPC rather than that policy, so `methods/pad/train_inverse_head.py` trains the
+closest fair substitute: an MLP that predicts the normalized executed action from
+two consecutive *frozen* PushObj world-model latents. The target is the planner's
+five-frame, 10-dimensional normalized action chunk, matching the transition it
+actually executes. It reads only
+`/dev/shm/tw78/data/pushobj_multishape` (or an explicit `--data` path), never a
+selection or test cohort. The shipped run uses seed 0, 2,048 sampled pairs, batch size
+64 and 12 Adam epochs; its final training MSE is 0.249628.
+
+The checkpoint stores its latent/action dimensions and the adapter rejects a mismatch.
+During deployment the encoder and this head are updated together, then both are reset
+at each episode boundary through `BaseWeightGuard`.
 
 ### `metadata.json` is load-bearing
 
