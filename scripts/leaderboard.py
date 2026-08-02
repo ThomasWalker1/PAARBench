@@ -33,6 +33,35 @@ from paarbench import settings as settings_mod
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+# How a selection cost should read. ``0`` alone is ambiguous: it is the honest score
+# for a method with nothing to tune, and it is also what a method reports when its
+# hyperparameters were simply written down. Those are different claims about tuning
+# burden, and the column exists precisely to make tuning burden comparable.
+COST_BASIS = {
+    "none": "0",
+    "authored": "0 (authored)",
+    "selected": None,          # the count speaks for itself
+    "skipped": "unknown",
+}
+
+
+def render_cost(record: dict) -> str:
+    cost = record.get("selection_cost_columns")
+    if record.get("selection_cost_basis") == "inherited":
+        # Charged, not free: the columns were run, just on the source setting. Saying
+        # 0 here would let a shift condition look cheaper than the thing it inherits.
+        return "unknown (inherited)" if cost is None else f"{cost} (inherited)"
+    basis = record.get("selection_cost_basis")
+    if basis is None:
+        # Written before the basis field existed. A recorded 0 from that era came
+        # from FixedParams unless it is frozen, which has no rule at all.
+        basis = ("none" if record.get("method") == "frozen"
+                 else "skipped" if cost is None
+                 else "authored" if cost == 0 else "selected")
+    label = COST_BASIS.get(basis)
+    return label if label is not None else str(cost)
+
+
 def binomial_se(p: float, n: int) -> float:
     if not n or p is None:
         return float("nan")
@@ -49,36 +78,14 @@ def load_records(results_dir: Path):
     return records
 
 
-def render(records, setting_id: str) -> str:
-    setting = settings_mod.SETTINGS.get(setting_id)
-    rows = [r for r in records if r.get("setting") == setting_id]
-    if not rows:
-        return ""
+HEADER = ("| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | "
+          "catastrophe [95% CI] | compounding [95% CI] | regret | "
+          "adapt s/replan | peak MB | n | selection cost |")
+RULE = "|---|---|---|---|---|---|---|---|---|---|---|---|"
 
-    frozen = next((r for r in rows if r["method"] == "frozen"), None)
-    baseline = frozen["success"] if frozen and frozen.get("success") is not None else None
 
-    # Sort by success, but only among complete records; incomplete ones go last and
-    # are labelled, never silently dropped.
-    rows.sort(key=lambda r: (r.get("complete", False),
-                             r["success"] if r.get("success") is not None else -1),
-              reverse=True)
-
-    out = [f"## {setting_id}", ""]
-    if setting is not None:
-        out.append(
-            f"Test cohorts: seeds {list(setting.test_seeds)}, "
-            f"{len(setting.shapes)} shapes, n={setting.n_evals} per shape per cohort. "
-            f"Selection cohort: seed {setting.selection_seed} (never scored here)."
-        )
-        out.append("")
-
-    detail = _metric_detail(setting_id)
-
-    out.append("| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | "
-               "catastrophe [95% CI] | compounding [95% CI] | regret | "
-               "adapt s/replan | peak MB | n | selection cost |")
-    out.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+def _table(rows, baseline, detail) -> list:
+    out = [HEADER, RULE]
     for r in rows:
         s = r.get("success")
         n = r.get("n", 0)
@@ -87,8 +94,6 @@ def render(records, setting_id: str) -> str:
             continue
         se = binomial_se(s, n)
         delta = "—" if baseline is None or r["method"] == "frozen" else f"{s - baseline:+.3f}"
-        cost = r.get("selection_cost_columns")
-        cost_s = "unknown" if cost is None else str(cost)
         d = detail.get(r["method"], {})
         # The continuous metrics come from the per-episode record on disk, the
         # success rate from the stored result record. If a re-run is in flight they
@@ -103,9 +108,43 @@ def render(records, setting_id: str) -> str:
             f"| {r['display_name']} | {s:.3f} | {se:.3f} | {delta} | "
             f"{d.get('distance', '—')} | {d.get('catastrophe', '—')} | "
             f"{d.get('compounding', '—')} | {d.get('regret', '—')} | "
-            f"{d.get('adapt_s', '—')} | {d.get('peak_mb', '—')} | {n} | {cost_s} |"
+            f"{d.get('adapt_s', '—')} | {d.get('peak_mb', '—')} | {n} | "
+            f"{render_cost(r)} |"
         )
+    return out
 
+
+def render(records, setting_id: str) -> str:
+    setting = settings_mod.SETTINGS.get(setting_id)
+    rows = [r for r in records if r.get("setting") == setting_id]
+    if not rows:
+        return ""
+
+    frozen = next((r for r in rows if r["method"] == "frozen"), None)
+    baseline = frozen["success"] if frozen and frozen.get("success") is not None else None
+
+    # Sort by success, but only among complete records; incomplete ones go last and
+    # are labelled, never silently dropped.
+    rows.sort(key=lambda r: (r.get("complete", False),
+                             r["success"] if r.get("success") is not None else -1),
+              reverse=True)
+    # A submission is a method together with its *declared* selection rule (PLAN.md
+    # §3). A run that departed from that rule is evidence about the protocol, not an
+    # entry -- so it is reported, in its own table, and never mixed into the ranking.
+    submissions = [r for r in rows if r.get("submission", True)]
+    ablations = [r for r in rows if not r.get("submission", True)]
+
+    out = [f"## {setting_id}", ""]
+    if setting is not None:
+        out.append(
+            f"Test cohorts: seeds {list(setting.test_seeds)}, "
+            f"{len(setting.shapes)} shapes, n={setting.n_evals} per shape per cohort. "
+            f"Selection cohort: seed {setting.selection_seed} (never scored here)."
+        )
+        out.append("")
+
+    detail = _metric_detail(setting_id)
+    out.extend(_table(submissions, baseline, detail))
     out.append("")
     out.append(
         "**Success rate is the weakest column here.** At these n its binomial SE is "
@@ -129,7 +168,11 @@ def render(records, setting_id: str) -> str:
         "be worse than doing nothing has to show it.\n"
         "- **adapt s/replan** and **peak MB** — adaptation cost, separated from planner "
         "cost and measured around the adapter hooks only.\n"
-        "- **selection cost** — evaluation columns the method's selection rule consumed."
+        "- **selection cost** — evaluation columns the method's selection rule consumed. "
+        "`0` means the method has no hyperparameters to tune; `0 (authored)` means it "
+        "has them and they were written down rather than selected, which is a weaker "
+        "claim and must not read as the same number; `unknown` means the declared rule "
+        "was skipped, so the tuning happened somewhere this record cannot price."
     )
     out.append("")
     out.append(
@@ -144,6 +187,18 @@ def render(records, setting_id: str) -> str:
         "and latency, and collapsing that to one number destroys the comparison."
     )
     out.append("")
+    if ablations:
+        out.append("### Ablations (not submissions)")
+        out.append("")
+        out.append(
+            "Held-out runs that did **not** follow a declared selection rule. A "
+            "submission is a method together with the rule it declares, so these are "
+            "not entries and are not ranked against the table above — they are "
+            "evidence about the protocol itself. Same cohorts, same n, same metrics."
+        )
+        out.append("")
+        out.extend(_table(ablations, baseline, detail))
+        out.append("")
     return "\n".join(out)
 
 

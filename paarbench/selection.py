@@ -77,6 +77,17 @@ class SelectionHarness:
         per_gpu: int = 1,
         verbose: bool = True,
     ):
+        if not setting.has_selection_cohort:
+            raise CohortViolation(
+                f"setting {setting.id!r} declares selection seed "
+                f"{setting.selection_seed}, which is also one of its test seeds "
+                f"{list(setting.test_seeds)}. Every column this harness could run "
+                f"would be read off the cohort the submission is then scored on. "
+                + (f"Evaluate with the parameters selected on "
+                   f"{setting.inherits_selection_from!r} instead."
+                   if setting.inherits_selection_from else
+                   "Declare inherits_selection_from on the setting.")
+            )
         self._setting = setting
         self._method_name = method_name
         self._tag = tag

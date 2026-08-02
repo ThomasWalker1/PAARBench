@@ -29,7 +29,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from paarbench import methods, settings as settings_mod
-from paarbench.runner import DEFAULT_OUT_ROOT, run_column
+from paarbench.runner import DEFAULT_OUT_ROOT, ColumnConflict, run_column
 from paarbench.selection import FixedParams, SelectionHarness
 from paarbench.staging import DEFAULT_TMPFS, resolve_dataset_path
 
@@ -44,6 +44,17 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--frozen", action="store_true",
                     help="evaluate the built-in do-nothing baseline instead of a method")
     ap.add_argument("--setting", default="pushobj")
+    ap.add_argument("--tag", default=None,
+                    help="name the test columns and the result record under this "
+                         "instead of the method name. Use it to evaluate a variant "
+                         "without overwriting a committed submission's evidence. "
+                         "Selection columns keep the method name, so a variant "
+                         "reuses the cached sweep rather than repeating it.")
+    ap.add_argument("--not-a-submission", action="store_true",
+                    help="record this run as an ablation. It is kept out of the "
+                         "leaderboard's main table and listed separately, because a "
+                         "submission is a method plus its *declared* rule and an "
+                         "ablation by definition did not follow one.")
     ap.add_argument("--gpus", default="0,1,2,3")
     ap.add_argument("--per-gpu", type=int, default=1,
                     help="concurrent processes per GPU; raise it for episode-isolated "
@@ -75,6 +86,41 @@ def resolve_data_path(setting, args):
     return resolve_dataset_path(setting, args.tmpfs_root)
 
 
+def inherit_selection(results_dir: Path, tag: str, source: str, method, setting):
+    """Take the parameters this submission already froze on another setting.
+
+    Reads the source setting's *result record* rather than re-deriving anything: that
+    file is what the leaderboard reports, so inheriting from it means the shifted run
+    is unambiguously the same submission and not a re-tuned cousin. Per-setting
+    parameter overrides still apply on top -- weights differ per domain even when the
+    selected hyperparameter does not.
+    """
+    record_path = results_dir / tag / f"{source}.json"
+    if not record_path.is_file():
+        raise SystemExit(
+            f"{setting.id} inherits its selection from {source}, but there is no "
+            f"record at {record_path}. Evaluate {tag} on {source} first: its frozen "
+            f"parameters are the input to this run."
+        )
+    record = json.loads(record_path.read_text())
+    if not record.get("complete", False):
+        raise SystemExit(
+            f"{record_path} is an incomplete run; refusing to inherit parameters from "
+            f"it. A shift condition inheriting from a half-finished selection would "
+            f"report a submission nobody ever made."
+        )
+    inherited = dict(record.get("params") or {})
+    # Per-setting overrides are about *where* the method runs, not about tuning, so
+    # they layer on top of the inherited choice rather than being overwritten by it.
+    overrides = {k: v for k, v in method.params_for(setting.id).items()
+                 if k not in method.params_for(source) or
+                 method.params_for(setting.id)[k] != method.params_for(source).get(k)}
+    inherited.update(overrides)
+    return (inherited,
+            record.get("selection_cost_columns"),
+            record.get("selection_rule", "unknown rule"))
+
+
 def main() -> int:
     args = parse_args()
     if bool(args.method) == bool(args.frozen):
@@ -93,6 +139,9 @@ def main() -> int:
     if args.frozen:
         name, display = "frozen", "Frozen base model (no adaptation)"
         params, selection_cost, selection_rule = {}, 0, "none (no hyperparameters)"
+        # Frozen's zero is the only unqualified one on the board: it has nothing to
+        # tune. Every other zero means something weaker -- see COST_BASIS below.
+        cost_basis = "none"
         isolation = False
     else:
         method = methods.load(args.method)
@@ -118,13 +167,29 @@ def main() -> int:
         if isinstance(rule, type):
             rule = rule()
 
-        if args.skip_selection or isinstance(rule, FixedParams):
+        if setting.inherits_selection_from and not isinstance(rule, FixedParams):
+            source = setting.inherits_selection_from
+            params, selection_cost, source_rule = inherit_selection(
+                Path(args.results_dir), args.tag or name, source, method, setting
+            )
+            cost_basis = "inherited"
+            selection_rule = (f"inherited from {source} "
+                              f"({source_rule}, {selection_cost} column(s) there)")
+            print(f"[select] {name}: {setting.id} has no selectable cohort; using the "
+                  f"parameters frozen on {source} -- {params}", flush=True)
+        elif args.skip_selection or isinstance(rule, FixedParams):
             params = method.params_for(setting.id)
             selection_cost = 0 if isinstance(rule, FixedParams) else None
-            selection_rule = ("none (params used as-is)" if isinstance(rule, FixedParams)
+            cost_basis = "authored" if isinstance(rule, FixedParams) else "skipped"
+            selection_rule = ("none (params authored, not selected)"
+                              if isinstance(rule, FixedParams)
                               else f"{method.selection_ref} (SKIPPED via --skip-selection)")
             print(f"[select] {name}: using method.yaml params {params}", flush=True)
         else:
+            # The selection sweep is tagged by the *method*, not by --tag: it is a
+            # property of the method and its rule, and two variants that differ only
+            # in which objective is read off the same columns should share them
+            # rather than pay for them twice.
             harness = SelectionHarness(
                 setting, name, tag=name, budget=args.selection_budget,
                 episode_isolation=isolation, **common
@@ -139,34 +204,50 @@ def main() -> int:
                 )
             params = {**method.params_for(setting.id), **chosen}
             selection_cost = harness.columns_used
+            cost_basis = "selected"
             selection_rule = method.selection_ref
             print(f"[select] {name}: froze {params} after {selection_cost} column(s)",
                   flush=True)
 
     # ---- 2/3. frozen parameters, run once per test cohort -----------------------
     method_name = None if args.frozen else name
+    tag = args.tag or name
     test_cohorts = [f"test{seed}" for seed in setting.test_seeds]
     results = {}
     for cohort in test_cohorts:
-        result = run_column(
-            setting, cohort, tag=name, method_name=method_name, params=params,
-            episode_isolation=isolation, **common
-        )
+        try:
+            result = run_column(
+                setting, cohort, tag=tag, method_name=method_name, params=params,
+                episode_isolation=isolation, **common
+            )
+        except ColumnConflict as exc:
+            raise SystemExit(f"[refused] {exc}")
         results[cohort] = result.to_dict()
         score = "incomplete" if result.success is None else f"{result.success:.3f}"
-        print(f"[test] {name} {setting.id}/{cohort}: {score}", flush=True)
+        print(f"[test] {tag} {setting.id}/{cohort}: {score}", flush=True)
 
     complete = [r for r in results.values() if r["complete"]]
     pooled = (sum(r["success"] * r["n"] for r in complete) / sum(r["n"] for r in complete)
               if complete else None)
 
     record = {
-        "method": name,
+        # ``method`` is the *tag*: it is the key the per-episode records on disk are
+        # filed under (paarbench/schema.py derives identity from the directory
+        # layout), so a variant evaluated under --tag must carry that tag here or the
+        # leaderboard would attach one run's success rate to another's episodes.
+        "method": tag,
+        "method_dir": name,
         "display_name": display,
         "setting": setting.id,
         "params": params,
+        "submission": not args.not_a_submission,
         "selection_rule": selection_rule,
         "selection_cost_columns": selection_cost,
+        # What the cost number means. ``0`` is not one thing: frozen has nothing to
+        # tune ("none"), while a FixedParams method's hyperparameters were written
+        # down by its author and never selected ("authored"). Those are different
+        # claims about tuning burden and must not render identically.
+        "selection_cost_basis": cost_basis,
         "episode_isolated": isolation,
         "selection_cohort_seed": setting.selection_seed,
         "test_cohorts": results,
@@ -176,7 +257,7 @@ def main() -> int:
         "frozen_reference": setting.frozen_success.get("test"),
     }
 
-    out = Path(args.results_dir) / name
+    out = Path(args.results_dir) / tag
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{setting.id}.json").write_text(json.dumps(record, indent=2))
 

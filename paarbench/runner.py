@@ -150,6 +150,47 @@ def read_success(logs_json: Path) -> Optional[float]:
     return value
 
 
+class ColumnConflict(Exception):
+    """A column on disk was produced by a different configuration than the one asked for."""
+
+
+def check_resumable(column_dir: Path, params: Dict[str, Any]) -> None:
+    """Refuse to resume a column that was produced under different parameters.
+
+    Resume keys on a per-unit completion marker, which says a unit *finished* but
+    nothing about *what it ran*. Point a second configuration at the same column and
+    the finished units are silently kept: the column then mixes two configurations
+    and reports the mean as if it were one. That is the exact failure mode the
+    benchmark is built to catch elsewhere, so the harness must not commit it.
+
+    The check is on the whole parameter dict rather than on a diff, because there is
+    no principled way to decide which keys are allowed to differ -- a method that
+    reads an undeclared param would slip through any allowlist.
+    """
+    marker = Path(column_dir) / "column_summary.json"
+    if not marker.is_file():
+        return
+    try:
+        previous = json.loads(marker.read_text()).get("params")
+    except (json.JSONDecodeError, OSError):
+        return  # an unreadable marker is not evidence of a conflict
+    if previous is None or previous == dict(params or {}):
+        return
+    differing = sorted(
+        set(previous) | set(params or {}),
+        key=lambda k: (previous.get(k) == (params or {}).get(k), k),
+    )
+    shown = [f"{k}: {previous.get(k)!r} -> {(params or {}).get(k)!r}"
+             for k in differing if previous.get(k) != (params or {}).get(k)]
+    raise ColumnConflict(
+        f"{column_dir} already holds a column run with different parameters:\n    "
+        + "\n    ".join(shown)
+        + "\n  Resuming would mix the two configurations into one reported mean. "
+          "Run the new configuration under its own --tag or --out-root, or delete "
+          "the existing column if it is not worth keeping."
+    )
+
+
 def unit_complete(out_dir: Path) -> bool:
     """Did this unit run to completion?
 
@@ -284,6 +325,8 @@ def run_column(
         raise ValueError(f"setting {setting.id!r} declares no shapes; nothing to run")
 
     column_dir = out_root / tag / setting.id / cohort
+    if resume:
+        check_resumable(column_dir, params or {})
     log_dir = column_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -330,6 +373,10 @@ def run_column(
                 method_name=method_name, params=params, data_path=data_path,
                 config_name=config_name, extra=extra, episode_index=episode_index,
             )
+            # Never leave rc unbound: if the launch itself raises, the unit has to
+            # be reported as a failure rather than killing this worker thread with
+            # an UnboundLocalError and quietly leaving the rest of the queue unrun.
+            rc, launch_error = 1, None
             try:
                 # Tee to disk: session interruptions lose captured stdout.
                 with open(log_dir / f"{log_name}.log", "w") as fh:
@@ -337,18 +384,25 @@ def run_column(
                     fh.flush()
                     rc = subprocess.call(cmd, cwd=REPO_ROOT, env=_worker_env(gpu),
                                          stdout=fh, stderr=subprocess.STDOUT)
+            except OSError as exc:
+                launch_error = exc
             finally:
                 slots.put(gpu)
                 work.task_done()
             with lock:
                 done["n"] += 1
-                if rc != 0:
+                if launch_error is not None:
+                    failures.append(f"{log_name} (launch failed: {launch_error})")
+                elif rc != 0:
                     failures.append(f"{log_name} (rc={rc}, see {log_dir / (log_name + '.log')})")
-                # One line per shape is readable; one per episode is not.
+                # One line per shape is readable; one per episode is not. The failure
+                # count rides along because a column that is failing every unit
+                # otherwise looks like a column that is running unusually fast.
                 if verbose and (episode_index is None or done["n"] % 25 == 0
                                 or done["n"] == len(pending)):
-                    print(f"[done] {setting.id}/{cohort} {done['n']}/{len(pending)} "
-                          f"({(time.time() - t0) / 60:.1f} min)", flush=True)
+                    bad = f", {len(failures)} failed" if failures else ""
+                    print(f"[done] {setting.id}/{cohort} {done['n']}/{len(pending)}"
+                          f"{bad} ({(time.time() - t0) / 60:.1f} min)", flush=True)
 
     threads = [threading.Thread(target=worker, daemon=True) for _ in slot_list]
     for t in threads:
@@ -379,4 +433,15 @@ def run_column(
         wall_seconds=time.time() - t0,
     )
     (column_dir / "column_summary.json").write_text(json.dumps(result.to_dict(), indent=2))
+    if verbose and failures:
+        # A column whose every unit crashes finishes *faster* than a healthy one, so
+        # wall-clock is a misleading progress signal and the failure has to be said
+        # out loud. Three examples is enough to recognise a shared cause.
+        print(f"[FAIL] {setting.id}/{cohort} tag={tag}: {len(failures)}/{len(pending)} "
+              f"unit(s) failed in {result.wall_seconds / 60:.1f} min", flush=True)
+        for line in failures[:3]:
+            print(f"        {line}", flush=True)
+        if len(failures) > 3:
+            print(f"        ... and {len(failures) - 3} more; see "
+                  f"{column_dir / 'column_summary.json'}", flush=True)
     return result

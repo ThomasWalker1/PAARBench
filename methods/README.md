@@ -141,6 +141,30 @@ Off-the-shelf rules (`GridSearch`, `FixedParams`) are in
 **If your method has no hyperparameters, omit `selection` entirely.** The `params` in
 your `method.yaml` are used as-is at a cost of zero columns.
 
+### Which zero you are claiming
+
+Omitting `selection` is honest for a method that genuinely has nothing to tune, and
+misleading for one whose hyperparameters you simply wrote down. The leaderboard
+distinguishes the two, so pick the one that is true of your submission:
+
+| what the record says | what you are claiming |
+|---|---|
+| `0` | the method has no hyperparameters. Only the built-in `frozen` arm reports this. |
+| `0 (authored)` | it has hyperparameters, and they were **authored, not selected** — no column was run to choose them. |
+| `4`, `16`, … | a declared rule ran that many columns on the selection cohort. |
+| `unknown` | a rule is declared but was skipped (`--skip-selection`), so the tuning happened somewhere this record cannot price. |
+
+`0 (authored)` is a legitimate thing to submit — a method whose settings come from the
+original paper has not tuned on this benchmark, and that is worth stating. What it is
+not is the same claim as `frozen`'s `0`, which is why the column does not render them
+identically. If your authored values came from a search you ran elsewhere, say so in
+your `README.md`; the column can only price what the harness watched.
+
+To move from `0 (authored)` to a real cost, write the rule that would have chosen those
+values and let it run. That is also the cheapest bug-finder in the repo: running
+`EpochSelection` for real is what caught a HyperJEPA checkpoint transcribed from the
+wrong column of a results table (`docs/CHECKPOINTS.md`).
+
 ## 4. Check and run it
 
 ```bash

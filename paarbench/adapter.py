@@ -173,10 +173,6 @@ class BaseWeightGuard:
     """
 
     def __init__(self, module: torch.nn.Module, *owned_modules: torch.nn.Module):
-        # Kept as a compatibility view for existing adapters that use the frozen
-        # world-model snapshot for a method-specific restoration operation. New code
-        # should rely on restore()/modules rather than reach into this detail.
-        self._module = module
         self._modules = (module,) + tuple(owned_modules)
         self._snapshots = [
             {
@@ -185,12 +181,32 @@ class BaseWeightGuard:
             }
             for guarded in self._modules
         ]
-        self._snapshot = self._snapshots[0]
 
     @property
     def modules(self) -> tuple:
         """Modules this guard will restore, in reset-test probe order."""
         return self._modules
+
+    def reference(self, name: str, module_index: int = 0) -> torch.Tensor:
+        """The pretrained value of one guarded tensor, on the CPU.
+
+        Public because a method may legitimately need the pretrained value of an
+        individual weight rather than an all-or-nothing ``restore()`` -- CoTTA-style
+        stochastic restoration is the motivating case. Reaching into the guard's
+        internals for this instead is what broke ``restore_tta``: it read a private
+        ``_snapshot`` dict that became a list when owned modules were added for PAD,
+        and every unit of the next column died with an ``AttributeError``. Anything a
+        method needs is on this class, so that a change here is a change to a
+        declared interface.
+        """
+        snapshot = self._snapshots[module_index]
+        if name not in snapshot:
+            raise KeyError(
+                f"{name!r} is not a guarded tensor of module {module_index}. The guard "
+                f"snapshots state_dict() at construction, so a tensor installed later "
+                f"is not covered -- construct the guard after installing it."
+            )
+        return snapshot[name]
 
     def restore(self) -> None:
         with torch.no_grad():

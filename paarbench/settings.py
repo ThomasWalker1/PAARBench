@@ -52,8 +52,30 @@ class Setting:
     is. Declaring it on the setting means a caller never has to know that.
     """
 
+    inherits_selection_from: str = ""
+    """Take the hyperparameters this method already froze on another setting.
+
+    Some settings have no cohort to select on. A distribution-shift condition is the
+    clear case: its episodes are held-out by construction, so there is nothing to
+    split into a selection half and a test half, and running a selection rule there
+    would be tuning on the test set. Naming a source setting says the submission is
+    evaluated here *as selected elsewhere* -- which is the interesting question about
+    a shift condition anyway: does the chosen hyperparameter survive the shift.
+    """
+
     enabled: bool = True
     notes: str = ""
+
+    @property
+    def has_selection_cohort(self) -> bool:
+        """Is there a cohort a selection rule may legitimately read?
+
+        False when the declared selection seed is also a test seed. That is not a
+        misconfiguration to fix by picking another seed -- for a held-out-shape
+        condition there is no other seed -- it is a setting where selection has to
+        come from somewhere else.
+        """
+        return self.selection_seed not in self.test_seeds
 
     @property
     def base_path(self) -> Path:
@@ -121,6 +143,11 @@ PUSHOBJ_SHIFT = _register(
         # is the single declared cohort and it is scored as a test cohort.
         selection_seed=100,
         test_seeds=(100,),
+        # ...which means a selection rule run here would read the cohort it is then
+        # scored on. The harness refuses to do that (see has_selection_cohort), and
+        # a submission is instead evaluated with what it froze on pushobj -- the
+        # same base model, the same rule, shifted shapes.
+        inherits_selection_from="pushobj",
         n_evals=50,
         frozen_success={"test": 0.293},
         notes="Held-out shapes. Report as a condition on pushobj, not as its own environment.",

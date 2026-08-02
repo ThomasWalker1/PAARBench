@@ -55,3 +55,27 @@ def test_per_shape_frozen_reference_matches_the_recorded_mean():
 
 def test_null_adapter_satisfies_the_protocol():
     assert isinstance(adapter.NullAdapter(), adapter.TestTimeAdapter)
+
+
+def test_shift_condition_has_no_cohort_to_select_on():
+    """Its one cohort is a test cohort, so any rule run there tunes on the test set."""
+    shift = settings.get("pushobj_shift")
+    assert shift.selection_seed in shift.test_seeds
+    assert not shift.has_selection_cohort
+    assert shift.inherits_selection_from == "pushobj"
+    assert settings.get("pushobj").has_selection_cohort
+
+
+def test_selection_harness_refuses_a_setting_with_no_selection_cohort():
+    """Structural, not procedural: the rule never gets an object it could misuse."""
+    from paarbench.selection import CohortViolation, SelectionHarness
+
+    with pytest.raises(CohortViolation, match="also one of its test seeds"):
+        SelectionHarness(settings.get("pushobj_shift"), "any_method", tag="any_method")
+
+
+def test_every_setting_can_either_select_or_names_where_it_inherits_from():
+    """A setting with no selection cohort and no source would silently leak."""
+    for setting in settings.SETTINGS.values():
+        if not setting.has_selection_cohort:
+            assert setting.inherits_selection_from in settings.SETTINGS, setting.id

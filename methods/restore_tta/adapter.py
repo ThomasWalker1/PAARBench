@@ -416,7 +416,7 @@ class RestoreTTAAdapter:
                         "restore_tta optimizer owns a parameter outside the world "
                         "model, so it has no pretrained snapshot to restore."
                     )
-                reference = self._guard._snapshot[name].to(
+                reference = self._guard.reference(name).to(
                     device=parameter.device, dtype=parameter.dtype
                 )
                 if tuple(reference.shape) != tuple(parameter.shape):
