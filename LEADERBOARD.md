@@ -39,7 +39,7 @@ Held-out runs that did **not** follow a declared selection rule. A submission is
 
 ## pushobj_shift
 
-Test cohorts: seeds [100], 3 shapes, n=50 per shape per cohort. Selection cohort: seed 100 (never scored here).
+Test cohorts: seeds [100], 3 shapes, n=50 per shape per cohort. No selection cohort: every episode here is held out, so a submission is evaluated with the parameters it froze on `pushobj`.
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|

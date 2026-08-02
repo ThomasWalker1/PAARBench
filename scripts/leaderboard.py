@@ -136,10 +136,18 @@ def render(records, setting_id: str) -> str:
 
     out = [f"## {setting_id}", ""]
     if setting is not None:
+        # Printing "Selection cohort: seed 100" above a table whose test seed is also
+        # 100 reads as a leak. A setting in that position has no cohort to select on,
+        # which is exactly why it inherits its parameters from somewhere else.
+        where = (f"Selection cohort: seed {setting.selection_seed} (never scored here)."
+                 if setting.has_selection_cohort else
+                 f"No selection cohort: every episode here is held out, so a submission "
+                 f"is evaluated with the parameters it froze on "
+                 f"`{setting.inherits_selection_from}`.")
         out.append(
             f"Test cohorts: seeds {list(setting.test_seeds)}, "
             f"{len(setting.shapes)} shapes, n={setting.n_evals} per shape per cohort. "
-            f"Selection cohort: seed {setting.selection_seed} (never scored here)."
+            + where
         )
         out.append("")
 
