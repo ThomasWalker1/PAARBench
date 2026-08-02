@@ -72,5 +72,8 @@
   "success": 0.485,
   "n": 600,
   "complete": true,
-  "frozen_reference": 0.485
+  "frozen_reference": 0.485,
+  "selection_cost_basis": "none",
+  "submission": true,
+  "method_dir": "frozen"
 }

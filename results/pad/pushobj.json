@@ -123,5 +123,8 @@
   "success": 0.5533333333333333,
   "n": 600,
   "complete": true,
-  "frozen_reference": 0.485
+  "frozen_reference": 0.485,
+  "selection_cost_basis": "authored",
+  "submission": true,
+  "method_dir": "pad"
 }
