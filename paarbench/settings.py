@@ -260,7 +260,11 @@ POINTMAZE = _register(
         # every cohort and voids the sweep the split was chosen from. The extra power
         # comes from pooling six test cohorts, not from longer ones.
         n_evals=50,
-        frozen_success={"selection": 0.740, "test": 0.757},
+        # test:      GPU, episode-isolated, n=300 (6 cohorts x 50) -- the real reference.
+        # selection: CPU probe, n=50, and NOT re-measured on the GPU, because a selection
+        #            column is only ever launched by a selection rule and no method was
+        #            run here. Treat it as indicative; a rule running here re-measures it.
+        frozen_success={"selection": 0.740, "test": 0.777},
         model_epoch="3",
         goal_source="dset",
         always_episode_isolated=True,

@@ -1071,3 +1071,38 @@ artifact just removed. **The `frozen_success` values declared on the setting (0.
 selection / 0.757 test) are therefore still the CPU measurements and are pending the GPU
 re-run** — including the possibility that the re-cohorting's seed choice has to be
 revisited if the GPU numbers order the cohorts differently.
+
+### Owner decision: the reported suite is three settings
+
+2026-08-03. PointMaze is **not populated with methods**. PushObj, PushT and the PushObj
+shift condition are the suite.
+
+The frozen arm did run on the GPU before this was decided, and it is worth recording both
+for the number and for what it says about the earlier CPU configuration:
+
+| cohort | test0 | test1 | test2 | test3 | test5 | test6 | pooled |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| frozen (GPU, isolated, n=300) | 0.720 | 0.800 | 0.740 | 0.760 | 0.840 | 0.800 | **0.7767** |
+
+**21.5 minutes**, against ~8 hours for the same coverage on the CPU path — so the 16%
+per-episode figure measured earlier badly understated the switch, because what actually
+changed was queue depth, not the cost of one episode. Worth remembering the next time a
+per-episode microbenchmark is used to justify a configuration.
+
+The setting keeps `enabled=True` and stays runnable. The re-cohorting was real work, and
+the generalisations it forced are what let any non-pushing setting run at all: per-setting
+`goal_source`, `model_epoch`, `needs_mujoco`, `always_episode_isolated`, target paths that
+are not assumed to be PushObj's, and dataset-path precedence that does not follow a
+checkpoint into a 3 TB directory. Its declared `frozen_success["test"]` is now the GPU
+measurement; the selection-cohort value is still the CPU probe and is labelled as such,
+since a selection column is only ever launched by a rule and none ran here.
+
+`results/frozen/pointmaze.json` was moved to `eval_outputs/frozen/pointmaze/` so the
+leaderboard renders the reported suite rather than a fourth section holding one frozen row.
+
+**What this leaves standing.** The suite is 2 environments + 1 shift condition, one task
+family — §2.3's original complaint, unresolved. The reason to stop was that PointMaze at
+n=300 resolves success effects only ≥ +0.050 against a predecessor effect of +0.044, so its
+most likely contribution was a row of unseparated numbers, and three settings that
+discriminate beat four where one cannot. If task-family diversity later becomes the binding
+limitation, PointMaze is the cheapest route to it and is now one command from running.

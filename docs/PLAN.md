@@ -171,6 +171,23 @@ porting as a bug in §5, not as a cost of the port.
   > rather than three is where the extra power comes from, at no extra cost since they are
   > already measured.
   >
+  > **Owner decision (2026-08-03): stop here. The reported suite is three settings.**
+  > PushObj, PushT and the PushObj shift condition are enough; PointMaze is not populated
+  > with methods. It stays registered, enabled and runnable -- the re-cohorting was real
+  > work and the harness generalisations it forced (per-setting `goal_source`,
+  > `model_epoch`, `needs_mujoco`, `always_episode_isolated`, non-pushing target paths)
+  > are what let *any* future non-pushing setting run at all. What is not done is the
+  > method compute. A frozen GPU column exists (0.777, n=300, isolated) under
+  > `eval_outputs/frozen/pointmaze/`, so picking it up later starts from a reference
+  > rather than from nothing.
+  >
+  > *Reason to stop rather than finish:* the setting resolves success effects only
+  > >= +0.050 at n=300 against a predecessor effect of +0.044, so its most likely
+  > contribution was a row of unseparated numbers. Three settings that discriminate beat
+  > four where one cannot. Note the suite is still **2 environments + 1 shift condition**,
+  > one task family -- §2.3's original complaint stands and PointMaze remains the cheapest
+  > route to a second family if that limitation ever becomes the binding one.
+  >
   > *What this does not fix, and must be said in any writeup.* PointMaze remains **the least
   > discriminating setting in the suite**: 24.3% headroom against PushObj's 51.5%, PushT's
   > 65.0% and the shift condition's 70.7%. At n=300 its success SE is 0.0248, so it resolves
@@ -584,6 +601,9 @@ All five are answered. The three settled on 2026-08-01 reshaped the project enou
 3. **PointMaze: re-cohort or drop?** Re-cohorting costs eval time; dropping leaves 2 environments.
    - A *(2026-08-01)*: **neither yet — defer.** Set the infrastructure up so it can be added,
      decide later. Registered but disabled; base checkpoints not staged. See §2.3.
+   - A *(2026-08-03)*: **re-cohorted, then left unpopulated.** The reported suite is
+     three settings. The setting is runnable and has a frozen reference; no method has
+     been evaluated on it. See §2.3.
    - A *(2026-08-02)*: **re-cohort.** Selection seed 4, test seeds 0/1/2/3/5/6, seed 300
      retired; `iid_seed0` base staged at `model_epoch=3`; `enabled=True`. The split was
      chosen from a measured frozen sweep over eight candidate cohorts, not picked. §2.3
