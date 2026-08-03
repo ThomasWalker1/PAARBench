@@ -146,17 +146,26 @@ class SelectionHarness:
         not charged to the submission's selection sweep.
         """
         if self._frozen_selection is None:
+            # Run the reference in the *same* evaluation mode as the candidates. The two
+            # modes do not agree even for the frozen model on identical environment
+            # seeds -- 4% of pushobj episodes flip outcome, 9% on pointmaze -- so a
+            # batched reference paired against an isolated candidate folds that
+            # difference into the candidate's paired metrics, which is what a
+            # paired-harm objective then selects on. A distinct tag rather than a mode
+            # flag on the same one: a column directory holding both a batched
+            # `<shape>/episodes.jsonl` and isolated `ep<NNN>/` units would be read as
+            # duplicate episodes by schema.iter_units.
             self._frozen_selection = run_column(
                 self._setting,
                 "selection",
-                "frozen",
+                "frozen_isolated" if self._episode_isolation else "frozen",
                 method_name=None,
                 params={},
                 gpus=self._gpus,
                 n_evals=self._n_evals,
                 out_root=self._out_root,
                 data_path=self._data_path,
-                episode_isolation=False,
+                episode_isolation=self._episode_isolation,
                 per_gpu=self._per_gpu,
                 verbose=self._verbose,
             )
@@ -177,6 +186,9 @@ class SelectionHarness:
                                       self._setting.id, "selection")
         frozen_frame = load_column(frozen.out_dir, "frozen", self._setting.id,
                                    "selection")
+        # Labelled "frozen" regardless of which tag produced it: metrics.pair_with_frozen
+        # looks the reference up by that name, and the mode match is already guaranteed
+        # by _frozen_column having run it in the candidate's mode.
         if candidate_frame.empty or frozen_frame.empty:
             return result
         summary = metrics.summarize(

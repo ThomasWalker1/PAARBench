@@ -142,7 +142,10 @@ def main() -> int:
         # Frozen's zero is the only unqualified one on the board: it has nothing to
         # tune. Every other zero means something weaker -- see COST_BASIS below.
         cost_basis = "none"
-        isolation = False
+        # A setting may require isolation of every column, frozen included. On such a
+        # setting there is no batched/isolated axis at all, so no arm can be paired
+        # against a reference in the other mode.
+        isolation = setting.always_episode_isolated
     else:
         method = methods.load(args.method)
         problems = methods.validate(method)
@@ -158,7 +161,8 @@ def main() -> int:
             )
 
         name, display = method.name, method.display_name
-        isolation = method.requires_episode_isolation
+        isolation = (method.requires_episode_isolation
+                     or setting.always_episode_isolated)
         if isolation:
             print(f'[isolate] {name} declares requires_episode_isolation: one process '
                   f'per episode ({setting.n_evals} per shape). A batched cohort would '

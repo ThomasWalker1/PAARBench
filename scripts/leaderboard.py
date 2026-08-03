@@ -226,6 +226,11 @@ def _warn_unmatched_reference(setting_id: str, detail: dict, records) -> None:
     floor is a median paired distance of -0.01 and a 0.66% catastrophe rate) but on
     pointmaze it is not (-0.47 and 10.2%), so it must never be silent.
     """
+    setting = settings_mod.SETTINGS.get(setting_id)
+    if setting is not None and setting.always_episode_isolated:
+        # Every column here is isolated, frozen included, so pairing against "frozen" is
+        # already mode-matched. Warning would be a false positive.
+        return
     isolated = {r["method"] for r in records
                 if r.get("setting") == setting_id and r.get("episode_isolated")}
     unmatched = sorted(m for m in isolated

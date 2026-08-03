@@ -1018,3 +1018,56 @@ success-rate power limit above. The recommendation is to run one method first �
 the largest expected effect, ~3 h of CPU with the GPUs idle — and let it decide whether the
 setting discriminates before committing four more arms. HyperJEPA and Static LoRA
 additionally need PointMaze adapter checkpoints staged, which is not yet done.
+
+### The selection path had the same mode mismatch, and it does not change any submission
+
+2026-08-03. `SelectionHarness._frozen_column` hardcoded `episode_isolation=False`, so a
+paired-harm objective read metrics computed against a *batched* frozen reference while its
+candidates were episode-isolated. That is the same fault as on the leaderboard path, in the
+one place where it feeds a rule's decision rather than a reported number. Fixed: the
+reference now runs in the candidate's mode, under a distinct `frozen_isolated` tag — a
+column directory holding both a batched `<shape>/episodes.jsonl` and isolated `ep<NNN>/`
+units would be read as duplicate episodes by `schema.iter_units`.
+
+Restore TTA is the only submission whose rule reads those metrics. Its four cached
+candidate columns, rescored against both references:
+
+| p | pushobj: batched ref → matched | pusht: batched ref → matched |
+|---|---:|---:|
+| 0.001 | +0.086 → −0.133 | +1.276 → +1.379 |
+| **0.01** | **−0.316 → −0.427** | +0.229 → +0.351 |
+| 0.05 | −0.077 → −0.037 | +0.490 → +0.354 |
+| **0.1** | −0.051 → −0.046 | **+0.059 → +0.022** |
+
+Individual slopes move by up to 0.12, but **the argmin is unchanged on both settings** —
+p=0.01 on PushObj, p=0.1 on PushT. So the committed submissions stand and nothing needs
+re-running. Worth having checked rather than assumed: the rule's whole job is to pick an
+argmin, and it was picking it from a contaminated column.
+
+### PointMaze moves to the GPU
+
+Owner decision. `cpu_only` bundled two independent things and only one was justified.
+`CUDA_VISIBLE_DEVICES=""` was inherited from the predecessor to "keep the GPUs free for
+PushObj work" — box partitioning, not a requirement — and is removed; the world model now
+runs on the GPUs like every other setting. `MUJOCO_PY_FORCE_CPU=1` stays, moved under
+`needs_mujoco`, because software rendering is a property of the environment rather than of
+compute.
+
+Measured beforehand on one isolated episode: planning 41.6 s → 22.4 s on the GPU, but only
+99.0 s → 83.2 s overall, because ~57 s of each episode is per-process dataset and
+environment construction. That 16% understates the gain at scale, where the queue depth
+rather than a single episode sets wall clock.
+
+PointMaze also now declares `always_episode_isolated`, which is a better answer to the
+mode-mismatch problem than pairing carefully: every column there, frozen included, runs one
+process per episode, so the batched/isolated axis does not exist on the setting and cannot
+be mismatched. It is also what the predecessor did, for an independent measured reason —
+a batched n=50 maze column forks ~51 processes.
+
+All CPU-computed PointMaze data is archived under `eval_outputs/_superseded_cpu/`, the
+frozen record included. Changing device perturbs the numbers the same way changing mode
+does, so mixing a CPU frozen reference with a GPU arm would reintroduce exactly the
+artifact just removed. **The `frozen_success` values declared on the setting (0.740
+selection / 0.757 test) are therefore still the CPU measurements and are pending the GPU
+re-run** — including the possibility that the re-cohorting's seed choice has to be
+revisited if the GPU numbers order the cohorts differently.

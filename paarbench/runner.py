@@ -300,13 +300,11 @@ def _worker_env(gpu: str, setting: Optional[Setting] = None) -> Dict[str, str]:
         OPENBLAS_NUM_THREADS="1",
         NUMEXPR_NUM_THREADS="1",
     )
-    if setting is not None and setting.cpu_only:
-        # Hide the GPUs entirely rather than merely not using them: a CPU-bound maze
-        # column and a GPU-bound pushing column are separate resource pools and are
-        # meant to be runnable at the same time.
-        env["CUDA_VISIBLE_DEVICES"] = ""
-        env["MUJOCO_PY_FORCE_CPU"] = "1"
     if setting is not None and setting.needs_mujoco:
+        # Render in software. Independent of where torch runs -- the world model stays on
+        # the GPU the caller assigned -- and it keeps EGL out of the way of the CUDA
+        # context for a cost that is not the bottleneck.
+        env["MUJOCO_PY_FORCE_CPU"] = "1"
         # Every worker opens the same 30 GB observation HDF5 read-only, and HDF5's
         # default file locking makes concurrent opens fail with OSError(5) at high
         # worker counts while a single process is fine. Read-only access needs no lock.

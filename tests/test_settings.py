@@ -47,12 +47,18 @@ def test_pointmaze_is_recohorted_and_enabled():
 
 
 def test_pointmaze_declares_what_makes_it_not_a_pushing_task():
-    """These four were hardcoded in the runner, which is why it could never run."""
+    """These were hardcoded in the runner, which is why it could never run.
+
+    Note what is *not* here: the world model runs on the GPU like every other setting.
+    An earlier version carried a cpu_only flag inherited from the predecessor, whose
+    reason was partitioning the box between domains rather than any requirement. Only
+    MuJoCo's rendering stays in software, which travels with needs_mujoco.
+    """
     s = settings.get("pointmaze")
     assert s.model_epoch == "3"          # `latest` is a different, later model
     assert s.goal_source == "dset"       # no per-shape target file exists
     assert s.targets_path("umaze") is None
-    assert s.cpu_only and s.needs_mujoco
+    assert s.needs_mujoco and s.always_episode_isolated
     # A column is addressed by variant even with no shape dimension; an empty tuple
     # makes run_column refuse the setting outright.
     assert s.shapes and s.cohort_n == s.n_evals

@@ -79,22 +79,41 @@ class Setting:
     hardcoded in the column runner -- which is why no non-pushing setting could run.
     """
 
-    cpu_only: bool = False
-    """Plan on the CPU, with the GPUs left free.
+    always_episode_isolated: bool = False
+    """Run *every* column here one process per episode, whatever the method asks for.
 
-    PointMaze's env is MuJoCo and its planning is CPU-bound (~100 s/episode
-    single-threaded), so a PointMaze column is a *different resource pool* from a
-    PushObj one and the two can run concurrently. Declaring it here rather than at the
-    call site keeps that out of every driver.
+    Normally isolation is the method's decision (``requires_episode_isolation``). A
+    setting can override it upward, and PointMaze does, for two reasons that happen to
+    coincide:
+
+    - A batched job forks one environment worker per evaluated episode, so a single
+      batched n=50 PointMaze column is ~51 live processes. Several at once put hundreds
+      on the box; the predecessor measured this and ran every PointMaze column isolated
+      for exactly that reason.
+    - It removes the batched/isolated axis from this setting entirely. Since the two
+      modes do not agree episode-for-episode, a setting where every arm *and* the frozen
+      reference run isolated cannot suffer a mode mismatch at all -- which is a stronger
+      guarantee than remembering to pair correctly.
     """
 
     needs_mujoco: bool = False
-    """Source ``env.sh`` for this setting's workers.
+    """This setting's env is MuJoCo: source ``env.sh``, and render in software.
 
-    Without it mujoco-py never imports, PointMaze is never registered with gym, and the
-    vectorized env's worker dies as a ``BrokenPipeError`` from ``env/venv.py`` -- which
-    reads as an IPC bug rather than a missing shared library. Recorded here so the
-    failure cannot be rediscovered.
+    Three things follow from it, all of them about the environment rather than about
+    compute, which is why they travel together:
+
+    - ``env.sh`` must be sourced, or mujoco-py never imports, PointMaze is never
+      registered with gym, and the vectorized env's worker dies as a
+      ``BrokenPipeError`` from ``env/venv.py`` -- which reads as an IPC bug rather than
+      a missing shared library.
+    - ``MUJOCO_PY_FORCE_CPU=1``: render in software. This is independent of where torch
+      runs, and keeping it on the CPU avoids EGL-versus-CUDA context trouble for a
+      rendering cost that is not the bottleneck.
+    - ``HDF5_USE_FILE_LOCKING=FALSE``: every worker opens the same observation HDF5
+      read-only, and the default lock makes concurrent opens fail at high worker counts.
+
+    The world model itself runs wherever torch is pointed -- on the GPUs, like every
+    other setting.
     """
 
     enabled: bool = True
@@ -244,7 +263,7 @@ POINTMAZE = _register(
         frozen_success={"selection": 0.740, "test": 0.757},
         model_epoch="3",
         goal_source="dset",
-        cpu_only=True,
+        always_episode_isolated=True,
         needs_mujoco=True,
         dataset_path="/dev/shm/tw78/point_maze",
         notes=(
