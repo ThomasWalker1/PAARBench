@@ -56,3 +56,40 @@ def test_an_unreadable_summary_is_not_treated_as_evidence(tmp_path):
     (tmp_path / "col").mkdir()
     (tmp_path / "col" / "column_summary.json").write_text("{not json")
     runner.check_resumable(tmp_path / "col", {"steps": 10})
+
+
+# --- concurrent launchers -----------------------------------------------------
+#
+# Two processes writing one column interleave their episodes.jsonl writes, and the
+# result reads as a result rather than as corruption. It has happened twice: to the
+# Restore TTA retest, and to a determinism check investigating that retest, where the
+# interleaved data looked convincingly like planner nondeterminism.
+
+def test_a_column_can_be_claimed_once(tmp_path):
+    lock = runner._claim_column(tmp_path / "col")
+    assert lock is not None and lock.is_file()
+    assert lock.read_text().strip() == str(__import__("os").getpid())
+
+
+def test_a_second_claim_on_the_same_column_is_refused(tmp_path):
+    runner._claim_column(tmp_path / "col")
+    with pytest.raises(runner.ColumnBusy) as excinfo:
+        runner._claim_column(tmp_path / "col")
+    assert "still running" in str(excinfo.value)
+
+
+def test_a_stale_lock_says_so_rather_than_just_refusing(tmp_path):
+    """A lock left by a killed launcher must be distinguishable from a live one."""
+    col = tmp_path / "col"
+    col.mkdir()
+    # A pid that cannot exist: the kernel maximum is well below this.
+    (col / ".paarbench_column_lock").write_text("999999999")
+    with pytest.raises(runner.ColumnBusy) as excinfo:
+        runner._claim_column(col)
+    assert "stale" in str(excinfo.value)
+
+
+def test_claiming_a_column_releases_it_for_the_next_run(tmp_path):
+    lock = runner._claim_column(tmp_path / "col")
+    lock.unlink()
+    assert runner._claim_column(tmp_path / "col") is not None

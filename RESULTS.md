@@ -970,3 +970,51 @@ n=300, a catastrophe floor of 10.2%, and a distance floor of 12% of a typical di
 against a predecessor effect on this domain of +0.044. The re-cohorting was necessary and
 is done; whether the setting can support a claim is a separate question, and the honest
 answer right now is that it cannot support a catastrophe-rate one.
+
+### Correction: the 10.17% was the bug's size, not a floor
+
+Same day, a few hours later. The paragraph above says PointMaze's catastrophe rate is
+"indistinguishable from the harness's own evaluation mode". **That is wrong as written**,
+and the error is worth naming precisely because it is easy to repeat.
+
+Every number in the noise-floor table was measured as *frozen-isolated against
+frozen-batched* — i.e. it measures the size of the mismatched-pairing bug, which the same
+commit then fixed. It does not measure an irreducible floor. Once an arm is paired against
+a frozen column in its own mode, that artifact cancels by construction: frozen against
+frozen in the same mode is the identical computation.
+
+Confirmed rather than assumed. Re-running three PointMaze frozen episodes and comparing to
+the original probe, same mode, same seeds: **3 of 3 bit-identical**, replan counts included.
+So the planner is run-to-run deterministic here as it is on the pushing settings, §6's
+determinism assumption holds, and **there is no residual noise floor on any setting** now
+that pairing is mode-matched.
+
+*How the wrong conclusion got made.* A first attempt at this check appeared to show
+nondeterminism — 3 of 3 episodes differing, one with a completely different outcome. That
+was an artifact of launching the probe three times into one output directory, so
+`episodes.jsonl` carried interleaved writes from concurrent processes. The tell was the
+replan counts disagreeing (5 vs 8, 3 vs 4) while final distances matched: nondeterminism
+does not preserve an endpoint while changing the path to it. This is the same
+double-launch corruption diagnosed at the top of the day, committed while investigating
+it, which is an argument for the harness preventing it rather than for being careful.
+
+**What survives about PointMaze, and what does not:**
+
+| claim | status |
+|---|---|
+| 24.3% headroom, least discriminating setting in the suite | stands |
+| at n=300, resolves success effects ≥ +0.050 against a predecessor effect of +0.044 | stands |
+| catastrophe rate unusable / floor 10.17% | **withdrawn** — that was the pairing bug |
+| distance floor 12.1% of a typical distance | **withdrawn** — same reason |
+
+One genuine caveat replaces the withdrawn ones, and it is about comparability rather than
+validity: PointMaze's median final distance is 3.85 units against PushObj's ~120, and its
+trajectories diverge faster, so the same 2×-frozen catastrophe threshold is easier to cross
+here. A catastrophe rate on PointMaze is meaningful *within* the setting and should not be
+read against a PushObj one.
+
+**So method results on PointMaze are worth running after all**, subject to the
+success-rate power limit above. The recommendation is to run one method first — AdaJEPA,
+the largest expected effect, ~3 h of CPU with the GPUs idle — and let it decide whether the
+setting discriminates before committing four more arms. HyperJEPA and Static LoRA
+additionally need PointMaze adapter checkpoints staged, which is not yet done.

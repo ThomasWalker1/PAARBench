@@ -191,6 +191,50 @@ def check_resumable(column_dir: Path, params: Dict[str, Any]) -> None:
     )
 
 
+class ColumnBusy(Exception):
+    """Another process is already writing this column."""
+
+
+def _claim_column(column_dir: Path) -> Optional[Path]:
+    """Take an exclusive lock on a column, or refuse.
+
+    Two launchers pointed at one column interleave their writes into the same
+    ``episodes.jsonl`` files, and the result does not look like corruption -- it looks
+    like a *result*. It has now happened twice in this repo: once to the Restore TTA
+    retest, and once to a determinism check that was investigating the first, where the
+    interleaved data read as planner nondeterminism convincingly enough to be written
+    up before the replan counts gave it away.
+
+    The lock is a file created with ``O_EXCL`` holding the owning pid, and it is removed
+    on the way out. A lock left behind by a killed process is reported with its pid so
+    the next person can check whether it is alive rather than guess.
+    """
+    column_dir.mkdir(parents=True, exist_ok=True)
+    lock = column_dir / ".paarbench_column_lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        try:
+            owner = lock.read_text().strip()
+        except OSError:
+            owner = "unknown"
+        alive = ""
+        if owner.isdigit():
+            try:
+                os.kill(int(owner), 0)
+                alive = " (that process is still running)"
+            except (ProcessLookupError, PermissionError):
+                alive = " (that pid is gone; the lock is stale, delete it)"
+        raise ColumnBusy(
+            f"{column_dir} is locked by pid {owner}{alive}. Two processes writing one "
+            f"column interleave their episodes.jsonl writes, and the result reads as a "
+            f"result rather than as corruption. Wait for it, or use a different --tag."
+        ) from None
+    with os.fdopen(fd, "w") as fh:
+        fh.write(str(os.getpid()))
+    return lock
+
+
 def unit_complete(out_dir: Path) -> bool:
     """Did this unit run to completion?
 
@@ -380,6 +424,29 @@ def run_column(
     column_dir = out_root / tag / setting.id / cohort
     if resume:
         check_resumable(column_dir, params or {})
+    lock = _claim_column(column_dir)
+    try:
+        return _run_column_locked(
+            setting, cohort, tag, column_dir,
+            method_name=method_name, params=params, gpus=gpus, n_evals=n_evals,
+            data_path=data_path, config_name=config_name, extra=extra,
+            resume=resume, verbose=verbose, episode_isolation=episode_isolation,
+            per_gpu=per_gpu, seed=seed,
+        )
+    finally:
+        if lock is not None:
+            lock.unlink(missing_ok=True)
+
+
+def _run_column_locked(
+    setting: Setting,
+    cohort: str,
+    tag: str,
+    column_dir: Path,
+    *,
+    method_name, params, gpus, n_evals, data_path, config_name, extra,
+    resume, verbose, episode_isolation, per_gpu, seed,
+) -> ColumnResult:
     log_dir = column_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
