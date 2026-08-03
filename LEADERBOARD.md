@@ -29,14 +29,6 @@ Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed 
 
 Sort by whichever column matters for your use. There is deliberately no overall rank: a method can be worse on success and better on catastrophe rate and latency, and collapsing that to one number destroys the comparison.
 
-### Ablations (not submissions)
-
-Held-out runs that did **not** follow a declared selection rule. A submission is a method together with the rule it declares, so these are not entries and are not ranked against the table above — they are evidence about the protocol itself. Same cohorts, same n, same metrics.
-
-| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Restore TTA, success-selected (p=0.001) — superseded selection objective | 0.687 | 0.019 | +0.198 | +7 [+3, +16] | 14.6% [10%, 20%] | +0.60 [+0.18, +1.31] | 58% / +293 | 0.659 | 177 | 600 | 4 |
-
 ## pushobj_shift
 
 Test cohorts: seeds [100], 3 shapes, n=50 per shape per cohort. No selection cohort: every episode here is held out, so a submission is evaluated with the parameters it froze on `pushobj`.
@@ -86,11 +78,3 @@ Test cohorts: seeds [200, 400], 3 shapes, n=50 per shape per cohort. Selection c
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
 Sort by whichever column matters for your use. There is deliberately no overall rank: a method can be worse on success and better on catastrophe rate and latency, and collapsing that to one number destroys the comparison.
-
-### Ablations (not submissions)
-
-Held-out runs that did **not** follow a declared selection rule. A submission is a method together with the rule it declares, so these are not entries and are not ranked against the table above — they are evidence about the protocol itself. Same cohorts, same n, same metrics.
-
-| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Restore TTA, success-selected (p=0.001) — superseded selection objective | 0.377 | 0.028 | +0.020 | +16 [+4, +29] | 16.4% [11%, 22%] | +0.96 [+0.31, +1.64] | 61% / +212 | 0.661 | 177 | 300 | 4 |

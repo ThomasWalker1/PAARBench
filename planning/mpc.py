@@ -88,7 +88,7 @@ class MPCPlanner(BasePlanner):
     def _dump_episode_rows(self, planner_seconds, adapt_seconds, adapt_peak_mb):
         """Append one row per episode for this replan to ``episodes.jsonl``.
 
-        The canonical per-episode/per-replan record.  Everything the §4 metrics need
+        The canonical per-episode/per-replan record. Everything the benchmark metrics need
         lives here and nowhere else: ``logs.json`` keeps only means, and a mean is the
         one summary that must not be used on a heavy-tailed distance.
 

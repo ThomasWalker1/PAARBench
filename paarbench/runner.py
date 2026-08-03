@@ -108,6 +108,10 @@ class ColumnResult:
                 else self.paired_metrics.compounding_slope)
 
     def to_dict(self) -> dict:
+        try:
+            out_dir = str(self.out_dir.relative_to(REPO_ROOT))
+        except ValueError:
+            out_dir = str(self.out_dir)
         return {
             "setting": self.setting,
             "cohort": self.cohort,
@@ -121,7 +125,7 @@ class ColumnResult:
             "complete": self.complete,
             "failures": self.failures,
             "wall_seconds": round(self.wall_seconds, 1),
-            "out_dir": str(self.out_dir),
+            "out_dir": out_dir,
             "paired_metrics": (None if self.paired_metrics is None
                                else self.paired_metrics.to_dict()),
         }
@@ -246,69 +250,23 @@ def unit_complete(out_dir: Path) -> bool:
     return read_success(Path(out_dir) / "logs.json") is not None
 
 
-_SOURCED_ENV: Dict[str, Dict[str, str]] = {}
-
-
-def _sourced_env() -> Dict[str, str]:
-    """The environment ``env.sh`` produces, cached for the process.
-
-    Sourced rather than reimplemented so this cannot drift from the interactive path.
-    ``env.sh`` is what puts MuJoCo and the staged GL libraries on ``LD_LIBRARY_PATH``;
-    without it mujoco-py never imports, PointMaze is never registered with gym, and the
-    vectorized env's worker dies as a ``BrokenPipeError`` that reads like an IPC bug.
-    Fail loudly here instead, since that is a 20-minute mystery otherwise.
-    """
-    if "env" not in _SOURCED_ENV:
-        script = REPO_ROOT / "env.sh"
-        proc = subprocess.run(
-            ["bash", "-c", f'source "{script}" >/dev/null 2>&1; env -0'],
-            capture_output=True, check=True,
-        )
-        env = {}
-        for entry in proc.stdout.split(b"\0"):
-            if entry:
-                key, _, value = entry.decode("utf-8", "replace").partition("=")
-                env[key] = value
-        if "mujoco210" not in env.get("LD_LIBRARY_PATH", ""):
-            raise RuntimeError(
-                f"{script} did not put MuJoCo on LD_LIBRARY_PATH. A setting declaring "
-                f"needs_mujoco cannot run without it; check MUJOCO_PY_MUJOCO_PATH and "
-                f"that .local-deps is staged (it carries the GL headers mujoco-py "
-                f"compiles against). See docs/CHECKPOINTS.md."
-            )
-        _SOURCED_ENV["env"] = env
-    return dict(_SOURCED_ENV["env"])
-
-
-def _worker_env(gpu: str, setting: Optional[Setting] = None) -> Dict[str, str]:
+def _worker_env(gpu: str) -> Dict[str, str]:
     # Each job forks one env worker per evaluated episode, so concurrent jobs
     # oversubscribe the box badly unless the GPU-bound torch math is held to one
-    # thread per process. env.sh's defaults are inlined so a column does not depend
-    # on the caller having sourced it.
-    base = (_sourced_env() if setting is not None and setting.needs_mujoco
-            else dict(os.environ))
+    # thread per process.
+    base = dict(os.environ)
     env = dict(
         base,
-        DATASET_DIR=base.get("DATASET_DIR", "/mnt/richb/tw78/data/datasets"),
+        DATASET_DIR=base.get("DATASET_DIR", str(REPO_ROOT / "data")),
         WANDB_MODE=base.get("WANDB_MODE", "offline"),
         CUDA_VISIBLE_DEVICES=gpu,
         SDL_VIDEODRIVER="dummy",
         PYTHONUNBUFFERED="1",
-        D4RL_SUPPRESS_IMPORT_ERROR="1",
         OMP_NUM_THREADS="1",
         MKL_NUM_THREADS="1",
         OPENBLAS_NUM_THREADS="1",
         NUMEXPR_NUM_THREADS="1",
     )
-    if setting is not None and setting.needs_mujoco:
-        # Render in software. Independent of where torch runs -- the world model stays on
-        # the GPU the caller assigned -- and it keeps EGL out of the way of the CUDA
-        # context for a cost that is not the bottleneck.
-        env["MUJOCO_PY_FORCE_CPU"] = "1"
-        # Every worker opens the same 30 GB observation HDF5 read-only, and HDF5's
-        # default file locking makes concurrent opens fail with OSError(5) at high
-        # worker counts while a single process is fine. Read-only access needs no lock.
-        env["HDF5_USE_FILE_LOCKING"] = "FALSE"
     return env
 
 
@@ -340,8 +298,8 @@ def build_command(
         str(REPO_ROOT / ".venv/bin/python"), "plan.py",
         "--config-name", config_name,
         f"ckpt_base_path={setting.base_path}",
-        f"model_epoch={setting.model_epoch}",
-        f"goal_source={setting.goal_source}",
+        "model_epoch=latest",
+        "goal_source=segments",
         "+wandb_logging=false",
         f"hydra.run.dir={out_dir}",
         f"seed={seed}",
@@ -349,12 +307,7 @@ def build_command(
         "planner.sub_planner.opt_steps=100",
         "decode_for_viz=false",
     ]
-    # Only settings whose goals come from staged per-shape target files get a target
-    # path. A `goal_source: dset` setting draws goals from the dataset, and handing it a
-    # fabricated pushobj-shaped path is how PointMaze failed to run at all.
-    targets = setting.targets_path(shape)
-    if targets is not None:
-        cmd.append(f"+eval_data_path={targets}")
+    cmd.append(f"+eval_data_path={setting.targets_path(shape)}")
     if episode_index is None:
         cmd.append(f"n_evals={n_evals}")
     else:
@@ -500,7 +453,7 @@ def _run_column_locked(
                 with open(log_dir / f"{log_name}.log", "w") as fh:
                     fh.write(" ".join(cmd) + "\n\n")
                     fh.flush()
-                    rc = subprocess.call(cmd, cwd=REPO_ROOT, env=_worker_env(gpu, setting),
+                    rc = subprocess.call(cmd, cwd=REPO_ROOT, env=_worker_env(gpu),
                                          stdout=fh, stderr=subprocess.STDOUT)
             except OSError as exc:
                 launch_error = exc

@@ -33,11 +33,6 @@ ALL_MODEL_KEYS = [
 
 
 def load_ckpt(snapshot_path, device):
-    # Instantiated for its side effect: the checkpoint pickles encoder objects whose
-    # class must be importable and whose torch.hub cache must be warm before unpickling.
-    from models.dino import DinoV2Encoder
-
-    _ = DinoV2Encoder("dinov2_vits14", "x_norm_patchtokens")
     with Path(snapshot_path).open("rb") as f:
         payload = torch.load(f, map_location=device)
     result = {}

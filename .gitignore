@@ -7,13 +7,11 @@ __pycache__/
 
 # Environments
 /.venv/
-/.local-deps/
 .env
 .env.*
 
-# Large artifacts staged into the repo, never committed.  Base checkpoints are
-# pinned by hash in PROVENANCE.md and fetched rather than tracked; see
-# docs/PLAN.md §2.4 for why they are not yet distributable at all.
+# Large artifacts staged into the repo, never committed. Expected paths and hashes
+# are documented in docs/CHECKPOINTS.md.
 /checkpoints/
 /data/
 *.pth

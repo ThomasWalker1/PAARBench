@@ -3,16 +3,15 @@
 A *setting* is a base world model plus an episode distribution.  A *cohort* is a
 disjoint set of episodes within a setting, identified by an evaluation seed.  The
 split between the selection cohort and the test cohorts is declared here, by the
-benchmark, and never by a submission — that separation is the whole point of the
-scoring protocol in docs/PLAN.md §3, and M3 makes the harness enforce it.
+benchmark, and never by a submission. The harness enforces that separation.
 
 A *column* is one (setting, cohort) evaluation: every shape in the setting, at one
 seed, for one method configuration.  Success rate for a column is the unweighted
 mean over shapes because every shape contributes the same ``n_evals``.
 
-``frozen_success`` records the do-nothing reference measured by the predecessor
-project.  It is a regression target, not an input to any metric: every metric in
-§4 is computed against a frozen column re-run alongside the method.
+``frozen_success`` records the do-nothing reference. It is a regression target, not an
+input to any metric: every metric is computed against a frozen column re-run alongside
+the method.
 """
 
 from __future__ import annotations
@@ -63,62 +62,6 @@ class Setting:
     a shift condition anyway: does the chosen hyperparameter survive the shift.
     """
 
-    model_epoch: str = "latest"
-    """Which base checkpoint epoch to plan with.
-
-    ``latest`` for the pushing bases. PointMaze's released base is selected at epoch 3,
-    and ``latest`` there is a *different, later* model -- so this is not cosmetic.
-    """
-
-    goal_source: str = "segments"
-    """Where the planner gets its goals.
-
-    ``segments`` reads a per-shape target file staged under ``data/``; ``dset`` draws
-    goals from the training dataset and needs no target file at all. This is the axis on
-    which the pushing settings and PointMaze genuinely differ, and it was previously
-    hardcoded in the column runner -- which is why no non-pushing setting could run.
-    """
-
-    always_episode_isolated: bool = False
-    """Run *every* column here one process per episode, whatever the method asks for.
-
-    Normally isolation is the method's decision (``requires_episode_isolation``). A
-    setting can override it upward, and PointMaze does, for two reasons that happen to
-    coincide:
-
-    - A batched job forks one environment worker per evaluated episode, so a single
-      batched n=50 PointMaze column is ~51 live processes. Several at once put hundreds
-      on the box; the predecessor measured this and ran every PointMaze column isolated
-      for exactly that reason.
-    - It removes the batched/isolated axis from this setting entirely. Since the two
-      modes do not agree episode-for-episode, a setting where every arm *and* the frozen
-      reference run isolated cannot suffer a mode mismatch at all -- which is a stronger
-      guarantee than remembering to pair correctly.
-    """
-
-    needs_mujoco: bool = False
-    """This setting's env is MuJoCo: source ``env.sh``, and render in software.
-
-    Three things follow from it, all of them about the environment rather than about
-    compute, which is why they travel together:
-
-    - ``env.sh`` must be sourced, or mujoco-py never imports, PointMaze is never
-      registered with gym, and the vectorized env's worker dies as a
-      ``BrokenPipeError`` from ``env/venv.py`` -- which reads as an IPC bug rather than
-      a missing shared library.
-    - ``MUJOCO_PY_FORCE_CPU=1``: render in software. This is independent of where torch
-      runs, and keeping it on the CPU avoids EGL-versus-CUDA context trouble for a
-      rendering cost that is not the bottleneck.
-    - ``HDF5_USE_FILE_LOCKING=FALSE``: every worker opens the same observation HDF5
-      read-only, and the default lock makes concurrent opens fail at high worker counts.
-
-    The world model itself runs wherever torch is pointed -- on the GPUs, like every
-    other setting.
-    """
-
-    enabled: bool = True
-    notes: str = ""
-
     @property
     def has_selection_cohort(self) -> bool:
         """Is there a cohort a selection rule may legitimately read?
@@ -159,16 +102,8 @@ class Setting:
             f"declared: selection={self.selection_seed}, test={list(self.test_seeds)}"
         )
 
-    def targets_path(self, shape: str):
-        """The per-shape goal file, or ``None`` when this setting does not use one.
-
-        ``goal_source: dset`` settings take their goals from the dataset, so there is no
-        target file to point at -- and passing a made-up one is how PointMaze failed
-        before: the path was built unconditionally from ``data/pushobj_eval/``, which is
-        both the wrong directory and the wrong idea for a maze.
-        """
-        if self.goal_source != "segments":
-            return None
+    def targets_path(self, shape: str) -> Path:
+        """Return the staged goal file for one shape."""
         return REPO_ROOT / "data" / "pushobj_eval" / f"val_{shape}" / "plan_targets.pkl"
 
 
@@ -190,7 +125,6 @@ PUSHOBJ = _register(
         n_evals=50,
         frozen_success={"selection": 0.490, "test": 0.485},
         frozen_success_by_shape={"T": 0.50, "L": 0.44, "Z": 0.60, "+": 0.42},
-        notes="Primary setting. n=200 selection, n=600 test (3 cohorts x 200).",
     )
 )
 
@@ -199,8 +133,7 @@ PUSHOBJ_SHIFT = _register(
         id="pushobj_shift",
         base="pushobj_shape_shift",
         shapes=("I", "small_tee", "square"),
-        # A distribution-shift *condition* on the pushobj base, not a fourth
-        # environment (docs/PLAN.md §2.3).  Held-out shapes were never trained on,
+        # A distribution-shift condition on the pushobj base. Held-out shapes were never trained on,
         # so there is no selection/test distinction to draw within them; seed 100
         # is the single declared cohort and it is scored as a test cohort.
         selection_seed=100,
@@ -212,7 +145,6 @@ PUSHOBJ_SHIFT = _register(
         inherits_selection_from="pushobj",
         n_evals=50,
         frozen_success={"test": 0.293},
-        notes="Held-out shapes. Report as a condition on pushobj, not as its own environment.",
     )
 )
 
@@ -230,57 +162,9 @@ PUSHT = _register(
         # placeholder, never substituted. Without an override the dataset call dies
         # with a bare FileNotFoundError naming only `env.dataset`. It reads the same
         # pushobj_multishape statistics as the pushobj base does.
-        dataset_path="/mnt/richb/tw78/data/hyperjepa_pushobj/pushobj_multishape",
-        notes=(
-            "Frozen headroom is very unevenly spread across shapes (0.640/0.260/0.180); "
-            "always report per-shape alongside the mean."
-        ),
+        dataset_path=str(REPO_ROOT / "data" / "pushobj_multishape"),
     )
 )
-
-POINTMAZE = _register(
-    Setting(
-        id="pointmaze",
-        base="pointmaze/scratch_resnet_global_cos1e-1_iid_seed0",
-        # One environment, no shape dimension -- but a column is still addressed by
-        # variant, so the maze is a single named variant rather than an empty tuple.
-        # An empty `shapes` made run_column raise "declares no shapes; nothing to run",
-        # which is the correct behaviour for a misconfigured setting and was the
-        # immediate blocker here.
-        shapes=("umaze",),
-        # Re-cohorted 2026-08-02 (docs/PLAN.md §2.3, RESULTS.md). Seed 300 is retired:
-        # measured over eight candidate cohorts it is the *easiest* of them (frozen
-        # 0.880 against a pooled 0.770), and a selection cohort easier than test
-        # flatters every candidate. Seed 4 (0.740) sits marginally harder than the
-        # pooled test cohorts (0.757), which is the safe direction.
-        selection_seed=4,
-        test_seeds=(0, 1, 2, 3, 5, 6),
-        # Unchanged at 50: the environment seed of episode i is
-        # `seed * eval_episode_total + i + 1`, so changing n_evals silently redraws
-        # every cohort and voids the sweep the split was chosen from. The extra power
-        # comes from pooling six test cohorts, not from longer ones.
-        n_evals=50,
-        # test:      GPU, episode-isolated, n=300 (6 cohorts x 50) -- the real reference.
-        # selection: CPU probe, n=50, and NOT re-measured on the GPU, because a selection
-        #            column is only ever launched by a selection rule and no method was
-        #            run here. Treat it as indicative; a rule running here re-measures it.
-        frozen_success={"selection": 0.740, "test": 0.777},
-        model_epoch="3",
-        goal_source="dset",
-        always_episode_isolated=True,
-        needs_mujoco=True,
-        dataset_path="/dev/shm/tw78/point_maze",
-        notes=(
-            "Second task family. The least discriminating setting in the suite: 24.3% "
-            "headroom against pushobj's 51.5%, and at n=300 it resolves only success "
-            "effects >= +0.050 -- the predecessor's own PointMaze effect was +0.044, "
-            "just under that. Report the continuous metrics here; do not read an "
-            "unseparated success ordering as a result. Needs the optional `pointmaze` "
-            "extra (mujoco-py, d4rl) and `.local-deps` staged for GL headers."
-        ),
-    )
-)
-
 
 def get(setting_id: str) -> Setting:
     try:
@@ -289,6 +173,4 @@ def get(setting_id: str) -> Setting:
         raise KeyError(
             f"unknown setting {setting_id!r}; known: {sorted(SETTINGS)}"
         ) from None
-    if not setting.enabled:
-        raise ValueError(f"setting {setting_id!r} is disabled: {setting.notes}")
     return setting

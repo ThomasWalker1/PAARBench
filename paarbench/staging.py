@@ -2,9 +2,8 @@
 
 The datasets live on an SMB mount that goes down under a large fan-out (one eval
 process per GPU slot, each reading normalization statistics at startup).  The
-predecessor project worked around this with per-config ``dataset_data_path``
-overrides; docs/PLAN.md §9 asks for it in the harness instead, so every driver
-gets the same behaviour without remembering to pass a flag.
+The harness applies ``dataset_data_path`` consistently so every driver gets the
+same behaviour without remembering to pass a flag.
 
 A stage is validated against a manifest of the source tree -- relative path, size
 and mtime per file -- rather than a hash of 2 GB of tensors, because a full hash
@@ -135,13 +134,8 @@ def resolve_dataset_path(setting, tmpfs_root=None, stage: bool = True,
     """Where a setting's dataset should be read from, staged if asked.
 
     A path **declared on the setting wins** over the one baked into the checkpoint.
-    The declaration is a deliberate statement by the benchmark; the checkpoint's path
-    is whatever a third party happened to train against, and it can be actively
-    dangerous to follow. PointMaze's base records
-    ``/mnt/.../datasets/point_maze``, whose ``obses/`` subtree is ~3 TB of per-frame
-    tensors -- staging that would try to copy 3 TB into tmpfs. Planning needs only the
-    three small metadata tensors (~10 MB), so the setting declares a directory holding
-    exactly those.
+    The declaration is controlled by the benchmark, while a checkpoint may contain a
+    machine-specific or stale training path.
 
     Returns ``None`` when neither is usable, which leaves ``dataset_data_path`` unset
     so the config decides.

@@ -236,8 +236,7 @@ class PlanWorkspace:
         actions = []
         observations = []
         
-        if self.goal_source in ("random_state", "point_maze_cell_distance",
-                                "point_maze_bfs"):
+        if self.goal_source == "random_state":
             # update env config from val trajs
             observations, states, actions, env_info = (
                 self.sample_traj_segment_from_dset(traj_len=2)
@@ -245,30 +244,9 @@ class PlanWorkspace:
             self.env.update_env(env_info)
 
             # sample random states
-            if self.goal_source == "point_maze_bfs":
-                # BFS-distance-controlled reachable goals for held-out-layout eval.
-                rand_init_state, rand_goal_state = (
-                    self.env.sample_bfs_distance_init_goal_states(
-                        self.eval_seed,
-                        self.cfg_dict.get("point_maze_min_cell_distance", 3),
-                        self.cfg_dict.get("point_maze_max_cell_distance", 5),
-                        self.cfg_dict.get("point_maze_cell_jitter", 0.2),
-                    )
-                )
-            elif self.goal_source == "point_maze_cell_distance":
-                rand_init_state, rand_goal_state = (
-                    self.env.sample_distant_cell_init_goal_states(
-                        self.eval_seed,
-                        self.cfg_dict.get("point_maze_min_cell_distance", 3.0),
-                        self.cfg_dict.get("point_maze_cell_jitter", 0.25),
-                    )
-                )
-            else:
-                rand_init_state, rand_goal_state = self.env.sample_random_init_goal_states(
-                    self.eval_seed
-                )
-            if self.env_name == "deformable_env": # take rand init state from dset for deformable envs
-                rand_init_state = np.array([x[0] for x in states])
+            rand_init_state, rand_goal_state = self.env.sample_random_init_goal_states(
+                self.eval_seed
+            )
 
             obs_0, state_0 = self.env.prepare(self.eval_seed, rand_init_state)
             obs_g, state_g = self.env.prepare(self.eval_seed, rand_goal_state)
@@ -552,12 +530,7 @@ def planning_main(cfg_dict):
     with open(os.path.join(model_path, "hydra.yaml"), "r") as f:
         model_cfg = OmegaConf.load(f)
 
-    # Optionally relocate the training dataset. The checkpoint records an absolute
-    # `data_path`, which for the PointMaze bases is an SMB mount. Only small metadata
-    # tensors are read from it (observations come from `hdf5_path`), but every eval
-    # process loads them at startup, and a large fan-out is enough to take the mount
-    # down. Staging those files locally and pointing here avoids that without editing
-    # checkpoints. Affects only where data is read from, never what is read.
+    # Optionally relocate the training dataset without editing checkpoint metadata.
     data_path_override = cfg_dict.get("dataset_data_path", None)
     if data_path_override:
         model_cfg.env.dataset.data_path = str(data_path_override)
@@ -583,26 +556,12 @@ def planning_main(cfg_dict):
     eval_env_name = cfg_dict.get("evaluation_env_name") or model_cfg.env.name
     eval_env_args = cfg_dict.get("evaluation_env_args", model_cfg.env.args)
     eval_env_kwargs = cfg_dict.get("evaluation_env_kwargs", model_cfg.env.kwargs)
-    # use dummy vector env for wall and deformable envs
-    if eval_env_name == "wall" or eval_env_name == "deformable_env":
-        from env.serial_vector_env import SerialVectorEnv
-        env = SerialVectorEnv(
-            [
-                gym.make(
-                    eval_env_name, *eval_env_args, **eval_env_kwargs
-                )
-                for _ in range(cfg_dict["n_evals"])
-            ]
-        )
-    else:
-        env = SubprocVectorEnv(
-            [
-                lambda: gym.make(
-                    eval_env_name, *eval_env_args, **eval_env_kwargs
-                )
-                for _ in range(cfg_dict["n_evals"])
-            ]
-        )
+    env = SubprocVectorEnv(
+        [
+            lambda: gym.make(eval_env_name, *eval_env_args, **eval_env_kwargs)
+            for _ in range(cfg_dict["n_evals"])
+        ]
+    )
 
     plan_workspace = PlanWorkspace(
         cfg_dict=cfg_dict,

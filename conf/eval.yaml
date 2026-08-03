@@ -26,8 +26,6 @@ eval_episode_index: null
 eval_episode_total: null
 goal_source: dset
 goal_H: 25
-point_maze_min_cell_distance: 3.0
-point_maze_cell_jitter: 0.25
 n_plot_samples: 10
 decode_for_viz: true
 num_start_frames: 1

@@ -135,8 +135,8 @@ def render(records, setting_id: str) -> str:
     rows.sort(key=lambda r: (r.get("complete", False),
                              r["success"] if r.get("success") is not None else -1),
               reverse=True)
-    # A submission is a method together with its *declared* selection rule (PLAN.md
-    # §3). A run that departed from that rule is evidence about the protocol, not an
+    # A submission is a method together with its declared selection rule. A run that
+    # departed from that rule is evidence about the protocol, not an
     # entry -- so it is reported, in its own table, and never mixed into the ranking.
     submissions = [r for r in rows if r.get("submission", True)]
     ablations = [r for r in rows if not r.get("submission", True)]
@@ -222,15 +222,8 @@ def _warn_unmatched_reference(setting_id: str, detail: dict, records) -> None:
     """Say so when a row could not be paired against its own evaluation mode.
 
     An episode-isolated arm scored against the *batched* frozen column carries the
-    evaluation-mode difference inside its method effect. On pushobj that is small (the
-    floor is a median paired distance of -0.01 and a 0.66% catastrophe rate) but on
-    pointmaze it is not (-0.47 and 10.2%), so it must never be silent.
+    evaluation-mode difference inside its method effect, so it must never be silent.
     """
-    setting = settings_mod.SETTINGS.get(setting_id)
-    if setting is not None and setting.always_episode_isolated:
-        # Every column here is isolated, frozen included, so pairing against "frozen" is
-        # already mode-matched. Warning would be a false positive.
-        return
     isolated = {r["method"] for r in records
                 if r.get("setting") == setting_id and r.get("episode_isolated")}
     unmatched = sorted(m for m in isolated

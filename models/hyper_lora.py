@@ -456,7 +456,7 @@ def fold_hyper_tensors(
     ``apply_hyper_tensors`` routes every planner rollout through the LoRA path
     (``y = Wx + scale * B(Ax)``), which costs two extra matmuls per adapted linear per
     call.  With a 100-step GD-MPC inner loop that overhead dominates the adaptation
-    saving (RESULTS §12: +0.80 s/replan, making HyperJEPA *slower* end to end than the
+    saving (+0.80 s/replan, making HyperJEPA *slower* end to end than the
     online baseline it beats on the adaptation component).
 
     Since ``y = Wx + scale * x(BA)^T = x(W + scale*BA)^T``, the correction can be folded

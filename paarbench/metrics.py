@@ -293,7 +293,7 @@ def reference_for(frame: pd.DataFrame, method: str, setting: str) -> str:
 
     An episode-isolated arm must be paired against a frozen column run
     *episode-isolated too*. The two modes do not agree: on pushobj no frozen episode is
-    bit-identical across them and 4% flip outcome, and on pointmaze 9% flip. Pairing an
+    bit-identical across them and 4% flip outcome. Pairing an
     isolated arm against the batched frozen column folds that difference into the method
     effect. Mode-matched, it cancels exactly -- the reference is then the same
     computation as the arm's own baseline.

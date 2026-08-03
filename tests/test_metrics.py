@@ -196,7 +196,7 @@ def test_summarize_of_frozen_has_no_self_comparison():
 #
 # Batched and episode-isolated evaluation are not interchangeable, even for the frozen
 # model on identical environment seeds: measured on pushobj, no frozen episode is
-# bit-identical across modes and 4% flip outcome; on pointmaze 9% flip. So an isolated
+# bit-identical across modes and 4% flip outcome. So an isolated
 # arm paired against the batched frozen column carries the mode difference inside its
 # method effect. Mode-matched, it cancels.
 

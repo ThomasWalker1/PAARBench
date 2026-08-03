@@ -300,12 +300,6 @@ def validate(method: Method) -> List[str]:
                 f"declares setting {setting_id!r}, which does not exist. "
                 f"known: {sorted(settings_mod.SETTINGS)}"
             )
-        elif not settings_mod.SETTINGS[setting_id].enabled:
-            problems.append(
-                f"declares setting {setting_id!r}, which is currently disabled: "
-                f"{settings_mod.SETTINGS[setting_id].notes.splitlines()[0]}"
-            )
-
     try:
         adapter_cls = method.load_adapter_class()
     except MethodError as exc:

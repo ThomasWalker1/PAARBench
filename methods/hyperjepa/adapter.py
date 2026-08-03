@@ -144,7 +144,7 @@ class HyperJEPAAdapter:
         self.applied = False
         # Deployment mode: fold the emitted correction into the predictor weights once
         # per replan instead of routing every planner rollout through the LoRA wrapper
-        # (RESULTS §12 -- the wrapper costs ~0.80 s of the 100-step GD-MPC replan).
+        # (the wrapper costs ~0.80 s of the 100-step GD-MPC replan).
         # Single-episode only; see fold_hyper_tensors.
         self.fold_weights = bool(fold_weights)
         self._base_snapshot = None

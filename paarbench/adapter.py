@@ -4,8 +4,7 @@ This is the benchmark's core extension point. A contributed method implements
 ``TestTimeAdapter`` and nothing else: the planner calls these hooks uniformly and has
 no per-method branch, so adding a method never requires editing benchmark internals.
 
-See ``methods/README.md`` for how to contribute one, and ``docs/ADAPTER_PROTOCOL.md``
-for why each hook has the signature it has.
+See ``methods/README.md`` for contribution instructions and hook semantics.
 
 
 What a method may and may not see

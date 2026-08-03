@@ -4,7 +4,7 @@
     scripts/evaluate.py adajepa --setting pushobj --gpus 0,1,2,3
     scripts/evaluate.py --frozen --setting pushobj --gpus 0,1,2,3
 
-The protocol this implements (docs/PLAN.md §3):
+The protocol is:
 
   1. Run the method's selection rule. It may only evaluate the **selection cohort**,
      and every column it runs is counted as its selection cost.
@@ -142,10 +142,7 @@ def main() -> int:
         # Frozen's zero is the only unqualified one on the board: it has nothing to
         # tune. Every other zero means something weaker -- see COST_BASIS below.
         cost_basis = "none"
-        # A setting may require isolation of every column, frozen included. On such a
-        # setting there is no batched/isolated axis at all, so no arm can be paired
-        # against a reference in the other mode.
-        isolation = setting.always_episode_isolated
+        isolation = False
     else:
         method = methods.load(args.method)
         problems = methods.validate(method)
@@ -161,8 +158,7 @@ def main() -> int:
             )
 
         name, display = method.name, method.display_name
-        isolation = (method.requires_episode_isolation
-                     or setting.always_episode_isolated)
+        isolation = method.requires_episode_isolation
         if isolation:
             print(f'[isolate] {name} declares requires_episode_isolation: one process '
                   f'per episode ({setting.n_evals} per shape). A batched cohort would '

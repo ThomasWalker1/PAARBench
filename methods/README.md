@@ -48,9 +48,8 @@ class MyAdapter:
         return {}                                  # per-replan scalars to record
 ```
 
-Full documentation of each hook, its exact tensor shapes, and why it is shaped that way:
-[`paarbench/adapter.py`](../paarbench/adapter.py) and
-[`docs/ADAPTER_PROTOCOL.md`](../docs/ADAPTER_PROTOCOL.md).
+Full documentation of each hook and its tensor shapes lives in
+[`paarbench/adapter.py`](../paarbench/adapter.py).
 
 Three rules that the harness enforces rather than trusts:
 

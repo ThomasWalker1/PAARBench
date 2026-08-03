@@ -3,15 +3,11 @@ name = "paarbench"
 version = "0.0.1"
 description = "PlanActAdaptRepeatBench - a benchmark for test-time adaptation of latent world models"
 readme = "README.md"
-# Pinned to 3.9 to match the predecessor (~/HyperJEPA) so that ported evaluation
-# numbers are comparable.  Upgrade deliberately, after M1/M2 reproduce.
+# Pinned to 3.9 so existing checkpoints and evaluation numbers remain comparable.
 requires-python = "==3.9.*"
 
 dependencies = [
-    # --- torch: see [tool.uv.sources] below.  Do NOT unpin without reading the
-    # CUDA note in docs/PLAN.md §9: default resolution picks a build for a newer
-    # CUDA than this machine's driver, and torch.cuda.is_available() then
-    # silently returns False rather than erroring.
+    # CUDA 12.1 is part of the benchmark's reproducible runtime.
     "torch==2.3.0+cu121",
     "torchvision==0.18.0+cu121",
 
@@ -57,26 +53,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# PointMaze only.  Kept out of the default install because mujoco-py compiles at
-# import time and needs MUJOCO_PY_MUJOCO_PATH + a system GL toolchain; the
-# PushObj/PushT settings do not touch any of it.  See docs/PLAN.md §2.3 -
-# PointMaze may yet be dropped from the suite entirely.
-pointmaze = [
-    "Cython==0.29.37",
-    # Left unpinned between the floor mujoco-py/d4rl need and the floor
-    # dm-control asks for; the predecessor's venv resolved to 2.3.7.
-    "mujoco>=2.3.7",
-    "mujoco-py==2.1.2.14",
-    "d4rl==1.1",
-    "gymnasium==0.29.1",
-    "gymnasium-robotics==1.2.4",
-    "minari==0.4.3",
-    # dm-control comes in transitively via d4rl.  Left unpinned on purpose: the
-    # predecessor's venv has dm-control 1.0.28 (wants mujoco>=3.2.7) installed
-    # next to mujoco 2.3.7 and gymnasium-robotics 1.2.4 (wants mujoco<3.0),
-    # which is an unsatisfiable set that only survives because pip was told to
-    # ignore it.  Letting the resolver choose keeps the extra installable.
-]
 dev = [
     "pytest>=8.0.0",
 ]
@@ -85,9 +61,7 @@ dev = [
 # The repo is run in place (`.venv/bin/python plan.py ...`), not installed, so
 # there is nothing to build for the root project.
 package = false
-# Linux/x86_64 only: the cu121 torch wheels, mujoco-py and d4rl exist nowhere
-# else.  Declaring this keeps the resolver from failing on platforms the
-# benchmark does not target.
+# Linux/x86_64 only: the CUDA wheels and benchmark runtime target this platform.
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
 [[tool.uv.index]]
@@ -104,6 +78,7 @@ torchvision = { index = "pytorch-cu121" }
 # machine.  Integration tests load a real base world model and need a staged
 # checkpoint, so they are opt-in with `-m integration`.
 addopts = "-m 'not integration'"
+pythonpath = ["."]
 markers = [
     "integration: needs a staged base checkpoint (and usually a GPU)",
 ]

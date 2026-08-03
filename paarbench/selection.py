@@ -148,7 +148,7 @@ class SelectionHarness:
         if self._frozen_selection is None:
             # Run the reference in the *same* evaluation mode as the candidates. The two
             # modes do not agree even for the frozen model on identical environment
-            # seeds -- 4% of pushobj episodes flip outcome, 9% on pointmaze -- so a
+            # seeds -- 4% of pushobj episodes flip outcome -- so a
             # batched reference paired against an isolated candidate folds that
             # difference into the candidate's paired metrics, which is what a
             # paired-harm objective then selects on. A distinct tag rather than a mode

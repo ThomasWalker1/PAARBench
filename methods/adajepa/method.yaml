@@ -9,10 +9,7 @@ description: >
 reference: "Predecessor project ~/HyperJEPA, planning/adaptation.py @ 628dff7"
 
 adapter: adapter:AdaJEPAAdapter
-settings: [pushobj, pushobj_shift, pusht, pointmaze]
-# PointMaze uses the same rank-2 predlast online configuration and the same
-# (steps x lr) grid the predecessor swept there, so no per-setting override is needed.
-# Its planning is CPU-only, so a PointMaze column does not compete with a pushing one.
+settings: [pushobj, pushobj_shift, pusht]
 
 # This method owns mutable shared state -- world-model parameters and an AdamW
 # trajectory -- so it cannot be evaluated as a batched cohort: one gradient step would
