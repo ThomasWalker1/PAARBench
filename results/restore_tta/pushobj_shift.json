@@ -58,7 +58,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 486.0,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/restore_tta/pushobj_shift/test100",
+      "out_dir": "eval_outputs/restore_tta/pushobj_shift/test100",
       "paired_metrics": null
     }
   },

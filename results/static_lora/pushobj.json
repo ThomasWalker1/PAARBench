@@ -39,7 +39,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 137.7,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test100",
+      "out_dir": "eval_outputs/static_lora/pushobj/test100",
       "paired_metrics": null
     },
     "test200": {
@@ -65,7 +65,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 148.0,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test200",
+      "out_dir": "eval_outputs/static_lora/pushobj/test200",
       "paired_metrics": null
     },
     "test400": {
@@ -91,7 +91,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 148.6,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj/test400",
+      "out_dir": "eval_outputs/static_lora/pushobj/test400",
       "paired_metrics": null
     }
   },

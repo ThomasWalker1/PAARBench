@@ -23,7 +23,20 @@ uv sync --extra dev
 
 Base checkpoints, adapter checkpoints, datasets, and evaluation targets are too large
 for git. Their expected paths and hashes are documented in
-[`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md).
+[`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md); the exact artifact inventory is pinned in
+[`CHECKPOINTS.sha256`](CHECKPOINTS.sha256).
+
+Download only the base JEPA models needed by benchmark settings, only method-specific
+adapter checkpoints, or the complete artifact set:
+
+```bash
+.venv/bin/python scripts/download_checkpoints.py settings
+.venv/bin/python scripts/download_checkpoints.py methods
+.venv/bin/python scripts/download_checkpoints.py all
+```
+
+Evaluating an adaptation method requires both groups, so use `all` on a new checkout.
+Each download is filtered to its group and verified against `CHECKPOINTS.sha256`.
 
 ## Settings
 

@@ -58,6 +58,15 @@ def test_an_unreadable_summary_is_not_treated_as_evidence(tmp_path):
     runner.check_resumable(tmp_path / "col", {"steps": 10})
 
 
+def test_result_records_use_repo_relative_output_paths():
+    result = runner.ColumnResult(
+        setting="pushobj", cohort="test100", seed=100, tag="toy", n_evals=1,
+        success_by_shape={"T": 0.5},
+        out_dir=runner.REPO_ROOT / "eval_outputs" / "toy" / "pushobj" / "test100",
+    )
+    assert result.to_dict()["out_dir"] == "eval_outputs/toy/pushobj/test100"
+
+
 # --- concurrent launchers -----------------------------------------------------
 #
 # Two processes writing one column interleave their episodes.jsonl writes, and the

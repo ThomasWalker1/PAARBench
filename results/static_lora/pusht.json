@@ -38,7 +38,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 139.5,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pusht/test200",
+      "out_dir": "eval_outputs/static_lora/pusht/test200",
       "paired_metrics": null
     },
     "test400": {
@@ -63,7 +63,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 137.2,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pusht/test400",
+      "out_dir": "eval_outputs/static_lora/pusht/test400",
       "paired_metrics": null
     }
   },

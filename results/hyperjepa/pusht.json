@@ -56,7 +56,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 142.9,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pusht/test200",
+      "out_dir": "eval_outputs/hyperjepa/pusht/test200",
       "paired_metrics": null
     },
     "test400": {
@@ -90,7 +90,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 143.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pusht/test400",
+      "out_dir": "eval_outputs/hyperjepa/pusht/test400",
       "paired_metrics": null
     }
   },

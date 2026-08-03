@@ -32,7 +32,7 @@ def pooled_latent(wm, obs):
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path,
-                        default=Path("/dev/shm/tw78/data/pushobj_multishape"))
+                        default=Path("data/pushobj_multishape"))
     parser.add_argument("--base", type=Path,
                         default=Path("checkpoints/pushobj_shape_shift"))
     parser.add_argument("--output", type=Path,

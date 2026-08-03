@@ -38,7 +38,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 151.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/static_lora/pushobj_shift/test100",
+      "out_dir": "eval_outputs/static_lora/pushobj_shift/test100",
       "paired_metrics": null
     }
   },

@@ -57,7 +57,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 152.9,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj/test100",
+      "out_dir": "eval_outputs/hyperjepa/pushobj/test100",
       "paired_metrics": null
     },
     "test200": {
@@ -92,7 +92,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 145.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj/test200",
+      "out_dir": "eval_outputs/hyperjepa/pushobj/test200",
       "paired_metrics": null
     },
     "test400": {
@@ -127,7 +127,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 146.7,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/hyperjepa/pushobj/test400",
+      "out_dir": "eval_outputs/hyperjepa/pushobj/test400",
       "paired_metrics": null
     }
   },

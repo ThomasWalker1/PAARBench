@@ -28,7 +28,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 126.9,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pushobj_shift/test100",
+      "out_dir": "eval_outputs/frozen/pushobj_shift/test100",
       "paired_metrics": null
     }
   },

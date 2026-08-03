@@ -25,7 +25,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 132.9,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pusht/test200"
+      "out_dir": "eval_outputs/frozen/pusht/test200"
     },
     "test400": {
       "setting": "pusht",
@@ -44,7 +44,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 124.4,
-      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pusht/test400"
+      "out_dir": "eval_outputs/frozen/pusht/test400"
     }
   },
   "success": 0.35,
