@@ -31,10 +31,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from paarbench import methods, settings as settings_mod
 from paarbench.runner import DEFAULT_OUT_ROOT, ColumnConflict, run_column
 from paarbench.selection import FixedParams, SelectionHarness
-from paarbench.staging import DEFAULT_TMPFS, resolve_dataset_path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RESULTS_DIR = REPO_ROOT / "results"
+RESULTS_DIR = Path("results")
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,23 +65,7 @@ def parse_args() -> argparse.Namespace:
                          "unknown rather than 0, since the tuning happened elsewhere")
     ap.add_argument("--out-root", type=Path, default=DEFAULT_OUT_ROOT)
     ap.add_argument("--results-dir", type=Path, default=RESULTS_DIR)
-    ap.add_argument("--tmpfs-root", type=Path, default=None,
-                    help=f"where to stage the dataset (default {DEFAULT_TMPFS})")
-    ap.add_argument("--data-path", type=Path, default=None,
-                    help="use this dataset directory verbatim; skips staging")
-    ap.add_argument("--no-stage", action="store_true")
     return ap.parse_args()
-
-
-def resolve_data_path(setting, args):
-    if args.data_path is not None:
-        if not args.data_path.is_dir():
-            raise SystemExit(f"--data-path is not a directory: {args.data_path}")
-        print(f"[stage] using {args.data_path} verbatim", flush=True)
-        return args.data_path
-    if args.no_stage:
-        return None
-    return resolve_dataset_path(setting, args.tmpfs_root)
 
 
 def inherit_selection(results_dir: Path, tag: str, source: str, method, setting):
@@ -128,10 +110,9 @@ def main() -> int:
 
     setting = settings_mod.get(args.setting)
     gpus = [g.strip() for g in args.gpus.split(",") if g.strip()]
-    data_path = resolve_data_path(setting, args)
 
     common = dict(
-        gpus=gpus, n_evals=args.n_evals, out_root=args.out_root, data_path=data_path,
+        gpus=gpus, n_evals=args.n_evals, out_root=args.out_root,
         per_gpu=args.per_gpu,
     )
 

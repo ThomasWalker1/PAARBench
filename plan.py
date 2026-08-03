@@ -520,21 +520,19 @@ def planning_main(cfg_dict):
     else:
         wandb_run = None
 
-    ckpt_base_path = cfg_dict["ckpt_base_path"]
+    ckpt_base_path = Path(cfg_dict["ckpt_base_path"])
     model_name = cfg_dict.get("model_name")
-    if ckpt_base_path.startswith("/"):
-        model_path = ckpt_base_path
-    else:
-        model_path = f"{ckpt_base_path}/{cfg_dict['model_name']}/"
-    model_path = os.path.abspath(model_path)
-    with open(os.path.join(model_path, "hydra.yaml"), "r") as f:
+    model_path = ckpt_base_path / model_name if model_name else ckpt_base_path
+    with open(model_path / "hydra.yaml", "r") as f:
         model_cfg = OmegaConf.load(f)
 
-    # Optionally relocate the training dataset without editing checkpoint metadata.
-    data_path_override = cfg_dict.get("dataset_data_path", None)
-    if data_path_override:
-        model_cfg.env.dataset.data_path = str(data_path_override)
-        print(f"[dataset] data_path -> {data_path_override}", flush=True)
+    # Segment-goal evaluation uses fixed normalization metadata and never indexes a
+    # training trajectory. Swap the saved training loader for its lightweight,
+    # dataset-free counterpart while retaining the saved transform and options.
+    if cfg_dict.get("goal_source") == "segments":
+        model_cfg.env.dataset._target_ = (
+            "datasets.pusht_dset.load_pusht_evaluation_metadata"
+        )
 
     seed(cfg_dict["seed"])
     _, dset = hydra.utils.call(
@@ -547,7 +545,7 @@ def planning_main(cfg_dict):
 
     num_action_repeat = model_cfg.num_action_repeat
     model_ckpt = (
-        Path(model_path) / "checkpoints" / f"model_{cfg_dict['model_epoch']}.pth"
+        model_path / "checkpoints" / f"model_{cfg_dict['model_epoch']}.pth"
     )
     model = load_model(model_ckpt, model_cfg, num_action_repeat, device=device)
     t_after_model = time.perf_counter()

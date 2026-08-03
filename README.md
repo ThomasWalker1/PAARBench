@@ -21,8 +21,8 @@ uv sync --extra dev
 .venv/bin/python -m pytest -q
 ```
 
-Base checkpoints, adapter checkpoints, datasets, and evaluation targets are too large
-for git. Their expected paths and hashes are documented in
+Base and adapter checkpoints are hosted outside git. Their expected paths and hashes
+are documented in
 [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md); the exact artifact inventory is pinned in
 [`CHECKPOINTS.sha256`](CHECKPOINTS.sha256).
 
@@ -37,6 +37,15 @@ adapter checkpoints, or the complete artifact set:
 
 Evaluating an adaptation method requires both groups, so use `all` on a new checkout.
 Each download is filtered to its group and verified against `CHECKPOINTS.sha256`.
+Evaluation targets are tracked in git, and standard evaluation does not require the
+training dataset. To reproduce training or develop a method that explicitly uses
+offline trajectories, download the separately versioned and verified dataset:
+
+```bash
+.venv/bin/python scripts/download_data.py
+```
+
+See [`docs/DATASET.md`](docs/DATASET.md) for its contents and provenance.
 
 ## Settings
 

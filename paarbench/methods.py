@@ -41,33 +41,6 @@ class MethodError(Exception):
     """A method directory is malformed. Always names the file and the fix."""
 
 
-def resolve_repo_paths(params: Dict[str, Any]) -> Dict[str, Any]:
-    """Make relative ``*_path`` / ``*_dir`` params repo-relative.
-
-    Hydra chdirs into the run directory before the planner is built, so a relative
-    path written in ``method.yaml`` -- the obvious thing to write -- resolves against
-    somewhere under ``eval_outputs/`` and fails. Every method shipping a checkpoint
-    would hit this, so it is fixed once here rather than in each method.
-
-    Only rewrites when the key looks like a path, the value is a relative string, and
-    the repo-relative interpretation actually exists on disk. A value that does not
-    name a real file is left alone, so this cannot mangle an arbitrary string that
-    happens to end in ``_path``.
-    """
-    resolved = {}
-    for key, value in params.items():
-        if (
-            isinstance(value, str)
-            and (key.endswith("_path") or key.endswith("_dir"))
-            and not Path(value).is_absolute()
-            and (REPO_ROOT / value).exists()
-        ):
-            resolved[key] = str(REPO_ROOT / value)
-        else:
-            resolved[key] = value
-    return resolved
-
-
 @dataclass
 class Method:
     """A loaded method definition. Metadata only -- nothing is instantiated yet."""
@@ -128,7 +101,7 @@ class Method:
         evaluates a candidate configuration without rewriting the file.
         """
         cls = self.load_adapter_class()
-        params = resolve_repo_paths({**self.params, **overrides})
+        params = {**self.params, **overrides}
         try:
             return cls(wm=wm, preprocessor=preprocessor, **params)
         except TypeError as exc:
@@ -293,6 +266,19 @@ def validate(method: Method) -> List[str]:
     from paarbench import settings as settings_mod
 
     problems: List[str] = []
+
+    for setting_id in method.settings:
+        for key, value in method.params_for(setting_id).items():
+            if (
+                isinstance(value, str)
+                and (key.endswith("_path") or key.endswith("_dir"))
+                and Path(value).is_absolute()
+            ):
+                problems.append(
+                    f"{setting_id} parameter {key!r} must be repository-relative; "
+                    "absolute artifact paths are machine-specific and may disclose "
+                    "personal directory names"
+                )
 
     for setting_id in method.settings:
         if setting_id not in settings_mod.SETTINGS:

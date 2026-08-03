@@ -11,11 +11,9 @@ running an evaluation.
 | `checkpoints/pusht_visual_shift/checkpoints/model_latest.pth` | `pusht` | `9098082f1d40bfa7` |
 
 Each base directory must also contain its training-time `hydra.yaml`. Evaluation reads
-the model architecture, dataset configuration, and environment parameters from it.
-
-The PushT config contains an unresolved dataset path, so `pusht` expects its source at
-`data/pushobj_multishape`. The runner stages that dataset to tmpfs before a fan-out and
-passes the staged path to the evaluation process. Use `--data-path` to override it.
+the model architecture, preprocessing configuration, and environment parameters from
+it. Saved data paths are repository-relative; segment-goal evaluation substitutes
+fixed normalization metadata and does not open the training dataset.
 
 ## Adapter checkpoints
 
@@ -47,7 +45,7 @@ weights, or both. The downloader filters the snapshot and verifies every request
 against `CHECKPOINTS.sha256`.
 
 The current artifact release is pinned to Hub commit
-`e40756436a73ac6dbd911fc0e31435d9d5a7b151`.
+`329f4215b0902d0eaa765a17290491ebe281a0b7`.
 
 Pin releases by immutable revision; never use an unpinned `main` revision for a
 published benchmark result. The downloader's default revision is updated whenever a
@@ -58,7 +56,7 @@ large-file storage, cached concurrent downloads, and selective snapshot download
 Publish the same release on Zenodo when a citable archival DOI is needed. Confirm that
 the upstream licenses permit redistribution before making inherited weights public.
 
-## Evaluation targets and datasets
+## Evaluation targets and training data
 
 PushObj and PushT goal files are expected at:
 
@@ -66,10 +64,9 @@ PushObj and PushT goal files are expected at:
 data/pushobj_eval/val_<shape>/plan_targets.pkl
 ```
 
-The base checkpoint's `hydra.yaml` identifies its training dataset unless the setting
-declares a replacement path. Only dataset statistics are read during evaluation; the
-runner stages the source directory under `/dev/shm/<user>/paarbench/data/` to prevent
-concurrent workers from overwhelming a network mount.
+The goal files are tracked in git and are the only data artifacts needed for benchmark
+evaluation. The optional training trajectories are distributed separately from the
+checkpoint release; see [`DATASET.md`](DATASET.md).
 
 These artifacts originate from the model releases used to establish the checked-in
 baseline records. Training new base models requires re-baselining all methods because

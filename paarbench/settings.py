@@ -42,15 +42,6 @@ class Setting:
     frozen_success_by_shape: dict[str, float] = field(default_factory=dict)
     """Per-shape reference on the *selection* cohort, where one is on record."""
 
-    dataset_path: str = ""
-    """Training dataset, when the checkpoint does not record a usable one.
-
-    The dataset supplies normalization statistics at startup; nothing else reads it.
-    Most bases record an absolute path in their ``hydra.yaml``, but some released ones
-    ship an unresolved placeholder, and then every column has to be told where the data
-    is. Declaring it on the setting means a caller never has to know that.
-    """
-
     inherits_selection_from: str = ""
     """Take the hyperparameters this method already froze on another setting.
 
@@ -75,7 +66,7 @@ class Setting:
 
     @property
     def base_path(self) -> Path:
-        return REPO_ROOT / "checkpoints" / self.base
+        return Path("checkpoints") / self.base
 
     @property
     def cohort_n(self) -> int:
@@ -104,7 +95,7 @@ class Setting:
 
     def targets_path(self, shape: str) -> Path:
         """Return the staged goal file for one shape."""
-        return REPO_ROOT / "data" / "pushobj_eval" / f"val_{shape}" / "plan_targets.pkl"
+        return Path("data") / "pushobj_eval" / f"val_{shape}" / "plan_targets.pkl"
 
 
 SETTINGS: dict[str, Setting] = {}
@@ -158,11 +149,6 @@ PUSHT = _register(
         n_evals=50,
         frozen_success={"selection": 0.360, "test": 0.350},
         frozen_success_by_shape={"T": 0.640, "L": 0.260, "Z": 0.180},
-        # This base's released hydra.yaml ships `data_path: <path>` -- the literal
-        # placeholder, never substituted. Without an override the dataset call dies
-        # with a bare FileNotFoundError naming only `env.dataset`. It reads the same
-        # pushobj_multishape statistics as the pushobj base does.
-        dataset_path=str(REPO_ROOT / "data" / "pushobj_multishape"),
     )
 )
 

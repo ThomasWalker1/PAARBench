@@ -1,0 +1,18 @@
+{
+  "repository": "ThomasWalker1/paarbench-data",
+  "root": "pushobj_multishape",
+  "splits": {
+    "train": {
+      "episodes": 7200,
+      "file_count": 7206,
+      "total_bytes": 864106305,
+      "tree_sha256": "1f5e743c220cde93322b3735c3ba7caa161826bd86368bea6901c94616c4488d"
+    },
+    "val": {
+      "episodes": 800,
+      "file_count": 806,
+      "total_bytes": 97366292,
+      "tree_sha256": "ea2e04833041a334409778f36942e9c57bb97eb69100738bda71caed4f1e0a87"
+    }
+  }
+}

@@ -30,9 +30,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from paarbench import settings as settings_mod
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
 # How a selection cost should read. ``0`` alone is ambiguous: it is the honest score
 # for a method with nothing to tune, and it is also what a method reports when its
 # hyperparameters were simply written down. Those are different claims about tuning
@@ -295,7 +292,7 @@ def _ci(bounds, pct: bool = False, places: int = 0) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--results-dir", type=Path, default=REPO_ROOT / "results")
+    ap.add_argument("--results-dir", type=Path, default=Path("results"))
     ap.add_argument("--setting", default=None, help="default: every setting with records")
     ap.add_argument("--out", type=Path, default=None, help="write markdown here")
     args = ap.parse_args()

@@ -259,36 +259,13 @@ def test_fixed_params_costs_nothing():
     assert h.columns_used == 0
 
 
-# -- repo-relative path resolution -------------------------------------------
-
-
-def test_relative_checkpoint_paths_resolve_against_the_repo_root():
-    """Hydra chdirs before the planner is built, so relative paths must be fixed up."""
-    from paarbench.methods import REPO_ROOT, resolve_repo_paths
-
-    out = resolve_repo_paths({"checkpoint_path": "pyproject.toml"})
-    assert out["checkpoint_path"] == str(REPO_ROOT / "pyproject.toml")
-
-
-def test_absolute_paths_are_left_alone():
-    from paarbench.methods import resolve_repo_paths
-
-    assert resolve_repo_paths({"ckpt_path": "/tmp"})["ckpt_path"] == "/tmp"
-
-
-def test_non_path_values_are_never_mangled():
-    """A string that only looks like a path key, or names nothing, is untouched."""
-    from paarbench.methods import resolve_repo_paths
-
-    params = {
-        "update_scope": "lora_predlast_all",   # not a *_path key
-        "context_path": "residual_action",     # *_path key, but names no file
-        "steps": 10,
-    }
-    assert resolve_repo_paths(params) == params
-
-
 # -- episode isolation -------------------------------------------------------
+
+
+def test_method_validation_rejects_absolute_artifact_paths():
+    method = methods.load("toy", FIXTURES)
+    method.params["checkpoint_path"] = "/absolute/artifact.pth"
+    assert any("repository-relative" in problem for problem in methods.validate(method))
 
 
 def test_isolation_is_opt_in_and_defaults_off():

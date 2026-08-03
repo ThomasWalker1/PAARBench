@@ -26,7 +26,18 @@ from typing import Any, Dict, List, Optional
 from paarbench.settings import Setting
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_OUT_ROOT = REPO_ROOT / "eval_outputs"
+DEFAULT_OUT_ROOT = Path("eval_outputs")
+
+
+def _portable_command_path(path: Path) -> str:
+    """Prefer a repository-relative path in subprocess commands and their logs."""
+    path = Path(path)
+    if not path.is_absolute():
+        return str(path)
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
 
 @dataclass
@@ -257,7 +268,6 @@ def _worker_env(gpu: str) -> Dict[str, str]:
     base = dict(os.environ)
     env = dict(
         base,
-        DATASET_DIR=base.get("DATASET_DIR", str(REPO_ROOT / "data")),
         WANDB_MODE=base.get("WANDB_MODE", "offline"),
         CUDA_VISIBLE_DEVICES=gpu,
         SDL_VIDEODRIVER="dummy",
@@ -279,7 +289,6 @@ def build_command(
     *,
     method_name: Optional[str] = None,
     params: Optional[Dict[str, Any]] = None,
-    data_path: Optional[Path] = None,
     config_name: str = "eval",
     extra: Optional[List[str]] = None,
     episode_index: Optional[int] = None,
@@ -295,13 +304,13 @@ def build_command(
     ``requires_episode_isolation`` methods get.
     """
     cmd = [
-        str(REPO_ROOT / ".venv/bin/python"), "plan.py",
+        ".venv/bin/python", "plan.py",
         "--config-name", config_name,
         f"ckpt_base_path={setting.base_path}",
         "model_epoch=latest",
         "goal_source=segments",
         "+wandb_logging=false",
-        f"hydra.run.dir={out_dir}",
+        f"hydra.run.dir={_portable_command_path(out_dir)}",
         f"seed={seed}",
         "goal_H=25",
         "planner.sub_planner.opt_steps=100",
@@ -316,8 +325,6 @@ def build_command(
             f"eval_episode_index={episode_index}",
             f"eval_episode_total={n_evals}",
         ]
-    if data_path is not None:
-        cmd.append(f"dataset_data_path={data_path}")
     if method_name is not None:
         cmd.append(f"+planner.adapter.method={method_name}")
         for key, value in (params or {}).items():
@@ -347,7 +354,6 @@ def run_column(
     gpus: Optional[List[str]] = None,
     n_evals: Optional[int] = None,
     out_root: Optional[Path] = None,
-    data_path: Optional[Path] = None,
     config_name: str = "eval",
     extra: Optional[List[str]] = None,
     resume: bool = True,
@@ -380,7 +386,7 @@ def run_column(
         return _run_column_locked(
             setting, cohort, tag, column_dir,
             method_name=method_name, params=params, gpus=gpus, n_evals=n_evals,
-            data_path=data_path, config_name=config_name, extra=extra,
+            config_name=config_name, extra=extra,
             resume=resume, verbose=verbose, episode_isolation=episode_isolation,
             per_gpu=per_gpu, seed=seed,
         )
@@ -395,7 +401,7 @@ def _run_column_locked(
     tag: str,
     column_dir: Path,
     *,
-    method_name, params, gpus, n_evals, data_path, config_name, extra,
+    method_name, params, gpus, n_evals, config_name, extra,
     resume, verbose, episode_isolation, per_gpu, seed,
 ) -> ColumnResult:
     log_dir = column_dir / "logs"
@@ -441,7 +447,7 @@ def _run_column_locked(
             gpu = slots.get()
             cmd = build_command(
                 setting, seed, shape, out_dir, n_evals,
-                method_name=method_name, params=params, data_path=data_path,
+                method_name=method_name, params=params,
                 config_name=config_name, extra=extra, episode_index=episode_index,
             )
             # Never leave rc unbound: if the launch itself raises, the unit has to

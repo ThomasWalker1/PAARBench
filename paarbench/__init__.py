@@ -1,7 +1,7 @@
 """PAARBench - benchmark harness for test-time adaptation of latent world models.
 
 The top-level modules implement world-model planning and simulation. ``paarbench``
-contains the settings registry, dataset staging, adapter protocol, output schema,
+contains the settings registry, adapter protocol, output schema,
 metrics, and submission harness.
 """
 

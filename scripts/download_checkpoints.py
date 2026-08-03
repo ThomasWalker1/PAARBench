@@ -20,7 +20,7 @@ MANIFEST = REPO_ROOT / "CHECKPOINTS.sha256"
 HF_REPO_ID = "ThomasWalker1/paarbench-checkpoints"
 
 # Updated to the immutable Hub commit after each published artifact release.
-DEFAULT_REVISION = "e40756436a73ac6dbd911fc0e31435d9d5a7b151"
+DEFAULT_REVISION = "329f4215b0902d0eaa765a17290491ebe281a0b7"
 
 GROUP_PREFIXES = {
     "settings": ("pushobj_shape_shift/", "pusht_visual_shift/"),
@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
         help="Hub tag or full commit hash (default: benchmark-pinned revision)",
     )
     parser.add_argument(
-        "--checkpoint-dir", type=Path, default=REPO_ROOT / "checkpoints",
+        "--checkpoint-dir", type=Path, default=Path("checkpoints"),
         help="destination directory (default: <repo>/checkpoints)",
     )
     return parser.parse_args()

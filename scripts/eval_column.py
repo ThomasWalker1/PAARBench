@@ -20,7 +20,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from paarbench import settings as settings_mod
 from paarbench.runner import DEFAULT_OUT_ROOT, run_column
-from paarbench.staging import DEFAULT_TMPFS, resolve_dataset_path
 
 
 def parse_param(text: str):
@@ -46,26 +45,12 @@ def main() -> int:
     ap.add_argument("--gpus", default="0,1,2,3")
     ap.add_argument("--n-evals", type=int, default=None)
     ap.add_argument("--out-root", type=Path, default=DEFAULT_OUT_ROOT)
-    ap.add_argument("--tmpfs-root", type=Path, default=None,
-                    help=f"where to stage the dataset (default {DEFAULT_TMPFS})")
-    ap.add_argument("--data-path", type=Path, default=None,
-                    help="use this dataset directory verbatim; skips staging")
-    ap.add_argument("--no-stage", action="store_true")
     ap.add_argument("--no-resume", action="store_true",
                     help="re-run shapes that already have logs.json")
     args = ap.parse_args()
 
     setting = settings_mod.get(args.setting)
     tag = args.tag or args.method or "frozen"
-
-    data_path = None
-    if args.data_path is not None:
-        if not args.data_path.is_dir():
-            raise SystemExit(f"--data-path is not a directory: {args.data_path}")
-        data_path = args.data_path
-        print(f"[stage] using {data_path} verbatim", flush=True)
-    elif not args.no_stage:
-        data_path = resolve_dataset_path(setting, args.tmpfs_root)
 
     result = run_column(
         setting,
@@ -76,7 +61,6 @@ def main() -> int:
         gpus=[g.strip() for g in args.gpus.split(",") if g.strip()],
         n_evals=args.n_evals,
         out_root=args.out_root,
-        data_path=data_path,
         resume=not args.no_resume,
     )
 

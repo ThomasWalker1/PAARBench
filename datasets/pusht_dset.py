@@ -20,6 +20,47 @@ PROPRIO_MEAN = torch.tensor([236.6155, 264.5674, -2.93032027,  2.54307914])
 PROPRIO_STD = torch.tensor([101.1202, 87.0112, 74.84556075, 74.14009094])
 
 
+class PushTEvaluationMetadata:
+    """Dataset-shaped metadata needed by segment-goal evaluation.
+
+    Planning against checked-in goal segments never indexes training trajectories.
+    Keeping this small object separate prevents evaluation from loading the optional
+    video dataset merely to recover fixed normalization constants and dimensions.
+    """
+
+    def __init__(self, transform=None, normalize_action=True, with_velocity=True):
+        self.transform = transform
+        self.action_dim = 2
+        self.state_dim = 7 if with_velocity else 5
+        self.proprio_dim = 4 if with_velocity else 2
+        if normalize_action:
+            self.action_mean = ACTION_MEAN
+            self.action_std = ACTION_STD
+            self.state_mean = STATE_MEAN[:self.state_dim]
+            self.state_std = STATE_STD[:self.state_dim]
+            self.proprio_mean = PROPRIO_MEAN[:self.proprio_dim]
+            self.proprio_std = PROPRIO_STD[:self.proprio_dim]
+        else:
+            self.action_mean = torch.zeros(self.action_dim)
+            self.action_std = torch.ones(self.action_dim)
+            self.state_mean = torch.zeros(self.state_dim)
+            self.state_std = torch.ones(self.state_dim)
+            self.proprio_mean = torch.zeros(self.proprio_dim)
+            self.proprio_std = torch.ones(self.proprio_dim)
+
+
+def load_pusht_evaluation_metadata(
+    transform=None, normalize_action=True, with_velocity=True, **_unused
+):
+    """Return the loader shape expected by planning without reading training data."""
+    metadata = PushTEvaluationMetadata(
+        transform=transform,
+        normalize_action=normalize_action,
+        with_velocity=with_velocity,
+    )
+    return {"valid": metadata}, {"valid": metadata}
+
+
 def episode_id_from_path(path: Path) -> int:
     return int(path.stem.split("_")[-1])
 

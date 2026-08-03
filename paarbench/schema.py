@@ -43,7 +43,6 @@ from typing import Iterator, List, Optional
 
 import pandas as pd
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
 EPISODES_FILE = "episodes.jsonl"
 
 
@@ -116,7 +115,7 @@ def load(out_root: Optional[Path] = None, methods=None, setting=None) -> pd.Data
     may also cache its private frozen reference under ``frozen/<setting>/selection``;
     selection cohorts are never reportable regardless of which arm owns them.
     """
-    root = Path(out_root) if out_root is not None else REPO_ROOT / "eval_outputs"
+    root = Path(out_root) if out_root is not None else Path("eval_outputs")
     if not root.is_dir():
         return pd.DataFrame()
     frames = []
