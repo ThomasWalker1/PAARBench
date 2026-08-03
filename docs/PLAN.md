@@ -140,18 +140,46 @@ porting as a bug in §5, not as a cost of the port.
 
 - PushObj and PushT are both pushing tasks on released DINO-WM-style checkpoints — one task
   family, two checkpoints.
-- **PointMaze is unusable as configured**: frozen sits at 0.880 on its selection cohort, which
+- **PointMaze was unusable as configured**: frozen sat at 0.880 on its selection cohort, which
   compresses everything (distance span 1.4× against PushObj's 12.7×), and n=50 gives SE ≈ 0.045.
   Either re-cohort to the harder distribution (its *test* cohort is frozen 0.733) or drop it.
   > **Owner decision (2026-08-01): defer.** Build the infrastructure so PointMaze *can* be
-  > added; decide re-cohort-vs-drop later. It is registered in `paarbench/settings.py` with
-  > `enabled=False` and its blocking reason recorded there, so `settings.get("pointmaze")`
-  > raises rather than silently returning a compressed setting. Its base checkpoints (5.9 GB,
-  > three variants) are deliberately **not staged** — which variant to take depends on how the
-  > re-cohorting resolves. *Reason to defer rather than drop:* the harness work is identical
-  > either way, and given how thin the suite is, a second task family is worth keeping
-  > reachable. This also keeps the `pointmaze` dependency extra (mujoco-py, d4rl) off the
-  > default install path, which is worth something on its own.
+  > added; decide re-cohort-vs-drop later. Registered with `enabled=False`, base checkpoints
+  > deliberately not staged, `pointmaze` dependency extra kept off the default install path.
+  >
+  > **Owner decision (2026-08-02): RE-COHORT.** Resolved, and the split below is measured
+  > rather than argued. See `RESULTS.md`, *Re-cohorting PointMaze*.
+  >
+  > *What the measurement changed about the diagnosis.* Running the frozen arm over **eight**
+  > candidate cohorts (400 episodes, CPU-only, 0 failures) reproduces both recorded numbers
+  > exactly — seed 300 → 0.880, seeds 0/1/2 → 0.7333 — and then shows the framing above to be
+  > half right. A cohort seed only selects *which* 50 environment seeds you get
+  > (`seed * eval_episode_total + index + 1`), so "the harder distribution" is not a different
+  > distribution; it is a different draw. Across the eight, frozen runs
+  > 0.660 / 0.660 / 0.700 / 0.740 / 0.840 / 0.840 / 0.840 / 0.880 and pools to **0.770**.
+  > Between-cohort SD is 0.090 against the 0.060 that binomial draws alone predict — a variance
+  > ratio of 2.29, χ²₇ = 16.0, p = 0.025 — so cohorts *do* differ beyond noise, but only about
+  > half the spread is real and **no choice of seed buys much headroom**. Seed 300 is simply the
+  > easiest of the eight, which is the worst possible thing for a selection cohort to be, and
+  > that specific error is what re-cohorting fixes.
+  >
+  > *The split.* **Selection: seed 4** (frozen 0.740). **Test: seeds 0, 1, 2, 3, 5, 6**
+  > (frozen 0.757, n=300). Seed 300 is retired. Selection now sits marginally *harder* than
+  > test rather than 0.147 easier, which is the safe direction — a selection cohort easier than
+  > test flatters every candidate and biases the rule. `n_evals` stays 50, so the episode-seed
+  > derivation is untouched and the 400 probe episodes remain valid; pooling six test cohorts
+  > rather than three is where the extra power comes from, at no extra cost since they are
+  > already measured.
+  >
+  > *What this does not fix, and must be said in any writeup.* PointMaze remains **the least
+  > discriminating setting in the suite**: 24.3% headroom against PushObj's 51.5%, PushT's
+  > 65.0% and the shift condition's 70.7%. At n=300 its success SE is 0.0248, so it resolves
+  > only effects ≥ +0.050 — and the predecessor's own PointMaze effect was hyper 92.4 against
+  > frozen 88.0, i.e. **+0.044, just below that floor**. So this setting will most likely
+  > produce success-rate rows that are not separated, and it earns its place only through the
+  > continuous metrics (§4) and as a second *task family*. If it is later found to add nothing
+  > the continuous metrics can resolve either, dropping it is still the right call — the
+  > re-cohorting makes it usable, not automatically worth using.
 - Held-out-shape PushObj is a distribution-shift *condition* on an existing base, not a new
   environment. It is valuable (the span *widens* to 14.7× there) but should not be counted as a
   fourth environment.
@@ -556,6 +584,12 @@ All five are answered. The three settled on 2026-08-01 reshaped the project enou
 3. **PointMaze: re-cohort or drop?** Re-cohorting costs eval time; dropping leaves 2 environments.
    - A *(2026-08-01)*: **neither yet — defer.** Set the infrastructure up so it can be added,
      decide later. Registered but disabled; base checkpoints not staged. See §2.3.
+   - A *(2026-08-02)*: **re-cohort.** Selection seed 4, test seeds 0/1/2/3/5/6, seed 300
+     retired; `iid_seed0` base staged at `model_epoch=3`; `enabled=True`. The split was
+     chosen from a measured frozen sweep over eight candidate cohorts, not picked. §2.3
+     records the numbers, including the part the original framing got wrong (the cohorts
+     are draws from one distribution, not two) and the limitation that survives
+     re-cohorting (24.3% headroom, resolves only effects ≥ +0.050).
 4. **Does the deformable domain get added?** It is the cheapest route to genuine task diversity
    since the env code and data already exist.
    - A: Yes. *(Not started; `env/deformable_env/` is ported and the dataset is at

@@ -285,10 +285,42 @@ def cost(frame: pd.DataFrame, method: str, setting: str) -> dict:
     }
 
 
+ISOLATED_REFERENCE = "frozen_isolated"
+
+
+def reference_for(frame: pd.DataFrame, method: str, setting: str) -> str:
+    """Which frozen column to pair ``method`` against.
+
+    An episode-isolated arm must be paired against a frozen column run
+    *episode-isolated too*. The two modes do not agree: on pushobj no frozen episode is
+    bit-identical across them and 4% flip outcome, and on pointmaze 9% flip. Pairing an
+    isolated arm against the batched frozen column folds that difference into the method
+    effect. Mode-matched, it cancels exactly -- the reference is then the same
+    computation as the arm's own baseline.
+
+    Falls back to ``frozen`` when no isolated reference has been run, because a thinner
+    number is better than no number; callers that care should say so, and
+    ``scripts/leaderboard.py`` warns.
+    """
+    if "mode" not in frame.columns:
+        return "frozen"
+    rows = frame[(frame["method"] == method) & (frame["setting"] == setting)]
+    if rows.empty or "isolated" not in set(rows["mode"]):
+        return "frozen"
+    available = set(frame[frame["setting"] == setting]["method"])
+    return ISOLATED_REFERENCE if ISOLATED_REFERENCE in available else "frozen"
+
+
 def summarize(frame: pd.DataFrame, method: str, setting: str,
-              frozen_method: str = "frozen") -> dict:
-    """Every metric for one (method, setting). The leaderboard row."""
-    out = {"method": method, "setting": setting}
+              frozen_method: Optional[str] = None) -> dict:
+    """Every metric for one (method, setting). The leaderboard row.
+
+    ``frozen_method`` defaults to whichever frozen column matches this method's
+    evaluation mode; pass it explicitly only to override that.
+    """
+    if frozen_method is None:
+        frozen_method = reference_for(frame, method, setting)
+    out = {"method": method, "setting": setting, "reference": frozen_method}
     out.update(success_rate(frame, method, setting))
     out["cost"] = cost(frame, method, setting)
 

@@ -63,6 +63,40 @@ class Setting:
     a shift condition anyway: does the chosen hyperparameter survive the shift.
     """
 
+    model_epoch: str = "latest"
+    """Which base checkpoint epoch to plan with.
+
+    ``latest`` for the pushing bases. PointMaze's released base is selected at epoch 3,
+    and ``latest`` there is a *different, later* model -- so this is not cosmetic.
+    """
+
+    goal_source: str = "segments"
+    """Where the planner gets its goals.
+
+    ``segments`` reads a per-shape target file staged under ``data/``; ``dset`` draws
+    goals from the training dataset and needs no target file at all. This is the axis on
+    which the pushing settings and PointMaze genuinely differ, and it was previously
+    hardcoded in the column runner -- which is why no non-pushing setting could run.
+    """
+
+    cpu_only: bool = False
+    """Plan on the CPU, with the GPUs left free.
+
+    PointMaze's env is MuJoCo and its planning is CPU-bound (~100 s/episode
+    single-threaded), so a PointMaze column is a *different resource pool* from a
+    PushObj one and the two can run concurrently. Declaring it here rather than at the
+    call site keeps that out of every driver.
+    """
+
+    needs_mujoco: bool = False
+    """Source ``env.sh`` for this setting's workers.
+
+    Without it mujoco-py never imports, PointMaze is never registered with gym, and the
+    vectorized env's worker dies as a ``BrokenPipeError`` from ``env/venv.py`` -- which
+    reads as an IPC bug rather than a missing shared library. Recorded here so the
+    failure cannot be rediscovered.
+    """
+
     enabled: bool = True
     notes: str = ""
 
@@ -106,7 +140,16 @@ class Setting:
             f"declared: selection={self.selection_seed}, test={list(self.test_seeds)}"
         )
 
-    def targets_path(self, shape: str) -> Path:
+    def targets_path(self, shape: str):
+        """The per-shape goal file, or ``None`` when this setting does not use one.
+
+        ``goal_source: dset`` settings take their goals from the dataset, so there is no
+        target file to point at -- and passing a made-up one is how PointMaze failed
+        before: the path was built unconditionally from ``data/pushobj_eval/``, which is
+        both the wrong directory and the wrong idea for a maze.
+        """
+        if self.goal_source != "segments":
+            return None
         return REPO_ROOT / "data" / "pushobj_eval" / f"val_{shape}" / "plan_targets.pkl"
 
 
@@ -179,19 +222,38 @@ PUSHT = _register(
 POINTMAZE = _register(
     Setting(
         id="pointmaze",
-        base="pointmaze",
-        shapes=(),
-        selection_seed=300,
-        test_seeds=(0, 1, 2),
+        base="pointmaze/scratch_resnet_global_cos1e-1_iid_seed0",
+        # One environment, no shape dimension -- but a column is still addressed by
+        # variant, so the maze is a single named variant rather than an empty tuple.
+        # An empty `shapes` made run_column raise "declares no shapes; nothing to run",
+        # which is the correct behaviour for a misconfigured setting and was the
+        # immediate blocker here.
+        shapes=("umaze",),
+        # Re-cohorted 2026-08-02 (docs/PLAN.md §2.3, RESULTS.md). Seed 300 is retired:
+        # measured over eight candidate cohorts it is the *easiest* of them (frozen
+        # 0.880 against a pooled 0.770), and a selection cohort easier than test
+        # flatters every candidate. Seed 4 (0.740) sits marginally harder than the
+        # pooled test cohorts (0.757), which is the safe direction.
+        selection_seed=4,
+        test_seeds=(0, 1, 2, 3, 5, 6),
+        # Unchanged at 50: the environment seed of episode i is
+        # `seed * eval_episode_total + i + 1`, so changing n_evals silently redraws
+        # every cohort and voids the sweep the split was chosen from. The extra power
+        # comes from pooling six test cohorts, not from longer ones.
         n_evals=50,
-        frozen_success={"selection": 0.880, "test": 0.733},
-        enabled=False,
+        frozen_success={"selection": 0.740, "test": 0.757},
+        model_epoch="3",
+        goal_source="dset",
+        cpu_only=True,
+        needs_mujoco=True,
+        dataset_path="/dev/shm/tw78/point_maze",
         notes=(
-            "DISABLED pending docs/PLAN.md §2.3. Frozen sits at 0.880 on the selection "
-            "cohort, which compresses every method into the remaining 12% and shrinks the "
-            "distance span to 1.4x (against pushobj's 12.7x); n=50 gives SE~0.045. "
-            "Re-cohort onto the harder test distribution (frozen 0.733) or drop the setting. "
-            "Also requires the optional `pointmaze` dependency extra (mujoco-py, d4rl)."
+            "Second task family. The least discriminating setting in the suite: 24.3% "
+            "headroom against pushobj's 51.5%, and at n=300 it resolves only success "
+            "effects >= +0.050 -- the predecessor's own PointMaze effect was +0.044, "
+            "just under that. Report the continuous metrics here; do not read an "
+            "unseparated success ordering as a result. Needs the optional `pointmaze` "
+            "extra (mujoco-py, d4rl) and `.local-deps` staged for GL headers."
         ),
     )
 )

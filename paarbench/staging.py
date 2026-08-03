@@ -134,19 +134,27 @@ def resolve_dataset_path(setting, tmpfs_root=None, stage: bool = True,
                          verbose: bool = True) -> Path | None:
     """Where a setting's dataset should be read from, staged if asked.
 
-    Prefers the path recorded on the checkpoint, falls back to the one the setting
-    declares. Returns ``None`` when neither is usable, which leaves
-    ``dataset_data_path`` unset so the config decides.
+    A path **declared on the setting wins** over the one baked into the checkpoint.
+    The declaration is a deliberate statement by the benchmark; the checkpoint's path
+    is whatever a third party happened to train against, and it can be actively
+    dangerous to follow. PointMaze's base records
+    ``/mnt/.../datasets/point_maze``, whose ``obses/`` subtree is ~3 TB of per-frame
+    tensors -- staging that would try to copy 3 TB into tmpfs. Planning needs only the
+    three small metadata tensors (~10 MB), so the setting declares a directory holding
+    exactly those.
+
+    Returns ``None`` when neither is usable, which leaves ``dataset_data_path`` unset
+    so the config decides.
     """
-    source = checkpoint_dataset_path(setting.base_path)
-    if source is None or not source.is_dir():
-        declared = Path(setting.dataset_path) if setting.dataset_path else None
-        if declared is not None and declared.is_dir():
-            if verbose:
-                print(f"[stage] {setting.id}: checkpoint records no usable dataset "
-                      f"path; using the setting's declared {declared}", flush=True)
-            source = declared
-        else:
+    declared = Path(setting.dataset_path) if setting.dataset_path else None
+    if declared is not None and declared.is_dir():
+        if verbose:
+            print(f"[stage] {setting.id}: using the dataset path declared on the "
+                  f"setting: {declared}", flush=True)
+        source = declared
+    else:
+        source = checkpoint_dataset_path(setting.base_path)
+        if source is None or not source.is_dir():
             if verbose:
                 print(f"[stage] {setting.id}: no usable dataset path on "
                       f"{setting.base_path}/hydra.yaml and none declared on the "

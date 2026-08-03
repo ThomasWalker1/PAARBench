@@ -5,6 +5,8 @@ them to the harness level, where a selection rule that reaches for a test seed m
 be *rejected by the harness*, not by review.
 """
 
+import math
+
 import pytest
 
 from paarbench import adapter, settings
@@ -32,12 +34,51 @@ def test_ambiguous_bare_test_cohort_is_refused():
     assert settings.get("pushobj_shift").cohort_seed("test") == 100
 
 
-def test_pointmaze_is_disabled_pending_recohorting():
-    """§2.3: frozen 0.880 on its selection cohort compresses every method."""
-    assert "pointmaze" in settings.SETTINGS
-    assert not settings.SETTINGS["pointmaze"].enabled
+def test_pointmaze_is_recohorted_and_enabled():
+    """§2.3 resolved 2026-08-02: re-cohort. Seed 300 was the easiest of eight draws."""
+    s = settings.get("pointmaze")
+    assert s.enabled
+    assert s.selection_seed == 4
+    assert s.test_seeds == (0, 1, 2, 3, 5, 6)
+    # The old selection cohort must not be reachable as either cohort now.
+    assert 300 not in s.test_seeds and s.selection_seed != 300
     with pytest.raises(ValueError):
-        settings.get("pointmaze")
+        s.cohort_seed("test300")
+
+
+def test_pointmaze_declares_what_makes_it_not_a_pushing_task():
+    """These four were hardcoded in the runner, which is why it could never run."""
+    s = settings.get("pointmaze")
+    assert s.model_epoch == "3"          # `latest` is a different, later model
+    assert s.goal_source == "dset"       # no per-shape target file exists
+    assert s.targets_path("umaze") is None
+    assert s.cpu_only and s.needs_mujoco
+    # A column is addressed by variant even with no shape dimension; an empty tuple
+    # makes run_column refuse the setting outright.
+    assert s.shapes and s.cohort_n == s.n_evals
+
+
+@pytest.mark.parametrize("setting_id", sorted(settings.SETTINGS))
+def test_no_selection_cohort_is_easier_than_its_test_cohorts(setting_id):
+    """A selection cohort easier than test flatters every candidate it scores.
+
+    This is the misconfiguration §2.3 carried: PointMaze selected on frozen 0.880 and
+    reported on 0.733, a 3.2-SE gap in the wrong direction. Tolerance is one SE of the
+    selection cohort, because the pushing settings sit a few thousandths apart and that
+    is draw noise, not a design error.
+    """
+    s = settings.SETTINGS[setting_id]
+    if not s.has_selection_cohort:
+        return
+    sel = s.frozen_success.get("selection")
+    test = s.frozen_success.get("test")
+    if sel is None or test is None:
+        return
+    se = math.sqrt(sel * (1 - sel) / max(s.cohort_n, 1))
+    assert sel - test <= se, (
+        f"{setting_id}: selection cohort frozen {sel:.3f} is easier than test "
+        f"{test:.3f} by {sel - test:+.3f}, more than one SE ({se:.3f})"
+    )
 
 
 def test_unknown_setting_names_are_refused():

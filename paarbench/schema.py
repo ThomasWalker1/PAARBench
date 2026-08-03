@@ -90,6 +90,14 @@ def load_column(column_dir: Path, method: str, setting: str, cohort: str) -> pd.
         # batched unit that is the local index; for an isolated one the directory
         # name carries it and the local index is always 0.
         frame["episode"] = offset + frame["episode_local"]
+        # Which evaluation mode produced this row. The two are *not* interchangeable
+        # even for the frozen model on identical environment seeds: the planner's loss
+        # is `loss.mean() * n_evals` and its kernels are batch-shape dependent, and 100
+        # GD steps x 20 replans of a closed loop amplify that. Measured on pushobj, no
+        # frozen episode is bit-identical across modes and 4% flip outcome. Recorded per
+        # row so a paired metric can compare like with like instead of folding the mode
+        # difference into the method effect.
+        frame["mode"] = "isolated" if path.parent.name.startswith("ep") else "batched"
         frames.append(frame)
     if not frames:
         return pd.DataFrame()

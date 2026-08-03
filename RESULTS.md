@@ -834,3 +834,139 @@ copied* — and the harness cannot detect the copy, because a copied parameter i
 perfectly valid parameter. What detects it is running the rule.
 
 No selection cost column reads `unknown` any more.
+
+---
+
+## Re-cohorting PointMaze, and the evaluation-mode artifact it exposed
+
+2026-08-03. §2.3's PointMaze question is resolved — **re-cohort** — and running the
+setting for the first time exposed a harness fault that affects every setting.
+
+### The re-cohorting is measured, not argued
+
+Frozen was run on **eight** candidate cohorts (400 episodes, CPU-only, 0 failures). It
+reproduces both recorded numbers exactly: seed 300 → **0.880**, seeds 0/1/2 → **0.7333**.
+That is also the first validation of the port on a third setting.
+
+| seed | 300 | 1 | 3 | 6 | 4 | 0 | 2 | 5 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| frozen | **0.880** | 0.840 | 0.840 | 0.840 | 0.740 | 0.700 | 0.660 | 0.660 |
+
+**§2.3's framing was half wrong.** A cohort seed only selects *which* 50 environment
+seeds you get (`seed * eval_episode_total + index + 1`), so "the harder distribution" is
+not a different distribution — it is a different draw. Pooled frozen over all eight is
+**0.770**. Between-cohort SD is 0.090 against the 0.060 that binomial draws alone predict
+(variance ratio 2.29, χ²₇ = 16.0, p = 0.025), so cohorts do differ beyond noise, but only
+about half the spread is real and **no seed choice buys much headroom**.
+
+What *was* wrong is narrower and worse: **seed 300 is the easiest of the eight**, and a
+selection cohort easier than test flatters every candidate scored on it.
+
+**The split.** Selection **seed 4** (0.740); test **seeds 0, 1, 2, 3, 5, 6** (0.757,
+n=300). Seed 300 retired. Selection now sits marginally *harder* than test instead of
+0.147 easier. `n_evals` stays 50 — changing it silently redraws every cohort and would
+void the sweep the split was chosen from — so the extra power comes from pooling six
+already-measured cohorts, free.
+
+Frozen through the real harness on that split: **0.7600 (n=300)**, per cohort
+0.700 / 0.880 / 0.700 / 0.820 / 0.680 / 0.780, ~78 min per cohort on CPU with the GPUs
+idle. Against the 0.757 declared from the probe.
+
+Enabling it needed five things that had been hardcoded to the pushing settings, now
+declared per setting: `model_epoch` (PointMaze selects epoch 3; `latest` is a different,
+later model), `goal_source` (`dset`, so `targets_path` returns `None` instead of
+fabricating a `data/pushobj_eval/` path), `cpu_only`, `needs_mujoco`, and a single named
+variant `umaze` because `shapes=()` makes `run_column` refuse the setting. Dataset-path
+precedence was also flipped so a setting's declaration beats the checkpoint's: PointMaze's
+base records an SMB directory whose `obses/` subtree is ~3 TB, and staging would have
+tried to copy all of it into tmpfs.
+
+### Batched and episode-isolated evaluation are not interchangeable
+
+The batched frozen column disagreed with the episode-isolated probe. They are not
+different draws — `plan.py:133` falls back `eval_episode_total → n_evals` so both derive
+seeds `[1..50]`, and `plan.py:414-419` deliberately aligns the goal draw. Same model,
+same episodes, no adapter:
+
+| setting | outcome flips | agreeing episodes bit-identical |
+|---|---:|---:|
+| pushobj / test100 / T | 2 of 50 (4%) | **0 of 48** |
+| pointmaze, 6 cohorts | 27 of 300 (9%) | — |
+
+`planning/gd.py:149`'s `if np.all(successes): break` would couple a batch, but it is dead
+at `eval_every: -1`. What remains is numerical — `total_loss = loss.mean() * n_evals`,
+and kernels that depend on batch shape — amplified through 100 GD steps × 20 replans of a
+closed loop.
+
+This matters because the leaderboard paired **episode-isolated** arms (adajepa,
+restore_tta, pad) against the **batched** frozen column, and §6 makes planner determinism
+the thing that licenses per-episode pairing. Note how it hid: pushobj/T's success came out
+identically 0.580 either way, because the two flips cancelled.
+
+### The noise floor, in leaderboard units
+
+§6 says not to introduce planner stochasticity without a noise-floor control. This is that
+control, and it had never been measured: frozen run episode-isolated, scored against
+frozen batched *as if it were a method*.
+
+| setting | n | success iso/batched | median dist Δ | catastrophe | compounding |
+|---|---:|---:|---:|---:|---:|
+| pushobj | 600 | 0.4883 / 0.4850 | −0.01 [−0.04, +0.00] | **0.66%** [0%, 1.6%] | −0.0003 |
+| pusht | 300 | 0.3567 / 0.3500 | −0.14 [−1.44, +0.06] | **4.23%** [1.6%, 7.4%] | −0.0065 |
+| pushobj_shift | 150 | 0.2933 / 0.2933 | −0.02 [−0.36, +0.02] | **0.95%** [0%, 2.9%] | −0.0000 |
+| pointmaze | 300 | 0.7567 / 0.7600 | −0.47 [−1.51, +0.12] | **10.17%** [3.4%, 18.6%] | −0.0095 |
+
+The per-episode divergences are real but symmetric — on pushobj the median *absolute*
+difference is 0.099 while the median *signed* paired delta is −0.01 — so they cancel in
+aggregate rather than shifting it. On the pushing settings every reported effect clears
+the floor by an order of magnitude or more.
+
+**On PointMaze it does not.** Its catastrophe floor is 10.17%, and real methods elsewhere
+on this benchmark score 3.2%–24.5% on that metric. Its distance floor is 12.1% of a
+typical final distance (median 3.85 units). So §4's most discriminative number is, on this
+setting, indistinguishable from the harness's own evaluation mode. This is a *second*
+limitation, independent of the compression §2.3 complained about, and it revises the
+conclusion written there earlier the same day: the setting does not simply "earn its place
+through the continuous metrics".
+
+### The fix, and what it moved
+
+An isolated arm is now paired against a frozen column run **episode-isolated too**, so the
+mode difference cancels instead of being charged to the method. `paarbench/schema.py`
+tags every row with its mode, `metrics.reference_for` picks the matching frozen column,
+and `scripts/leaderboard.py` warns when no matching reference exists rather than pairing
+across modes silently. Four tests pin it. Isolated frozen references now exist for all
+four settings (600 / 300 / 150 / 300 episodes).
+
+Corrected numbers, mode-matched. **Two claims made earlier today do not survive**:
+
+| row | as committed | mode-matched | verdict |
+|---|---|---|---|
+| restore_tta pusht, distance | −2.6 [−4.7, −0.4] | **−0 [−3, +2]** | **withdrawn** — the interval now includes zero |
+| restore_tta pushobj, distance | +5 [−0, +9] | **+6 [+3, +11]** | **strengthened, against the method** — now excludes zero |
+| adajepa pushobj, distance | +13 [+7, +22] | +14 [+8, +23] | unchanged in kind |
+| adajepa pusht, distance | +23 [+5, +38] | +27 [+13, +52] | unchanged in kind |
+| adajepa pusht, catastrophe | 21.4% | 24.5% | unchanged in kind |
+| pad pushobj, distance | +4 [−2, +9] | +5 [−0, +11] | unchanged in kind |
+
+The correction is systematically against the isolated arms, because the isolated frozen
+reference is slightly *better* than the batched one (0.4883 vs 0.4850 on pushobj).
+
+**The withdrawn claim matters and should not be quietly dropped.** Earlier today this log
+reported the slope-selected Restore TTA on PushT as "the only entry anywhere on this
+benchmark whose paired distance interval excludes zero on the good side". Mode-matched, it
+does not: −0 [−3, +2]. What survives is the rest of that row — catastrophe 5.4% [3%, 9%]
+against the success-selected variant's 16.4%, compounding +0.01 against +0.96, tail regret
++68 against +212, at no success gain (0.347 against frozen's 0.350). The selection-
+objective finding stands; the specific superlative does not.
+
+No ordering on any leaderboard changed.
+
+### Still open on PointMaze
+
+Only the frozen arm has run. Before spending method compute here, note what the two
+measurements together say: 24.3% headroom, success resolving only effects ≥ +0.050 at
+n=300, a catastrophe floor of 10.2%, and a distance floor of 12% of a typical distance —
+against a predecessor effect on this domain of +0.044. The re-cohorting was necessary and
+is done; whether the setting can support a claim is a separate question, and the honest
+answer right now is that it cannot support a catastrophe-rate one.

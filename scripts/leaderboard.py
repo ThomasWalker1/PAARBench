@@ -93,8 +93,15 @@ def _table(rows, baseline, detail) -> list:
             out.append(f"| {r['display_name']} | *incomplete* | | | | | | | | | {n} | |")
             continue
         se = binomial_se(s, n)
-        delta = "—" if baseline is None or r["method"] == "frozen" else f"{s - baseline:+.3f}"
         d = detail.get(r["method"], {})
+        # An episode-isolated arm's gain is measured against frozen run in the same
+        # mode, for the same reason its continuous columns are: the two modes give
+        # different frozen success rates (pushobj 0.4883 isolated vs 0.4850 batched), and
+        # charging that difference to the method is exactly the artifact being removed.
+        ref = baseline
+        if r.get("episode_isolated") and detail.get("frozen_isolated", {}).get("_success") is not None:
+            ref = detail["frozen_isolated"]["_success"]
+        delta = "—" if ref is None or r["method"] == "frozen" else f"{s - ref:+.3f}"
         # The continuous metrics come from the per-episode record on disk, the
         # success rate from the stored result record. If a re-run is in flight they
         # can disagree, and a row mixing a complete success with partial distance
@@ -152,6 +159,7 @@ def render(records, setting_id: str) -> str:
         out.append("")
 
     detail = _metric_detail(setting_id)
+    _warn_unmatched_reference(setting_id, detail, records)
     out.extend(_table(submissions, baseline, detail))
     out.append("")
     out.append(
@@ -210,6 +218,26 @@ def render(records, setting_id: str) -> str:
     return "\n".join(out)
 
 
+def _warn_unmatched_reference(setting_id: str, detail: dict, records) -> None:
+    """Say so when a row could not be paired against its own evaluation mode.
+
+    An episode-isolated arm scored against the *batched* frozen column carries the
+    evaluation-mode difference inside its method effect. On pushobj that is small (the
+    floor is a median paired distance of -0.01 and a 0.66% catastrophe rate) but on
+    pointmaze it is not (-0.47 and 10.2%), so it must never be silent.
+    """
+    isolated = {r["method"] for r in records
+                if r.get("setting") == setting_id and r.get("episode_isolated")}
+    unmatched = sorted(m for m in isolated
+                       if detail.get(m, {}).get("_reference") == "frozen")
+    if unmatched:
+        print(f"warning: {setting_id}: {', '.join(unmatched)} are episode-isolated but "
+              f"were paired against the BATCHED frozen column; no frozen_isolated "
+              f"reference exists for this setting. Run "
+              f"`scripts/evaluate.py --frozen --setting {setting_id}` with episode "
+              f"isolation to remove the evaluation-mode artifact.", file=sys.stderr)
+
+
 def _metric_detail(setting_id: str) -> dict:
     """Compute the continuous metrics from the per-episode record, if it exists.
 
@@ -232,7 +260,8 @@ def _metric_detail(setting_id: str) -> dict:
             s = metrics.summarize(frame, method, setting_id)
         except Exception:  # noqa: BLE001
             continue
-        row = {"_n": s.get("n", 0)}
+        row = {"_n": s.get("n", 0), "_reference": s.get("reference"),
+               "_success": s.get("success")}
         cost = s.get("cost") or {}
         if cost.get("adapt_s_per_replan") is not None:
             row["adapt_s"] = f"{cost['adapt_s_per_replan']:.3f}"

@@ -26,11 +26,29 @@ documentation.
 
 ### Not staged
 
-`pointmaze/` — 5.9 GB across three variants
-(`scratch_resnet_global_cos1e-1_{iid,minari_medium,minari_medium_e10}_seed0`). Deferred:
-the `pointmaze` setting is registered but disabled pending §2.3, and which variant to
-take depends on how that is resolved. Also needs the optional `pointmaze` dependency
-extra (mujoco-py, d4rl).
+`pointmaze/scratch_resnet_global_cos1e-1_{minari_medium,minari_medium_e10}_seed0` — 4.6 GB.
+Not needed: §2.3 resolved to re-cohort, and the variant that resolution selects is the
+`iid_seed0` one below. These two remain unstaged.
+
+### PointMaze (staged 2026-08-03)
+
+| path | notes |
+|---|---|
+| `pointmaze/scratch_resnet_global_cos1e-1_iid_seed0` | 1.3 GB. The variant the predecessor's protocol-correct PointMaze run used, at **`model_epoch=3`** — `latest` is a different, later model, so the epoch is load-bearing and is declared on the setting rather than passed by a caller. |
+
+Two things this setting needs that the pushing ones do not:
+
+- **The `pointmaze` dependency extra**, plus **`.local-deps/`** staged (21 MB of GL
+  headers and libraries, copied from the predecessor). `mujoco-py` compiles at import and
+  fails on `GL/glew.h` without it; `env.sh` already looks for `.local-deps` and simply had
+  nothing to find. `uv sync --extra pointmaze --extra dev` leaves `torch 2.3.0+cu121`
+  intact — pass `--extra dev` too or it drops pytest.
+- **A dataset directory holding only the three metadata tensors** (`states.pth`,
+  `actions.pth`, `seq_lengths.pth`, ~10 MB), staged at `/dev/shm/tw78/point_maze` and
+  declared on the setting. The checkpoint's own `hydra.yaml` points at
+  `/mnt/.../datasets/point_maze`, whose `obses/` subtree is ~3 TB of per-frame tensors;
+  planning reads only the metadata, so a setting's declared dataset path now takes
+  precedence over the checkpoint's to keep staging from trying to copy all of it.
 
 ## Adapter checkpoints
 

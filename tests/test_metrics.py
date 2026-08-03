@@ -190,3 +190,76 @@ def test_summarize_of_frozen_has_no_self_comparison():
     f = paired_frame([10.0], [10.0])
     s = metrics.summarize(f, "frozen", "pushobj")
     assert "distance" not in s and s["success"] is not None
+
+
+# --- evaluation-mode matching -------------------------------------------------
+#
+# Batched and episode-isolated evaluation are not interchangeable, even for the frozen
+# model on identical environment seeds: measured on pushobj, no frozen episode is
+# bit-identical across modes and 4% flip outcome; on pointmaze 9% flip. So an isolated
+# arm paired against the batched frozen column carries the mode difference inside its
+# method effect. Mode-matched, it cancels.
+
+def _rows(method, mode, dists, n_replans=2):
+    out = []
+    for ep, dist in enumerate(dists):
+        for replan in range(n_replans):
+            out.append({
+                "method": method, "setting": "s", "cohort": "c", "shape": "x",
+                "episode": ep, "episode_local": ep, "replan": replan,
+                "mode": mode,
+                "success": False, "cumulative_success": False,
+                "state_dist": dist, "visual_dist": dist, "proprio_dist": dist,
+                "planner_s": 1.0, "adapt_s": 0.0, "adapt_peak_mb": 0.0,
+            })
+    return out
+
+
+def _frame(*groups):
+    import pandas as pd
+    rows = []
+    for g in groups:
+        rows.extend(g)
+    return pd.DataFrame(rows)
+
+
+def test_an_isolated_arm_prefers_the_isolated_frozen_reference():
+    frame = _frame(
+        _rows("frozen", "batched", [10.0, 10.0]),
+        _rows("frozen_isolated", "isolated", [12.0, 12.0]),
+        _rows("m", "isolated", [14.0, 14.0]),
+    )
+    assert metrics.reference_for(frame, "m", "s") == "frozen_isolated"
+    # +2 against the isolated reference, not +4 against the batched one.
+    assert metrics.summarize(frame, "m", "s")["distance"]["median_paired_delta"] == 2.0
+
+
+def test_a_batched_arm_uses_the_batched_frozen_reference():
+    frame = _frame(
+        _rows("frozen", "batched", [10.0, 10.0]),
+        _rows("frozen_isolated", "isolated", [12.0, 12.0]),
+        _rows("m", "batched", [14.0, 14.0]),
+    )
+    assert metrics.reference_for(frame, "m", "s") == "frozen"
+    assert metrics.summarize(frame, "m", "s")["distance"]["median_paired_delta"] == 4.0
+
+
+def test_an_isolated_arm_falls_back_when_no_isolated_reference_was_run():
+    """A thinner number beats no number -- but the leaderboard must warn, and does."""
+    frame = _frame(
+        _rows("frozen", "batched", [10.0, 10.0]),
+        _rows("m", "isolated", [14.0, 14.0]),
+    )
+    assert metrics.reference_for(frame, "m", "s") == "frozen"
+    assert metrics.summarize(frame, "m", "s")["reference"] == "frozen"
+
+
+def test_an_explicit_reference_overrides_mode_matching():
+    frame = _frame(
+        _rows("frozen", "batched", [10.0, 10.0]),
+        _rows("frozen_isolated", "isolated", [12.0, 12.0]),
+        _rows("m", "isolated", [14.0, 14.0]),
+    )
+    got = metrics.summarize(frame, "m", "s", frozen_method="frozen")
+    assert got["reference"] == "frozen"
+    assert got["distance"]["median_paired_delta"] == 4.0

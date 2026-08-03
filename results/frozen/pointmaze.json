@@ -1,0 +1,127 @@
+{
+  "method": "frozen",
+  "method_dir": "frozen",
+  "display_name": "Frozen base model (no adaptation)",
+  "setting": "pointmaze",
+  "params": {},
+  "submission": true,
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
+  "episode_isolated": false,
+  "selection_cohort_seed": 4,
+  "test_cohorts": {
+    "test0": {
+      "setting": "pointmaze",
+      "cohort": "test0",
+      "seed": 0,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "umaze": 0.7
+      },
+      "success": 0.7,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 4690.6,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pointmaze/test0",
+      "paired_metrics": null
+    },
+    "test1": {
+      "setting": "pointmaze",
+      "cohort": "test1",
+      "seed": 1,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "umaze": 0.88
+      },
+      "success": 0.88,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 4721.1,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pointmaze/test1",
+      "paired_metrics": null
+    },
+    "test2": {
+      "setting": "pointmaze",
+      "cohort": "test2",
+      "seed": 2,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "umaze": 0.7
+      },
+      "success": 0.7,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 4673.2,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pointmaze/test2",
+      "paired_metrics": null
+    },
+    "test3": {
+      "setting": "pointmaze",
+      "cohort": "test3",
+      "seed": 3,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "umaze": 0.82
+      },
+      "success": 0.82,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 4641.1,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pointmaze/test3",
+      "paired_metrics": null
+    },
+    "test5": {
+      "setting": "pointmaze",
+      "cohort": "test5",
+      "seed": 5,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "umaze": 0.68
+      },
+      "success": 0.68,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 4732.2,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pointmaze/test5",
+      "paired_metrics": null
+    },
+    "test6": {
+      "setting": "pointmaze",
+      "cohort": "test6",
+      "seed": 6,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "umaze": 0.78
+      },
+      "success": 0.78,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 4696.2,
+      "out_dir": "/home/tw78/PAARBench/eval_outputs/frozen/pointmaze/test6",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.76,
+  "n": 300,
+  "complete": true,
+  "frozen_reference": 0.757
+}
