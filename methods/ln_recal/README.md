@@ -46,7 +46,7 @@ Three properties hold by construction rather than by tuning:
 | no artifacts | nothing is loaded from disk, so there is no checkpoint to mis-transcribe and no epoch to select |
 
 The memorylessness claim is tested rather than asserted:
-`methods/ln_recal/test_reset.py::test_the_fit_is_memoryless` requires the emitted delta to
+`methods/ln_recal/test_ln_recal_reset.py::test_the_fit_is_memoryless` requires the emitted delta to
 be **bit-identical** whether the fit runs from the frozen model or with a different
 correction already installed.
 

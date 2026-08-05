@@ -3,18 +3,16 @@
 Why these live here rather than being left to ``tests/test_adapter_reset.py``: that
 suite's probe finds an installed correction either by scanning ``state_dict()`` for
 tensors whose names end in ``affine_delta_weight``/``affine_delta_bias``, or by reading
-``lora_A``/``lora_B``/``delta_weight``/``delta_bias`` attributes off a declared target
-module. LN-Recal's correction is neither. ``HyperLayerNorm.set_affine`` assigns plain
-tensors to ``affine_delta_weight``/``affine_delta_bias``, so they never enter
-``state_dict()``, and those attribute names are not the ones the probe reads. The probe
-also supplies no executed transition, and LN-Recal correctly installs nothing before it
-has seen one. The result is that the benchmark's reset guarantee is *vacuous* for this
-method: it skips rather than checks.
+``lora_A``/``lora_B``/``affine_delta_weight``/``affine_delta_bias`` attributes off a
+declared target module. ``HyperLayerNorm.set_affine`` assigns plain tensors, so they never
+enter ``state_dict()`` -- and the probe supplies no executed transition, while LN-Recal
+correctly installs nothing before it has seen one. So both halves of the generic check
+skip rather than fail, and the benchmark's reset guarantee is vacuous for this method.
 
-So the guarantee is discharged here instead, on the mechanism the method actually uses.
-Marked ``integration`` (a base checkpoint is needed) and therefore not part of the
-default suite. Note that CI runs ``pytest tests/ -q``, so it does not collect this file
-either; run it with
+The guarantee is therefore discharged here, on the mechanism the method actually uses.
+Marked ``integration`` because a base checkpoint is needed, so it is excluded from the
+default suite and skips in CI (which collects ``methods/`` but has no checkpoint). Run it
+with
 
     .venv/bin/python -m pytest methods/ln_recal -m integration -q
 """
