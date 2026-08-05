@@ -64,9 +64,22 @@ PushObj and PushT goal files are expected at:
 data/pushobj_eval/val_<shape>/plan_targets.pkl
 ```
 
-The goal files are tracked in git and are the only data artifacts needed for benchmark
-evaluation. The optional training trajectories are distributed separately from the
-checkpoint release; see [`DATASET.md`](DATASET.md).
+They are the only data artifacts benchmark evaluation needs — and they are **not**
+distributed: `.gitignore` excludes `/data/` and `*.pkl`, and neither Hub release contains
+them. Nor can they be regenerated from this repository: `plan.py:dump_targets` writes the
+`goal_source=file` format, whereas evaluation uses `prepare_targets_from_segments`, which
+reads a pre-sampled `{"segments": [...], "traj_len": N}` payload that nothing here
+produces. `pushobj_shift`'s held-out shapes (`I`, `small_tee`, `square`) are not in the
+published training release either.
+
+So they have to be obtained from whoever produced the baseline records and staged by hand.
+Until they are, `paarbench.settings.Setting.require_targets` fails every run up front with
+the list of missing files rather than letting a column start and die shape by shape. A
+`scripts/download_targets.py` alongside the checkpoint downloader is the obvious fix and is
+not yet written.
+
+The optional training trajectories are distributed separately from the checkpoint release;
+see [`DATASET.md`](DATASET.md).
 
 These artifacts originate from the model releases used to establish the checked-in
 baseline records. Training new base models requires re-baselining all methods because
