@@ -35,8 +35,12 @@ jobs:
       - name: Validate methods
         run: uv run python scripts/validate_method.py
 
+      # methods/ as well as tests/, so a submission can ship verification the generic
+      # probes cannot reach -- a method whose correction lives somewhere
+      # tests/test_adapter_reset.py cannot see, say. Method-local tests that need a
+      # checkpoint should be marked `integration` and skip here.
       - name: Tests
-        run: uv run python -m pytest tests/ -q
+        run: uv run python -m pytest tests/ methods/ -q
 
       # A selection rule must not be able to reach a test cohort. Enforced in code
       # and covered by the suite above; called out separately so a failure here is
