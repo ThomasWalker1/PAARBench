@@ -37,8 +37,42 @@ METHODS_DIR = REPO_ROOT / "methods"
 _MODULE_PREFIX = "paarbench._methods"
 
 
+_ARTIFACT_SUFFIXES = ("_path", "_dir")
+
+
 class MethodError(Exception):
     """A method directory is malformed. Always names the file and the fix."""
+
+
+def resolve_artifact_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Anchor repository-relative artifact parameters to the repository root.
+
+    ``methods/README.md`` promises exactly this: "Any param key ending in ``_path`` or
+    ``_dir`` whose value names a real repo-relative file is resolved for you before your
+    adapter is constructed." A method must be able to declare
+    ``checkpoint_path: checkpoints/...`` and be indifferent to where the planner was
+    launched from, because ``plan.py`` moves into the run directory before planning and
+    the obvious relative path would otherwise resolve somewhere under ``eval_outputs/``.
+    ``validate`` below *rejects* absolute artifact paths, so repo-relative is the only
+    thing a submission is allowed to declare and it therefore has to work.
+
+    Anchored on this file's location rather than on the process CWD, so it gives the same
+    answer whenever it is called. A value that names nothing in the repository is passed
+    through untouched: it may be an output path, a Hub id, or a deliberately absolute
+    path, and guessing would be worse than leaving it alone.
+    """
+    resolved = {}
+    for key, value in params.items():
+        if (
+            isinstance(value, str)
+            and key.endswith(_ARTIFACT_SUFFIXES)
+            and not Path(value).is_absolute()
+        ):
+            candidate = REPO_ROOT / value
+            if candidate.exists():
+                value = str(candidate)
+        resolved[key] = value
+    return resolved
 
 
 @dataclass
@@ -101,7 +135,7 @@ class Method:
         evaluates a candidate configuration without rewriting the file.
         """
         cls = self.load_adapter_class()
-        params = {**self.params, **overrides}
+        params = resolve_artifact_params({**self.params, **overrides})
         try:
             return cls(wm=wm, preprocessor=preprocessor, **params)
         except TypeError as exc:

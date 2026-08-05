@@ -59,6 +59,52 @@ def render_cost(record: dict) -> str:
     return label if label is not None else str(cost)
 
 
+CONTINUOUS_COLUMNS = slice(4, 10)
+"""Table cells computed from the per-episode record: median dist Δ through peak MB.
+
+Indices into a rendered row: 0 method, 1 success, 2 ±1 SE, 3 vs frozen, then the six
+recomputed columns, then n and selection cost -- both of which come from the result record
+and are therefore always populated, so including them would mask a total loss as a partial
+one.
+
+Everything in this range comes from ``eval_outputs/**/episodes.jsonl``, which is
+git-ignored -- so on a machine that has only *some* methods' raw records, exactly these
+cells go blank. See ``rows_losing_columns``.
+"""
+
+
+def _continuous_cells(text: str) -> dict:
+    """``display name -> number of populated continuous cells``, over a whole table file."""
+    counts = {}
+    for line in text.splitlines():
+        if not line.startswith("|") or line.startswith("|---") or "| success |" in line:
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 12:
+            continue
+        populated = sum(1 for cell in cells[CONTINUOUS_COLUMNS] if cell not in ("", "—"))
+        counts[cells[0]] = counts.get(cells[0], 0) + populated
+    return counts
+
+
+def rows_losing_columns(previous: str, current: str) -> dict:
+    """Methods whose continuous columns are *less* populated than before.
+
+    The leaderboard's continuous metrics are recomputed from raw per-episode records that
+    are not distributed with the repository. A contributor who has run only their own
+    method and the frozen baseline therefore regenerates a table in which five columns of
+    every *other* method silently become "—", and `vs frozen` shifts for the
+    episode-isolated rows because their mode-matched reference is missing too. That is a
+    destructive edit disguised as a rebuild, and the only current signal is one stderr
+    line saying "per-episode metrics unavailable".
+
+    Returns ``{display name: (before, after)}`` for rows that lost cells.
+    """
+    before, after = _continuous_cells(previous), _continuous_cells(current)
+    return {name: (count, after.get(name, 0))
+            for name, count in before.items() if after.get(name, 0) < count}
+
+
 def binomial_se(p: float, n: int) -> float:
     if not n or p is None:
         return float("nan")
@@ -295,6 +341,10 @@ def main() -> int:
     ap.add_argument("--results-dir", type=Path, default=Path("results"))
     ap.add_argument("--setting", default=None, help="default: every setting with records")
     ap.add_argument("--out", type=Path, default=None, help="write markdown here")
+    ap.add_argument("--force", action="store_true",
+                    help="write --out even if rows would lose continuous columns. Only "
+                         "correct when you genuinely have every method's per-episode "
+                         "records on disk and the loss is intended.")
     args = ap.parse_args()
 
     records = load_records(args.results_dir)
@@ -312,6 +362,29 @@ def main() -> int:
             + body)
 
     if args.out:
+        if args.out.is_file():
+            lost = rows_losing_columns(args.out.read_text(), text)
+            if lost and not args.force:
+                print(
+                    f"refusing to overwrite {args.out}: {len(lost)} row(s) would lose "
+                    f"continuous columns, because their per-episode records are not on "
+                    f"this machine (eval_outputs/ is git-ignored).",
+                    file=sys.stderr,
+                )
+                for name, (before, after) in sorted(lost.items()):
+                    print(f"    {name}: {before} populated cell(s) -> {after}",
+                          file=sys.stderr)
+                print(
+                    "  This is what a contributor's regenerate looks like: it deletes "
+                    "other methods' published metrics. Add your row to the existing table "
+                    "instead (see CONTRIBUTING.md), or pass --force if you really do have "
+                    "every method's raw records.",
+                    file=sys.stderr,
+                )
+                return 1
+            if lost:
+                print(f"warning: --force given; {len(lost)} row(s) lose continuous columns",
+                      file=sys.stderr)
         args.out.write_text(text)
         print(f"wrote {args.out}")
     else:

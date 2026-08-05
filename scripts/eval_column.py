@@ -52,6 +52,14 @@ def main() -> int:
     setting = settings_mod.get(args.setting)
     tag = args.tag or args.method or "frozen"
 
+    # A missing artifact is a staging problem, not a bug: report it as one line rather
+    # than as a traceback through the harness.
+    try:
+        setting.require_targets()
+    except settings_mod.MissingTargets as exc:
+        print(f"[missing] {exc}", file=sys.stderr)
+        return 1
+
     result = run_column(
         setting,
         args.cohort,

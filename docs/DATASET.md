@@ -8,9 +8,11 @@ tags:
 
 # Optional training dataset
 
-The PAARBench evaluation protocol does **not** require training trajectories. Its goal
-segments are tracked under `data/pushobj_eval/`, and evaluation reads fixed
-normalization metadata without opening the training dataset.
+The PAARBench evaluation protocol does **not** require training trajectories: evaluation
+reads fixed normalization metadata without opening the training dataset. What it does
+require is the goal segments under `data/pushobj_eval/`, which are **not** tracked in git
+and are not part of this release either — see
+[`CHECKPOINTS.md`](CHECKPOINTS.md#evaluation-targets-and-training-data).
 
 The training release is provided for researchers who want to reproduce base-model or
 adapter training, or develop methods that explicitly use offline trajectories:

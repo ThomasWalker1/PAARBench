@@ -241,7 +241,19 @@ def test_installed_corrections_are_cleared_on_reset(world_model, name):
     )
 
 
-_CORRECTION_ATTRS = ("lora_A", "lora_B", "delta_weight", "delta_bias")
+_CORRECTION_ATTRS = (
+    "lora_A",
+    "lora_B",
+    "delta_weight",
+    "delta_bias",
+    # models/lora.py:HyperLayerNorm names its slots `affine_delta_*`, so the two names
+    # above never matched it and a method whose correction lives only in a LayerNorm
+    # wrapper skipped this check with "installs no correction slots" instead of being
+    # tested. That is exactly the reset leak the check exists to catch, and it was
+    # invisible for the one correction type that carries no parameters of its own.
+    "affine_delta_weight",
+    "affine_delta_bias",
+)
 
 
 def _has_correction(module) -> bool:
