@@ -1,0 +1,49 @@
+name: ln_recal
+display_name: "LN-Recal — closed-form output-LayerNorm refit"
+description: >
+  Recalibrates the predictor's output LayerNorm in closed form from the transitions the
+  controller has executed this episode. The predictor's last operation is an affine map
+  of normalized features, so the least-squares affine taking those features onto the
+  next latents actually observed has a 2x2 solution per feature; LN-Recal solves it
+  under a ridge shrinkage toward the pretrained affine and installs the result as a
+  per-episode delta. No gradients, no optimizer, no trained parameters, and no
+  checkpoint. The fit is recomputed from the frozen affine at every replan from
+  statistics that are invariant to the installed correction, so there is no optimizer
+  trajectory to accumulate. Included as the cheap analytic point on the frontier: it
+  measures how much of online gradient TTA's gain is available without gradients.
+reference: >
+  No single source. The mechanism is a test-time analogue of BN-statistics adaptation
+  for a LayerNorm network (cf. Schneider et al., NeurIPS 2020; Wang et al., TENT, ICLR
+  2021), solved in closed form against observed latents rather than by gradient descent.
+
+adapter: adapter:LNRecalAdapter
+settings: [pushobj, pushobj_shift, pusht]
+
+# No shared mutable state: every buffered statistic and the emitted affine delta carry a
+# leading episode axis, so a batched cohort computes exactly what one process per episode
+# would. Isolation would only make it n_evals times more expensive.
+requires_episode_isolation: false
+
+params:
+  # Frozen by selection:RidgeGrid on the pushobj selection cohort: the cell with the
+  # least paired distance harm of the 8. Note that it is NOT the success-maximizing cell
+  # (ridge=10, fit_weight=true, 0.595 vs this cell's 0.545 on that cohort) -- see
+  # SWEEP.md, and selection.py for why the rule is scored on harm.
+  ridge: 30.0
+  fit_weight: true
+  # One model-resolution transition is executed per replan (n_taken_actions // frameskip
+  # = 1) and an episode is at most 20 replans, so this is "the whole episode": the fit
+  # uses all the evidence there is. Authored, not swept -- a shorter window would be a
+  # second shrinkage knob confounded with ridge. See README.
+  buffer_size: 20
+  min_transitions: 1
+
+selection: selection:RidgeGrid
+
+# The same rule run on pusht's own selection cohort froze the bias-only mechanism at the
+# same ridge. Recorded here so the method carries what it actually selected per domain
+# rather than one setting's answer everywhere; `pushobj_shift` inherits pushobj's, which
+# is what a held-out shape condition is for.
+params_by_setting:
+  pusht:
+    fit_weight: false
