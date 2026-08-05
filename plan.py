@@ -580,13 +580,41 @@ def planning_main(cfg_dict):
     return logs
 
 
+REPO_RELATIVE_INPUTS = ("ckpt_base_path", "eval_data_path", "goal_file_path")
+"""Config keys naming inputs the caller wrote relative to the repository root."""
+
+
 @hydra.main(config_path="conf", config_name="plan_gd")
 def main(cfg: OmegaConf):
+    # ``hydra.job.chdir`` is false (conf/eval.yaml), so every repository-relative path
+    # on the command line resolves correctly -- but the planner writes ``logs.json``,
+    # ``episodes.jsonl``, ``plan_targets.pkl`` and its videos to the *current* directory,
+    # which is then the repository root rather than ``hydra.run.dir``. One process per
+    # shape means several of them appending to one ``episodes.jsonl``: the harness reads
+    # no completion marker under the column, and the interleaved rows read as a result
+    # rather than as corruption (paarbench/runner.py:_claim_column has the history).
+    #
+    # So: resolve the inputs while the CWD is still the repository root, then move into
+    # the run directory before anything is written. Method parameters naming
+    # repository-relative artifacts are resolved in paarbench/planner_hooks.py, which
+    # anchors on the repository root rather than on the CWD for the same reason.
+    from hydra.core.hydra_config import HydraConfig
+
+    run_dir = Path(HydraConfig.get().runtime.output_dir).absolute()
     with open_dict(cfg):
-        cfg["saved_folder"] = os.getcwd()
+        for key in REPO_RELATIVE_INPUTS:
+            value = cfg.get(key)
+            if value is None or os.path.isabs(str(value)):
+                continue
+            resolved = Path(str(value)).absolute()
+            if resolved.exists():
+                cfg[key] = str(resolved)
+        cfg["saved_folder"] = str(run_dir)
         log.info(f"Planning result saved dir: {cfg['saved_folder']}")
     cfg_dict = cfg_to_dict(cfg)
     cfg_dict["wandb_logging"] = bool(cfg_dict.get("wandb_logging", True))
+    run_dir.mkdir(parents=True, exist_ok=True)
+    os.chdir(run_dir)
     planning_main(cfg_dict)
 
 

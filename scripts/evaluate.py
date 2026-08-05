@@ -109,6 +109,13 @@ def main() -> int:
         raise SystemExit("give exactly one of: a method name, or --frozen")
 
     setting = settings_mod.get(args.setting)
+    # Up front, before the selection rule spends anything: a missing goal file is a
+    # staging problem, and it should read as one rather than as a traceback out of the
+    # first column the rule happens to launch.
+    try:
+        setting.require_targets()
+    except settings_mod.MissingTargets as exc:
+        raise SystemExit(f"[missing] {exc}")
     gpus = [g.strip() for g in args.gpus.split(",") if g.strip()]
 
     common = dict(

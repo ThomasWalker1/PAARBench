@@ -37,9 +37,16 @@ adapter checkpoints, or the complete artifact set:
 
 Evaluating an adaptation method requires both groups, so use `all` on a new checkout.
 Each download is filtered to its group and verified against `CHECKPOINTS.sha256`.
-Evaluation targets are tracked in git, and standard evaluation does not require the
-training dataset. To reproduce training or develop a method that explicitly uses
-offline trajectories, download the separately versioned and verified dataset:
+Evaluation targets — the goal files defining each setting's episodes — are **not** tracked
+in git and are not part of the checkpoint release. Stage them under
+`data/pushobj_eval/val_<shape>/plan_targets.pkl` before evaluating anything; see
+[`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md). A run missing any of them now fails
+immediately, naming the files, instead of launching one process per shape and letting each
+die separately.
+
+Standard evaluation does not require the training dataset. To reproduce training or
+develop a method that explicitly uses offline trajectories, download the separately
+versioned and verified dataset:
 
 ```bash
 .venv/bin/python scripts/download_data.py

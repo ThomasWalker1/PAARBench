@@ -378,6 +378,11 @@ def run_column(
     if not setting.shapes:
         raise ValueError(f"setting {setting.id!r} declares no shapes; nothing to run")
 
+    # Before anything is launched: the goal files define this setting's episodes and are
+    # not tracked in git, so a fresh checkout would otherwise start one process per shape
+    # and have each die in its own log file with a bare FileNotFoundError.
+    setting.require_targets()
+
     column_dir = out_root / tag / setting.id / cohort
     if resume:
         check_resumable(column_dir, params or {})

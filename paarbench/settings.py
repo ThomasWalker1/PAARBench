@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -96,6 +97,38 @@ class Setting:
     def targets_path(self, shape: str) -> Path:
         """Return the staged goal file for one shape."""
         return Path("data") / "pushobj_eval" / f"val_{shape}" / "plan_targets.pkl"
+
+    def missing_targets(self, root: Optional[Path] = None) -> list:
+        """Goal files this setting needs that are not staged, in shape order."""
+        base = Path(root) if root is not None else REPO_ROOT
+        return [self.targets_path(shape) for shape in self.shapes
+                if not (base / self.targets_path(shape)).is_file()]
+
+    def require_targets(self, root: Optional[Path] = None) -> None:
+        """Fail before launching anything if the goal files are not staged.
+
+        These files define the setting's episodes and are **not** tracked in git, so a
+        fresh checkout has none of them. Without this check each shape's ``plan.py``
+        starts, loads a base model, and dies three seconds later with its own bare
+        ``FileNotFoundError`` inside a per-unit log file -- so a whole column fails in a
+        way whose cause is four levels down in ``eval_outputs/`` rather than on stdout.
+        One message, up front, naming the files and the fix.
+        """
+        missing = self.missing_targets(root)
+        if not missing:
+            return
+        listed = "\n    ".join(str(path) for path in missing)
+        raise MissingTargets(
+            f"setting {self.id!r} needs {len(missing)} goal file(s) that are not staged:\n"
+            f"    {listed}\n"
+            f"  These are not tracked in git. Stage them under data/pushobj_eval/ before "
+            f"evaluating; see docs/CHECKPOINTS.md ('Evaluation targets and training data'). "
+            f"scripts/download_checkpoints.py does not fetch them."
+        )
+
+
+class MissingTargets(Exception):
+    """A setting's goal files are not staged, so none of its columns can run."""
 
 
 SETTINGS: dict[str, Setting] = {}
