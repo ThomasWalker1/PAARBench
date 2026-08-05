@@ -1,0 +1,102 @@
+{
+  "method": "ln_recal",
+  "method_dir": "ln_recal",
+  "display_name": "LN-Recal \u2014 closed-form output-LayerNorm refit",
+  "setting": "pushobj",
+  "params": {
+    "ridge": 30.0,
+    "fit_weight": true,
+    "buffer_size": 20,
+    "min_transitions": 1
+  },
+  "submission": true,
+  "selection_rule": "selection:RidgeGrid",
+  "selection_cost_columns": 8,
+  "selection_cost_basis": "selected",
+  "episode_isolated": false,
+  "selection_cohort_seed": 300,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pushobj",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "ln_recal",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "ridge": 30.0,
+        "fit_weight": true,
+        "buffer_size": 20,
+        "min_transitions": 1
+      },
+      "success_by_shape": {
+        "T": 0.6,
+        "L": 0.64,
+        "Z": 0.72,
+        "+": 0.58
+      },
+      "success": 0.635,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 127.7,
+      "out_dir": "eval_outputs/ln_recal/pushobj/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pushobj",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "ln_recal",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "ridge": 30.0,
+        "fit_weight": true,
+        "buffer_size": 20,
+        "min_transitions": 1
+      },
+      "success_by_shape": {
+        "T": 0.58,
+        "L": 0.58,
+        "Z": 0.64,
+        "+": 0.56
+      },
+      "success": 0.59,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 124.9,
+      "out_dir": "eval_outputs/ln_recal/pushobj/test200",
+      "paired_metrics": null
+    },
+    "test400": {
+      "setting": "pushobj",
+      "cohort": "test400",
+      "seed": 400,
+      "tag": "ln_recal",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "ridge": 30.0,
+        "fit_weight": true,
+        "buffer_size": 20,
+        "min_transitions": 1
+      },
+      "success_by_shape": {
+        "T": 0.58,
+        "L": 0.56,
+        "Z": 0.6,
+        "+": 0.52
+      },
+      "success": 0.5650000000000001,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 129.1,
+      "out_dir": "eval_outputs/ln_recal/pushobj/test400",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.5966666666666667,
+  "n": 600,
+  "complete": true,
+  "frozen_reference": 0.485
+}

@@ -12,6 +12,7 @@ Test cohorts: seeds [100, 200, 400], 4 shapes, n=50 per shape per cohort. Select
 | AdaJEPA — online gradient TTA | 0.678 | 0.019 | +0.190 | +14 [+8, +23] | 14.5% [9%, 20%] | +0.75 [+0.32, +1.36] | 63% / +198 | 0.568 | 177 | 600 | 16 |
 | Restore TTA — online gradient TTA with stochastic restoration | 0.678 | 0.019 | +0.190 | +6 [+3, +11] | 7.5% [4%, 12%] | +0.38 [+0.07, +0.79] | 61% / +146 | 0.651 | 177 | 600 | 4 |
 | HyperJEPA — amortized hypernetwork | 0.610 | 0.020 | +0.125 | -6 [-14, -1] | 8.3% [5%, 12%] | +0.01 [-0.16, +0.09] | 43% / +93 | 0.147 | 977 | 600 | 5 |
+| LN-Recal — closed-form output-LayerNorm refit | 0.597 | 0.020 | +0.112 | -1 [-7, +5] | 5.3% [3%, 8%] | -0.02 [-0.08, +0.01] | 48% / +85 | 0.091 | 888 | 600 | 8 |
 | Static LoRA — unconditioned correction | 0.567 | 0.020 | +0.082 | -5 [-9, +1] | 6.2% [3%, 10%] | -0.08 [-0.24, +0.04] | 46% / +73 | 0.000 | 157 | 600 | 5 |
 | PAD — inverse-dynamics encoder adaptation | 0.553 | 0.020 | +0.065 | +5 [-0, +11] | 6.7% [4%, 10%] | +0.26 [-0.04, +0.53] | 56% / +96 | 0.029 | 290 | 600 | 0 (authored) |
 | Frozen base model (no adaptation) | 0.485 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
@@ -38,6 +39,7 @@ Test cohorts: seeds [100], 3 shapes, n=50 per shape per cohort. No selection coh
 | AdaJEPA — online gradient TTA | 0.387 | 0.040 | +0.093 | +9 [-4, +31] | 13.3% [7%, 21%] | +0.80 [-0.03, +1.83] | 56% / +146 | 0.569 | 177 | 150 | 16 (inherited) |
 | Restore TTA — online gradient TTA with stochastic restoration | 0.340 | 0.039 | +0.047 | +11 [-5, +24] | 10.4% [5%, 17%] | +0.58 [-0.35, +1.13] | 54% / +105 | 0.658 | 177 | 150 | 4 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.320 | 0.038 | +0.027 | -2 [-11, +17] | 7.5% [3%, 13%] | +0.06 [-0.42, +0.56] | 46% / +81 | 0.152 | 977 | 150 | 5 (inherited) |
+| LN-Recal — closed-form output-LayerNorm refit | 0.320 | 0.038 | +0.027 | -3 [-10, +6] | 1.0% [0%, 3%] | -0.04 [-0.31, +0.17] | 42% / +75 | 0.092 | 888 | 150 | 8 (inherited) |
 | Frozen base model (no adaptation) | 0.293 | 0.037 | — | — | — | — | — | 0.000 | 157 | 150 | 0 |
 | Static LoRA — unconditioned correction | 0.287 | 0.037 | -0.007 | -4 [-14, +8] | 9.1% [4%, 15%] | -0.45 [-1.01, +0.24] | 48% / +93 | 0.000 | 157 | 150 | 5 (inherited) |
 
@@ -65,6 +67,7 @@ Test cohorts: seeds [200, 400], 3 shapes, n=50 per shape per cohort. Selection c
 | Static LoRA — unconditioned correction | 0.363 | 0.028 | +0.013 | +4 [-10, +13] | 11.2% [7%, 16%] | +0.08 [-0.38, +0.30] | 54% / +180 | 0.000 | 157 | 300 | 5 |
 | Frozen base model (no adaptation) | 0.350 | 0.028 | — | — | — | — | — | 0.000 | 157 | 300 | 0 |
 | Restore TTA — online gradient TTA with stochastic restoration | 0.347 | 0.027 | -0.010 | -0 [-3, +2] | 5.4% [3%, 9%] | +0.01 [-0.08, +0.14] | 48% / +68 | 0.665 | 177 | 300 | 4 |
+| LN-Recal — closed-form output-LayerNorm refit | 0.340 | 0.027 | -0.010 | -1 [-3, +4] | 4.9% [2%, 8%] | -0.04 [-0.11, +0.01] | 48% / +99 | 0.092 | 888 | 300 | 8 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 

@@ -1,0 +1,74 @@
+{
+  "method": "ln_recal",
+  "method_dir": "ln_recal",
+  "display_name": "LN-Recal \u2014 closed-form output-LayerNorm refit",
+  "setting": "pusht",
+  "params": {
+    "ridge": 30.0,
+    "fit_weight": false,
+    "buffer_size": 20,
+    "min_transitions": 1
+  },
+  "submission": true,
+  "selection_rule": "selection:RidgeGrid",
+  "selection_cost_columns": 8,
+  "selection_cost_basis": "selected",
+  "episode_isolated": false,
+  "selection_cohort_seed": 100,
+  "test_cohorts": {
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "ln_recal",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "ridge": 30.0,
+        "fit_weight": false,
+        "buffer_size": 20,
+        "min_transitions": 1
+      },
+      "success_by_shape": {
+        "T": 0.56,
+        "L": 0.26,
+        "Z": 0.2
+      },
+      "success": 0.34,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 139.5,
+      "out_dir": "eval_outputs/ln_recal/pusht/test200",
+      "paired_metrics": null
+    },
+    "test400": {
+      "setting": "pusht",
+      "cohort": "test400",
+      "seed": 400,
+      "tag": "ln_recal",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "ridge": 30.0,
+        "fit_weight": false,
+        "buffer_size": 20,
+        "min_transitions": 1
+      },
+      "success_by_shape": {
+        "T": 0.44,
+        "L": 0.44,
+        "Z": 0.14
+      },
+      "success": 0.34,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 127.8,
+      "out_dir": "eval_outputs/ln_recal/pusht/test400",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.34,
+  "n": 300,
+  "complete": true,
+  "frozen_reference": 0.35
+}
