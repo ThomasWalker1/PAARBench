@@ -4,7 +4,7 @@
   "display_name": "Static LoRA \u2014 unconditioned correction",
   "setting": "pushobj_shift",
   "params": {
-    "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth",
+    "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_1.pth",
     "target_scope": "predlast_all",
     "rank": 2,
     "lora_scale": 1.0
@@ -14,7 +14,7 @@
   "selection_cost_columns": 3,
   "selection_cost_basis": "inherited",
   "episode_isolated": false,
-  "selection_cohort_seed": 100,
+  "selection_cohort_seed": 0,
   "test_cohorts": {
     "test100": {
       "setting": "pushobj_shift",
@@ -24,26 +24,76 @@
       "n_evals": 50,
       "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_1.pth",
         "target_scope": "predlast_all",
         "rank": 2,
         "lora_scale": 1.0
       },
       "success_by_shape": {
-        "I": 0.24,
-        "small_tee": 0.48,
-        "square": 0.14
+        "I": 0.2,
+        "small_tee": 0.52,
+        "square": 0.18
       },
-      "success": 0.2866666666666667,
+      "success": 0.3,
       "complete": true,
       "failures": [],
-      "wall_seconds": 131.5,
+      "wall_seconds": 134.6,
       "out_dir": "eval_outputs/static_lora/pushobj_shift/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pushobj_shift",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_1.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "I": 0.2,
+        "small_tee": 0.46,
+        "square": 0.3
+      },
+      "success": 0.32,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 136.1,
+      "out_dir": "eval_outputs/static_lora/pushobj_shift/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "pushobj_shift",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_1.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "I": 0.22,
+        "small_tee": 0.46,
+        "square": 0.12
+      },
+      "success": 0.26666666666666666,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 135.1,
+      "out_dir": "eval_outputs/static_lora/pushobj_shift/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.2866666666666667,
-  "n": 150,
+  "success": 0.29555555555555557,
+  "n": 450,
   "complete": true,
-  "frozen_reference": 0.293
+  "frozen_reference": null
 }

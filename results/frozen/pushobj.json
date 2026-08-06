@@ -9,29 +9,8 @@
   "selection_cost_columns": 0,
   "selection_cost_basis": "none",
   "episode_isolated": false,
-  "selection_cohort_seed": 300,
+  "selection_cohort_seed": 0,
   "test_cohorts": {
-    "test100": {
-      "setting": "pushobj",
-      "cohort": "test100",
-      "seed": 100,
-      "tag": "frozen",
-      "n_evals": 50,
-      "n": 200,
-      "params": {},
-      "success_by_shape": {
-        "T": 0.58,
-        "L": 0.58,
-        "Z": 0.58,
-        "+": 0.46
-      },
-      "success": 0.5499999999999999,
-      "complete": true,
-      "failures": [],
-      "wall_seconds": 0.0,
-      "out_dir": "eval_outputs/frozen/pushobj/test100",
-      "paired_metrics": null
-    },
     "test200": {
       "setting": "pushobj",
       "cohort": "test200",
@@ -53,10 +32,31 @@
       "out_dir": "eval_outputs/frozen/pushobj/test200",
       "paired_metrics": null
     },
-    "test400": {
+    "test100": {
       "setting": "pushobj",
-      "cohort": "test400",
-      "seed": 400,
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 200,
+      "params": {},
+      "success_by_shape": {
+        "T": 0.58,
+        "L": 0.58,
+        "Z": 0.58,
+        "+": 0.46
+      },
+      "success": 0.5499999999999999,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 0.0,
+      "out_dir": "eval_outputs/frozen/pushobj/test100",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "pushobj",
+      "cohort": "test300",
+      "seed": 300,
       "tag": "frozen",
       "n_evals": 50,
       "n": 200,
@@ -64,19 +64,19 @@
       "success_by_shape": {
         "T": 0.5,
         "L": 0.44,
-        "Z": 0.4,
-        "+": 0.44
+        "Z": 0.6,
+        "+": 0.42
       },
-      "success": 0.44499999999999995,
+      "success": 0.49,
       "complete": true,
       "failures": [],
       "wall_seconds": 0.0,
-      "out_dir": "eval_outputs/frozen/pushobj/test400",
+      "out_dir": "eval_outputs/frozen/pushobj/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.485,
+  "success": 0.5,
   "n": 600,
   "complete": true,
-  "frozen_reference": 0.485
+  "frozen_reference": null
 }

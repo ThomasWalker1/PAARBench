@@ -9,7 +9,7 @@
   "selection_cost_columns": 0,
   "selection_cost_basis": "none",
   "episode_isolated": false,
-  "selection_cohort_seed": 100,
+  "selection_cohort_seed": 0,
   "test_cohorts": {
     "test100": {
       "setting": "pushobj_shift",
@@ -27,13 +27,53 @@
       "success": 0.29333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 122.2,
+      "wall_seconds": 0.0,
       "out_dir": "eval_outputs/frozen/pushobj_shift/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pushobj_shift",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 150,
+      "params": {},
+      "success_by_shape": {
+        "I": 0.2,
+        "small_tee": 0.46,
+        "square": 0.28
+      },
+      "success": 0.31333333333333335,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 120.1,
+      "out_dir": "eval_outputs/frozen/pushobj_shift/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "pushobj_shift",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 150,
+      "params": {},
+      "success_by_shape": {
+        "I": 0.28,
+        "small_tee": 0.44,
+        "square": 0.16
+      },
+      "success": 0.29333333333333333,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 119.4,
+      "out_dir": "eval_outputs/frozen/pushobj_shift/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.29333333333333333,
-  "n": 150,
+  "success": 0.3,
+  "n": 450,
   "complete": true,
-  "frozen_reference": 0.293
+  "frozen_reference": null
 }

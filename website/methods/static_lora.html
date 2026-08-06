@@ -42,12 +42,27 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <p>No tunable hyperparameters.</p>
+  <ul class='param-list'><li><span>checkpoint_path</span> = checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_1.pth</li><li><span>lora_scale</span> = 1.0</li><li><span>rank</span> = 2</li><li><span>target_scope</span> = predlast_all</li></ul>
 </section>
 
 <section>
   <h2>Results Summary</h2>
-  <p>No result records checked in for this method.</p>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.547</td>
+  <td class="num"></td>
+  <td class="num">600</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.296</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.360</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr></tbody></table></div>
 </section>
 
 <section>
@@ -71,11 +86,11 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.567 (±0.020)</td>
-  <td class="num delta-pos">+0.082</td>
-  <td class="num">-5 [-9, +1]</td>
-  <td class="num">6.2% [3%, 10%]</td>
-  <td class="num">46% / +73</td>
+  <td class="num">0.547 (±0.020)</td>
+  <td class="num delta-pos">+0.047</td>
+  <td class="num">-5 [-9, +0]</td>
+  <td class="num">5.2% [3%, 8%]</td>
+  <td class="num">44% / +57</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
 </tr>
@@ -101,11 +116,11 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.287 (±0.037)</td>
-  <td class="num delta-neg">-0.007</td>
-  <td class="num">-4 [-14, +8]</td>
-  <td class="num">9.1% [4%, 15%]</td>
-  <td class="num">48% / +93</td>
+  <td class="num">0.296 (±0.022)</td>
+  <td class="num delta-neg">-0.004</td>
+  <td class="num">-2 [-9, +2]</td>
+  <td class="num">8.6% [6%, 12%]</td>
+  <td class="num">48% / +102</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
 </tr>
@@ -131,11 +146,11 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.363 (±0.028)</td>
-  <td class="num delta-pos">+0.013</td>
-  <td class="num">+4 [-10, +13]</td>
-  <td class="num">11.2% [7%, 16%]</td>
-  <td class="num">54% / +180</td>
+  <td class="num">0.360 (±0.023)</td>
+  <td class="num delta-pos">+0.011</td>
+  <td class="num">+7 [-0, +20]</td>
+  <td class="num">11.6% [8%, 16%]</td>
+  <td class="num">55% / +181</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
 </tr>

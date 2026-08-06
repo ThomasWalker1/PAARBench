@@ -23,8 +23,42 @@
   "selection_cost_columns": 4,
   "selection_cost_basis": "selected",
   "episode_isolated": false,
-  "selection_cohort_seed": 100,
+  "selection_cohort_seed": 0,
   "test_cohorts": {
+    "test100": {
+      "setting": "pusht",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_3.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "T": 0.62,
+        "L": 0.44,
+        "Z": 0.32
+      },
+      "success": 0.46,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 0.0,
+      "out_dir": "eval_outputs/hyperjepa/pusht/test100",
+      "paired_metrics": null
+    },
     "test200": {
       "setting": "pusht",
       "cohort": "test200",
@@ -55,14 +89,14 @@
       "success": 0.4666666666666666,
       "complete": true,
       "failures": [],
-      "wall_seconds": 137.1,
+      "wall_seconds": 0.0,
       "out_dir": "eval_outputs/hyperjepa/pusht/test200",
       "paired_metrics": null
     },
-    "test400": {
+    "test300": {
       "setting": "pusht",
-      "cohort": "test400",
-      "seed": 400,
+      "cohort": "test300",
+      "seed": 300,
       "tag": "hyperjepa",
       "n_evals": 50,
       "n": 150,
@@ -82,20 +116,20 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "T": 0.5,
-        "L": 0.44,
-        "Z": 0.3
+        "T": 0.52,
+        "L": 0.46,
+        "Z": 0.36
       },
-      "success": 0.41333333333333333,
+      "success": 0.4466666666666666,
       "complete": true,
       "failures": [],
-      "wall_seconds": 140.1,
-      "out_dir": "eval_outputs/hyperjepa/pusht/test400",
+      "wall_seconds": 0.0,
+      "out_dir": "eval_outputs/hyperjepa/pusht/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.44,
-  "n": 300,
+  "success": 0.4577777777777778,
+  "n": 450,
   "complete": true,
-  "frozen_reference": 0.35
+  "frozen_reference": null
 }
