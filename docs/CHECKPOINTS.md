@@ -23,7 +23,8 @@ fixed normalization metadata and does not open the training dataset.
 | `checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, PushObj | 1–5 | 2 |
 | `checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_N.pth` | HyperJEPA, PushT | 1–4 | 3 |
 | `checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, PushT | 1–5 | 1 |
-| `checkpoints/pad/pushobj_inverse_dynamics.pth` | PAD, PushObj | — | single checkpoint |
+| `checkpoints/pad/pushobj_inverse_dynamics.pth` | PAD, PushObj / PushObj Shift | — | single checkpoint |
+| `checkpoints/pad/pusht_inverse_dynamics.pth` | PAD, PushT | — | single checkpoint |
 
 All epoch candidates are required: the declared selection rules evaluate them on the
 selection cohort before freezing the deployed epoch. The checkpoint payloads embed the

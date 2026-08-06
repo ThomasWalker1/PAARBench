@@ -3,13 +3,13 @@ display_name: "PAD — inverse-dynamics encoder adaptation"
 description: >
   Policy Adaptation during Deployment: update the world-model encoder online with a
   self-supervised inverse-dynamics loss that predicts the executed action from
-  consecutive latents. The inverse-dynamics head is pretrained offline on PushObj
-  trajectories and is an adapter-owned module, reset alongside the encoder every
-  episode.
+  consecutive latents. The inverse-dynamics head is pretrained offline on the same
+  PushObj trajectory pool used to train the released world models, then reset alongside
+  the encoder every episode.
 reference: "Hansen et al., 'Self-Supervised Policy Adaptation during Deployment', ICLR 2021"
 
 adapter: adapter:PADAdapter
-settings: [pushobj]
+settings: [pushobj, pushobj_shift, pusht]
 requires_episode_isolation: true
 
 params:
@@ -26,3 +26,7 @@ params:
   grad_clip_norm: 1.0
   refresh_interval: 1
   require_single_episode: true
+
+params_by_setting:
+  pusht:
+    checkpoint_path: checkpoints/pad/pusht_inverse_dynamics.pth

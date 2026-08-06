@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Re-run the full PAARBench protocol under the standardized selection rules.
+# Continue the benchmark rerun from restore_tta onward (skips completed methods).
 # Requires checkpoints/, data/pushobj_eval/, and 8 GPUs by default.
 set -euo pipefail
 
@@ -18,23 +18,6 @@ for setting_id in ("pushobj", "pushobj_shift", "pusht"):
     s.get(setting_id).require_targets()
 print("goal files ok")
 PY
-
-echo "[frozen] baseline columns ..."
-"${EVAL[@]}" --frozen --setting pushobj
-"${EVAL[@]}" --frozen --setting pushobj_shift
-"${EVAL[@]}" --frozen --setting pusht
-
-for setting in pushobj pusht; do
-  echo "[method] hyperjepa $setting"
-  "${EVAL[@]}" hyperjepa --setting "$setting"
-  echo "[method] static_lora $setting"
-  "${EVAL[@]}" static_lora --setting "$setting"
-done
-
-echo "[method] hyperjepa pushobj_shift (inherits selection)"
-"${EVAL[@]}" hyperjepa --setting pushobj_shift
-echo "[method] static_lora pushobj_shift (inherits selection)"
-"${EVAL[@]}" static_lora --setting pushobj_shift
 
 for setting in pushobj pusht; do
   echo "[method] restore_tta $setting"
@@ -55,4 +38,6 @@ done
 
 echo "[leaderboard] regenerating LEADERBOARD.md ..."
 "$PY" scripts/leaderboard.py --out LEADERBOARD.md
+echo "[website] regenerating static site ..."
+"$PY" scripts/build_website.py
 echo "done."

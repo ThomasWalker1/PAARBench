@@ -28,9 +28,9 @@
 
 <div class="method-hero">
   <h1>PAD — inverse-dynamics encoder adaptation</h1>
-  <p class="lead">Policy Adaptation during Deployment: update the world-model encoder online with a self-supervised inverse-dynamics loss that predicts the executed action from consecutive latents. The inverse-dynamics head is pretrained offline on PushObj trajectories and is an adapter-owned module, reset alongside the encoder every episode.</p>
+  <p class="lead">Policy Adaptation during Deployment: update the world-model encoder online with a self-supervised inverse-dynamics loss that predicts the executed action from consecutive latents. The inverse-dynamics head is pretrained offline on the same PushObj trajectory pool used to train the released world models, then reset alongside the encoder every episode.</p>
   <p class='reference'><strong>Reference:</strong> Hansen et al., &#x27;Self-Supervised Policy Adaptation during Deployment&#x27;, ICLR 2021</p>
-  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span></div>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
 </div>
 
 <section>
@@ -44,17 +44,122 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <p>No tunable hyperparameters.</p>
+  <ul class='param-list'><li><span>action_dim</span> = 10</li><li><span>buffer_size</span> = 1</li><li><span>checkpoint_path</span> = checkpoints/pad/pushobj_inverse_dynamics.pth</li><li><span>encoder_lr</span> = 1e-05</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>head_hidden_dim</span> = 256</li><li><span>head_lr</span> = 0.0001</li><li><span>latent_dim</span> = 394</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 1</li></ul>
 </section>
 
 <section>
   <h2>Results Summary</h2>
-  <p>No result records checked in for this method.</p>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.577</td>
+  <td class="num"></td>
+  <td class="num">600</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.342</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.380</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr></tbody></table></div>
 </section>
 
 <section>
   <h2>Leaderboard Row</h2>
-  <p>Not on the leaderboard for any setting.</p>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.577 (±0.020)</td>
+  <td class="num delta-pos">+0.077</td>
+  <td class="num">+2 [-4, +8]</td>
+  <td class="num">6.4% [3%, 10%]</td>
+  <td class="num">52% / +110</td>
+  <td class="num">0.029</td>
+  <td class="num">290</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.342 (±0.022)</td>
+  <td class="num delta-pos">+0.042</td>
+  <td class="num">+5 [-2, +8]</td>
+  <td class="num">10.0% [7%, 14%]</td>
+  <td class="num">53% / +118</td>
+  <td class="num">0.029</td>
+  <td class="num">290</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.380 (±0.023)</td>
+  <td class="num delta-pos">+0.031</td>
+  <td class="num">+1 [-3, +12]</td>
+  <td class="num">8.0% [5%, 11%]</td>
+  <td class="num">52% / +171</td>
+  <td class="num">0.029</td>
+  <td class="num">290</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
 </section>
 
   </main>

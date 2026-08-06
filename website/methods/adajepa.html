@@ -42,17 +42,122 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <p>No tunable hyperparameters.</p>
+  <ul class='param-list'><li><span>action_lr</span> = 0.0005</li><li><span>buffer_size</span> = 5</li><li><span>buffer_strategy</span> = recent</li><li><span>enc_lr</span> = 1e-05</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>lora_rank</span> = 2</li><li><span>lora_scale</span> = 1.0</li><li><span>pred_lr</span> = 0.002</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 5</li><li><span>stop_grad</span> = True</li><li><span>update_scope</span> = lora_predlast_all</li></ul>
 </section>
 
 <section>
   <h2>Results Summary</h2>
-  <p>No result records checked in for this method.</p>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.697</td>
+  <td class="num"></td>
+  <td class="num">600</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.400</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.440</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr></tbody></table></div>
 </section>
 
 <section>
   <h2>Leaderboard Row</h2>
-  <p>Not on the leaderboard for any setting.</p>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.697 (±0.019)</td>
+  <td class="num delta-pos">+0.197</td>
+  <td class="num">+6 [-1, +17]</td>
+  <td class="num">17.1% [12%, 23%]</td>
+  <td class="num">57% / +256</td>
+  <td class="num">0.294</td>
+  <td class="num">177</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.400 (±0.023)</td>
+  <td class="num delta-pos">+0.100</td>
+  <td class="num">+16 [+6, +28]</td>
+  <td class="num">16.9% [12%, 22%]</td>
+  <td class="num">59% / +205</td>
+  <td class="num">0.290</td>
+  <td class="num">177</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.440 (±0.023)</td>
+  <td class="num delta-pos">+0.091</td>
+  <td class="num">+55 [+36, +84]</td>
+  <td class="num">26.8% [21%, 33%]</td>
+  <td class="num">66% / +549</td>
+  <td class="num">0.293</td>
+  <td class="num">177</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
 </section>
 
   </main>
