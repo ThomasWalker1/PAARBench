@@ -12,7 +12,7 @@ than about the method.
 | artifact | how to get it | needed for |
 |---|---|---|
 | base + adapter checkpoints (~1.1 GB) | `scripts/download_checkpoints.py all` | everything |
-| **goal files** `data/pushobj_eval/val_<shape>/plan_targets.pkl` | **not distributed** — see [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) | everything |
+| **goal files** `data/pushobj_eval/val_<shape>/plan_targets.pkl` | [`scripts/download_targets.py`](scripts/download_targets.py) → `ThomasWalker1/paarbench-data` | everything |
 | training trajectories (~1 GB) | `scripts/download_data.py` | only methods that use offline data |
 
 The goal files are the awkward one: they define each setting's episodes, they are not in git

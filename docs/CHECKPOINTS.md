@@ -64,19 +64,23 @@ PushObj and PushT goal files are expected at:
 data/pushobj_eval/val_<shape>/plan_targets.pkl
 ```
 
-They are the only data artifacts benchmark evaluation needs — and they are **not**
-distributed: `.gitignore` excludes `/data/` and `*.pkl`, and neither Hub release contains
-them. Nor can they be regenerated from this repository: `plan.py:dump_targets` writes the
-`goal_source=file` format, whereas evaluation uses `prepare_targets_from_segments`, which
-reads a pre-sampled `{"segments": [...], "traj_len": N}` payload that nothing here
-produces. `pushobj_shift`'s held-out shapes (`I`, `small_tee`, `square`) are not in the
-published training release either.
+They define the benchmark's fixed evaluation episodes (1000 pre-sampled segments per
+shape, `goal_H=25`) and are **not** tracked in git. They originate from the
+[AdaJEPA release](https://github.com/agentic-learning-ai-lab/adajepa) and are
+distributed on Hugging Face Hub alongside the optional training dataset:
 
-So they have to be obtained from whoever produced the baseline records and staged by hand.
-Until they are, `paarbench.settings.Setting.require_targets` fails every run up front with
-the list of missing files rather than letting a column start and die shape by shape. A
-`scripts/download_targets.py` alongside the checkpoint downloader is the obvious fix and is
-not yet written.
+```bash
+python scripts/download_targets.py
+```
+
+The downloader fetches `pushobj_eval/` from
+[`ThomasWalker1/paarbench-data`](https://huggingface.co/datasets/ThomasWalker1/paarbench-data)
+and verifies every file against `TARGETS.sha256`. If Hub is unavailable, place
+`data/pushobj_eval.zip` locally and rerun with `--source local`, or use
+`--source drive` as a last resort (Google Drive id
+`1LNoPl-3XTlBFGSPg6DFqNXF3rv01LbUf`).
+
+Publish updates with `scripts/upload_targets.py` (requires a Hub write token).
 
 The optional training trajectories are distributed separately from the checkpoint release;
 see [`DATASET.md`](DATASET.md).

@@ -10,38 +10,12 @@
     "lora_scale": 1.0
   },
   "submission": true,
-  "selection_rule": "selection:EpochSelection",
-  "selection_cost_columns": 5,
+  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_cost_columns": 3,
   "selection_cost_basis": "selected",
   "episode_isolated": false,
   "selection_cohort_seed": 300,
   "test_cohorts": {
-    "test100": {
-      "setting": "pushobj",
-      "cohort": "test100",
-      "seed": 100,
-      "tag": "static_lora",
-      "n_evals": 50,
-      "n": 200,
-      "params": {
-        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth",
-        "target_scope": "predlast_all",
-        "rank": 2,
-        "lora_scale": 1.0
-      },
-      "success_by_shape": {
-        "T": 0.66,
-        "L": 0.62,
-        "Z": 0.58,
-        "+": 0.56
-      },
-      "success": 0.605,
-      "complete": true,
-      "failures": [],
-      "wall_seconds": 137.7,
-      "out_dir": "eval_outputs/static_lora/pushobj/test100",
-      "paired_metrics": null
-    },
     "test200": {
       "setting": "pushobj",
       "cohort": "test200",
@@ -64,8 +38,34 @@
       "success": 0.535,
       "complete": true,
       "failures": [],
-      "wall_seconds": 148.0,
+      "wall_seconds": 135.9,
       "out_dir": "eval_outputs/static_lora/pushobj/test200",
+      "paired_metrics": null
+    },
+    "test100": {
+      "setting": "pushobj",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 200,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "T": 0.66,
+        "L": 0.62,
+        "Z": 0.58,
+        "+": 0.56
+      },
+      "success": 0.605,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 140.0,
+      "out_dir": "eval_outputs/static_lora/pushobj/test100",
       "paired_metrics": null
     },
     "test400": {
@@ -90,7 +90,7 @@
       "success": 0.56,
       "complete": true,
       "failures": [],
-      "wall_seconds": 148.6,
+      "wall_seconds": 135.7,
       "out_dir": "eval_outputs/static_lora/pushobj/test400",
       "paired_metrics": null
     }

@@ -19,8 +19,8 @@
     "fold_weights": false
   },
   "submission": true,
-  "selection_rule": "inherited from pushobj (selection:EpochSelection, 5 column(s) there)",
-  "selection_cost_columns": 5,
+  "selection_rule": "inherited from pushobj (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
   "selection_cost_basis": "inherited",
   "episode_isolated": false,
   "selection_cohort_seed": 100,
@@ -55,7 +55,7 @@
       "success": 0.32,
       "complete": true,
       "failures": [],
-      "wall_seconds": 150.7,
+      "wall_seconds": 129.2,
       "out_dir": "eval_outputs/hyperjepa/pushobj_shift/test100",
       "paired_metrics": null
     }

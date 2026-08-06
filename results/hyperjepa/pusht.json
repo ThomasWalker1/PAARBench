@@ -19,7 +19,7 @@
     "fold_weights": false
   },
   "submission": true,
-  "selection_rule": "selection:EpochSelection",
+  "selection_rule": "standard (3-point grid + boundary expansion)",
   "selection_cost_columns": 4,
   "selection_cost_basis": "selected",
   "episode_isolated": false,
@@ -55,7 +55,7 @@
       "success": 0.4666666666666666,
       "complete": true,
       "failures": [],
-      "wall_seconds": 142.9,
+      "wall_seconds": 137.1,
       "out_dir": "eval_outputs/hyperjepa/pusht/test200",
       "paired_metrics": null
     },
@@ -89,7 +89,7 @@
       "success": 0.41333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 143.4,
+      "wall_seconds": 140.1,
       "out_dir": "eval_outputs/hyperjepa/pusht/test400",
       "paired_metrics": null
     }

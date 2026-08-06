@@ -27,7 +27,7 @@
       "success": 0.29333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 126.9,
+      "wall_seconds": 122.2,
       "out_dir": "eval_outputs/frozen/pushobj_shift/test100",
       "paired_metrics": null
     }

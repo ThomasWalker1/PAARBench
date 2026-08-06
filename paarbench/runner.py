@@ -239,7 +239,19 @@ def _claim_column(column_dir: Path) -> Optional[Path]:
                 os.kill(int(owner), 0)
                 alive = " (that process is still running)"
             except (ProcessLookupError, PermissionError):
-                alive = " (that pid is gone; the lock is stale, delete it)"
+                # A killed evaluate.py leaves this lock behind; reclaim it so resume
+                # can continue instead of aborting the whole submission.
+                lock.unlink(missing_ok=True)
+                fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, "w") as fh:
+                    fh.write(str(os.getpid()))
+                return lock
+        if alive:
+            raise ColumnBusy(
+                f"{column_dir} is locked by pid {owner}{alive}. Two processes writing one "
+                f"column interleave their episodes.jsonl writes, and the result reads as a "
+                f"result rather than as corruption. Wait for it, or use a different --tag."
+            ) from None
         raise ColumnBusy(
             f"{column_dir} is locked by pid {owner}{alive}. Two processes writing one "
             f"column interleave their episodes.jsonl writes, and the result reads as a "

@@ -1,32 +1,16 @@
 {
   "method": "frozen",
+  "method_dir": "frozen",
   "display_name": "Frozen base model (no adaptation)",
   "setting": "pusht",
   "params": {},
+  "submission": true,
   "selection_rule": "none (no hyperparameters)",
   "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
   "episode_isolated": false,
   "selection_cohort_seed": 100,
   "test_cohorts": {
-    "test200": {
-      "setting": "pusht",
-      "cohort": "test200",
-      "seed": 200,
-      "tag": "frozen",
-      "n_evals": 50,
-      "n": 150,
-      "params": {},
-      "success_by_shape": {
-        "T": 0.58,
-        "L": 0.26,
-        "Z": 0.2
-      },
-      "success": 0.3466666666666667,
-      "complete": true,
-      "failures": [],
-      "wall_seconds": 132.9,
-      "out_dir": "eval_outputs/frozen/pusht/test200"
-    },
     "test400": {
       "setting": "pusht",
       "cohort": "test400",
@@ -43,15 +27,33 @@
       "success": 0.35333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 124.4,
-      "out_dir": "eval_outputs/frozen/pusht/test400"
+      "wall_seconds": 124.1,
+      "out_dir": "eval_outputs/frozen/pusht/test400",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 150,
+      "params": {},
+      "success_by_shape": {
+        "T": 0.58,
+        "L": 0.26,
+        "Z": 0.2
+      },
+      "success": 0.3466666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 124.6,
+      "out_dir": "eval_outputs/frozen/pusht/test200",
+      "paired_metrics": null
     }
   },
   "success": 0.35,
   "n": 300,
   "complete": true,
-  "frozen_reference": null,
-  "selection_cost_basis": "none",
-  "submission": true,
-  "method_dir": "frozen"
+  "frozen_reference": 0.35
 }

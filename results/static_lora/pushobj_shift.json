@@ -10,8 +10,8 @@
     "lora_scale": 1.0
   },
   "submission": true,
-  "selection_rule": "inherited from pushobj (selection:EpochSelection, 5 column(s) there)",
-  "selection_cost_columns": 5,
+  "selection_rule": "inherited from pushobj (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
   "selection_cost_basis": "inherited",
   "episode_isolated": false,
   "selection_cohort_seed": 100,
@@ -37,7 +37,7 @@
       "success": 0.2866666666666667,
       "complete": true,
       "failures": [],
-      "wall_seconds": 151.4,
+      "wall_seconds": 131.5,
       "out_dir": "eval_outputs/static_lora/pushobj_shift/test100",
       "paired_metrics": null
     }

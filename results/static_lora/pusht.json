@@ -10,8 +10,8 @@
     "lora_scale": 1.0
   },
   "submission": true,
-  "selection_rule": "selection:EpochSelection",
-  "selection_cost_columns": 5,
+  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_cost_columns": 3,
   "selection_cost_basis": "selected",
   "episode_isolated": false,
   "selection_cohort_seed": 100,
@@ -37,7 +37,7 @@
       "success": 0.38000000000000006,
       "complete": true,
       "failures": [],
-      "wall_seconds": 139.5,
+      "wall_seconds": 136.5,
       "out_dir": "eval_outputs/static_lora/pusht/test200",
       "paired_metrics": null
     },
@@ -62,7 +62,7 @@
       "success": 0.3466666666666667,
       "complete": true,
       "failures": [],
-      "wall_seconds": 137.2,
+      "wall_seconds": 137.0,
       "out_dir": "eval_outputs/static_lora/pusht/test400",
       "paired_metrics": null
     }

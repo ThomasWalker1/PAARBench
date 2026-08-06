@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -54,10 +55,13 @@ def parse_args() -> argparse.Namespace:
                          "leaderboard's main table and listed separately, because a "
                          "submission is a method plus its *declared* rule and an "
                          "ablation by definition did not follow one.")
-    ap.add_argument("--gpus", default="0,1,2,3")
+    ap.add_argument("--gpus", default="0,1,2,3,4,5,6,7")
     ap.add_argument("--per-gpu", type=int, default=1,
                     help="concurrent processes per GPU; raise it for episode-isolated "
                          "methods, where each process plans a single episode")
+    ap.add_argument("--no-parallel-cohorts", action="store_true",
+                    help="run batched test cohorts one at a time even when spare GPUs "
+                         "could run another cohort in parallel")
     ap.add_argument("--n-evals", type=int, default=None)
     ap.add_argument("--selection-budget", type=int, default=None,
                     help="refuse to let the selection rule run more than N columns")
@@ -102,6 +106,74 @@ def inherit_selection(results_dir: Path, tag: str, source: str, method, setting)
     return (inherited,
             record.get("selection_cost_columns"),
             record.get("selection_rule", "unknown rule"))
+
+
+def _batched_cohort_parallelism(n_shapes: int, n_gpus: int) -> int:
+    """How many batched test cohorts can run at once without sharing a GPU."""
+    if n_shapes <= 0 or n_gpus <= 0:
+        return 1
+    return max(1, n_gpus // n_shapes)
+
+
+def _run_test_cohorts(
+    setting,
+    test_cohorts,
+    *,
+    tag,
+    method_name,
+    params,
+    isolation,
+    gpus,
+    parallel_cohorts,
+    **common,
+):
+    """Run each test cohort once with frozen parameters."""
+    results = {}
+    n_shapes = len(setting.shapes)
+    parallel = (
+        not isolation
+        and parallel_cohorts
+        and _batched_cohort_parallelism(n_shapes, len(gpus)) > 1
+        and len(test_cohorts) > 1
+    )
+
+    def run_one(cohort: str, gpu_subset: list[str]):
+        try:
+            return cohort, run_column(
+                setting, cohort, tag=tag, method_name=method_name, params=params,
+                episode_isolation=isolation, gpus=gpu_subset, **common
+            )
+        except ColumnConflict as exc:
+            raise SystemExit(f"[refused] {exc}") from exc
+
+    if not parallel:
+        for cohort in test_cohorts:
+            cohort, result = run_one(cohort, gpus)
+            results[cohort] = result.to_dict()
+            score = "incomplete" if result.success is None else f"{result.success:.3f}"
+            print(f"[test] {tag} {setting.id}/{cohort}: {score}", flush=True)
+        return results
+
+    width = _batched_cohort_parallelism(n_shapes, len(gpus))
+    print(
+        f"[parallel] batched test cohorts: up to {width} at a time "
+        f"({n_shapes} GPUs per cohort across {len(gpus)} slots)",
+        flush=True,
+    )
+    for wave_start in range(0, len(test_cohorts), width):
+        wave = test_cohorts[wave_start:wave_start + width]
+        with ThreadPoolExecutor(max_workers=len(wave)) as pool:
+            futures = {}
+            for index, cohort in enumerate(wave):
+                start = index * n_shapes
+                gpu_subset = gpus[start:start + n_shapes]
+                futures[pool.submit(run_one, cohort, gpu_subset)] = cohort
+            for future in as_completed(futures):
+                cohort, result = future.result()
+                results[cohort] = result.to_dict()
+                score = "incomplete" if result.success is None else f"{result.success:.3f}"
+                print(f"[test] {tag} {setting.id}/{cohort}: {score}", flush=True)
+    return results
 
 
 def main() -> int:
@@ -206,18 +278,19 @@ def main() -> int:
     method_name = None if args.frozen else name
     tag = args.tag or name
     test_cohorts = [f"test{seed}" for seed in setting.test_seeds]
-    results = {}
-    for cohort in test_cohorts:
-        try:
-            result = run_column(
-                setting, cohort, tag=tag, method_name=method_name, params=params,
-                episode_isolation=isolation, **common
-            )
-        except ColumnConflict as exc:
-            raise SystemExit(f"[refused] {exc}")
-        results[cohort] = result.to_dict()
-        score = "incomplete" if result.success is None else f"{result.success:.3f}"
-        print(f"[test] {tag} {setting.id}/{cohort}: {score}", flush=True)
+    results = _run_test_cohorts(
+        setting,
+        test_cohorts,
+        tag=tag,
+        method_name=method_name,
+        params=params,
+        isolation=isolation,
+        gpus=gpus,
+        parallel_cohorts=not args.no_parallel_cohorts,
+        n_evals=common["n_evals"] if "n_evals" in common else None,
+        out_root=common["out_root"],
+        per_gpu=common["per_gpu"],
+    )
 
     complete = [r for r in results.values() if r["complete"]]
     pooled = (sum(r["success"] * r["n"] for r in complete) / sum(r["n"] for r in complete)

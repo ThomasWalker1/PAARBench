@@ -121,9 +121,9 @@ class Setting:
         raise MissingTargets(
             f"setting {self.id!r} needs {len(missing)} goal file(s) that are not staged:\n"
             f"    {listed}\n"
-            f"  These are not tracked in git. Stage them under data/pushobj_eval/ before "
-            f"evaluating; see docs/CHECKPOINTS.md ('Evaluation targets and training data'). "
-            f"scripts/download_checkpoints.py does not fetch them."
+            f"  These are not tracked in git. Fetch them with "
+            f"`scripts/download_targets.py`; see docs/CHECKPOINTS.md "
+            f"('Evaluation targets and training data')."
         )
 
 

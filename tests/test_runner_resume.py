@@ -87,15 +87,15 @@ def test_a_second_claim_on_the_same_column_is_refused(tmp_path):
     assert "still running" in str(excinfo.value)
 
 
-def test_a_stale_lock_says_so_rather_than_just_refusing(tmp_path):
-    """A lock left by a killed launcher must be distinguishable from a live one."""
+def test_a_stale_lock_is_reclaimed_automatically(tmp_path):
+    """A lock left by a killed launcher must not block resume forever."""
     col = tmp_path / "col"
     col.mkdir()
     # A pid that cannot exist: the kernel maximum is well below this.
     (col / ".paarbench_column_lock").write_text("999999999")
-    with pytest.raises(runner.ColumnBusy) as excinfo:
-        runner._claim_column(col)
-    assert "stale" in str(excinfo.value)
+    lock = runner._claim_column(col)
+    assert lock.is_file()
+    lock.unlink()
 
 
 def test_claiming_a_column_releases_it_for_the_next_run(tmp_path):
