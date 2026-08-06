@@ -26,34 +26,30 @@
     
 <section id="about">
   <h2>About the Benchmark</h2>
-  <p class="lead">
-    PAARBench (PlanActAdaptRepeatBench) evaluates <strong>test-time adaptation (TTA) strategies</strong>
-    for latent world models in closed-loop control. Each submission declares at most two tunable
-    hyperparameters; the harness runs a fixed selection protocol (3-point grid per axis on the
-    selection cohort, up to two boundary expansions), freezes the best configuration, and
-    evaluates once on held-out test cohorts.
-  </p>
-  <div class="grid-2" style="margin-top:1.5rem;">
-    <div class="stat-card">
-      <h4>What it tests</h4>
-      <p>Whether a world model can adapt online during MPC replanning — and whether that adaptation
-      helps control without compounding error, catastrophic failures, or hidden tuning cost.</p>
-    </div>
-    <div class="stat-card">
-      <h4>Environments</h4>
-      <p><strong>PushObj</strong> — pushing objects of varied shapes.<br>
-      <strong>PushT</strong> — visual pushing with distribution shift.</p>
-    </div>
-    <div class="stat-card">
-      <h4>Fixed planner</h4>
-      <p>Goal horizon 25, 100 gradient-descent steps, zero action initialization, no action noise.
-      Deterministic closed-loop for paired episode comparisons.</p>
-    </div>
-    <div class="stat-card">
-      <h4>Metric frontier</h4>
-      <p>Success rate (with binomial SE in parentheses) plus paired distance change,
-      catastrophe rate, regret, adaptation latency, and peak memory — not a single rank.</p>
-    </div>
+  <div class="prose">
+    <p class="lead">
+      PAARBench (PlanActAdaptRepeatBench) evaluates <strong>test-time adaptation (TTA) strategies</strong>
+      for latent world models in closed-loop control. Each submission declares at most two tunable
+      hyperparameters; the harness runs a fixed selection protocol (3-point grid per axis on the
+      selection cohort, up to two boundary expansions), freezes the best configuration, and
+      evaluates once on held-out test cohorts.
+    </p>
+    <p>
+      The benchmark asks whether a world model can adapt online during MPC replanning — and whether
+      that adaptation helps control without compounding error, catastrophic failures, or hidden
+      tuning cost. Tasks include <strong>PushObj</strong> (pushing objects of varied shapes) and
+      <strong>PushT</strong> (visual pushing with distribution shift).
+    </p>
+    <p>
+      Planning is held fixed across submissions: goal horizon 25, 100 gradient-descent steps, zero
+      action initialization, and no action noise, so episodes are deterministic and paired comparisons
+      against the frozen baseline are meaningful.
+    </p>
+    <p>
+      Results are reported as a multi-objective frontier — success rate (with binomial SE in
+      parentheses), paired distance change, catastrophe rate, regret, adaptation latency, and peak
+      memory — rather than a single rank.
+    </p>
   </div>
 </section>
 
