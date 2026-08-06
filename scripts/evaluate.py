@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from paarbench import methods, settings as settings_mod
 from paarbench.runner import DEFAULT_OUT_ROOT, ColumnConflict, run_column
 from paarbench.selection import FixedParams, SelectionHarness
+from paarbench.tunable import StandardSelection
 
 RESULTS_DIR = Path("results")
 
@@ -154,6 +155,8 @@ def main() -> int:
         rule = method.load_selection_rule() or FixedParams(method.params_for(setting.id))
         if isinstance(rule, type):
             rule = rule()
+        if method.tunable is not None:
+            rule = StandardSelection(method.tunable, setting.id)
 
         if setting.inherits_selection_from and not isinstance(rule, FixedParams):
             source = setting.inherits_selection_from
@@ -182,18 +185,20 @@ def main() -> int:
                 setting, name, tag=name, budget=args.selection_budget,
                 episode_isolation=isolation, **common
             )
-            print(f"[select] {name}: running {method.selection_ref} on the "
+            rule_label = (StandardSelection.RULE_NAME if method.tunable is not None
+                          else method.selection_ref)
+            print(f"[select] {name}: running {rule_label} on the "
                   f"selection cohort (seed {setting.selection_seed})", flush=True)
             chosen = rule.select(harness)
             if not isinstance(chosen, dict):
                 raise SystemExit(
-                    f"{method.selection_ref}.select returned {type(chosen).__name__}, "
+                    f"{rule_label}.select returned {type(chosen).__name__}, "
                     f"expected a dict of parameters to freeze"
                 )
             params = {**method.params_for(setting.id), **chosen}
             selection_cost = harness.columns_used
             cost_basis = "selected"
-            selection_rule = method.selection_ref
+            selection_rule = rule_label
             print(f"[select] {name}: froze {params} after {selection_cost} column(s)",
                   flush=True)
 

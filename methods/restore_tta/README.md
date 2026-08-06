@@ -14,16 +14,15 @@ mechanisms, so this directory implements and claims only the restoration mechani
 The question is narrowly useful: AdaJEPA's compounding slope is positive on PushObj
 (+0.91 per replan, 95% CI [+0.40, +1.68]), whereas recomputed corrections are flat.
 Does restoring random parameter elements flatten that slope, and what does it cost in
-success rate? A null result is reported as such; the rule is a four-value selection
-grid for `p` (`0.001, 0.01, 0.05, 0.1`), not repeated tuning until a preferred
-result appears. Its declared selection objective is the paired compounding slope,
-not success: restoration exists to limit the accumulation mechanism, and success was
-too coarse to distinguish the rates on the selection cohort.
+success rate? A null result is reported as such; the declared selection objective is
+the paired compounding slope, not success: restoration exists to limit the accumulation
+mechanism, and success was too coarse to distinguish the rates on the selection cohort.
+Selection uses the benchmark-standard 3-point grid on `restore_probability` (log-spaced).
 
 Like AdaJEPA, this method owns shared world-model weights and AdamW state, so it
 declares episode isolation. Its base gradient configuration is AdaJEPA's already
-declared selected cell; the only additional search cost is the four restoration
-probabilities. Each reset also restores the full pretrained snapshot and rebuilds the
+declared selected cell; the only additional search cost is the standard 3-point sweep
+over restoration probability. Each reset also restores the full pretrained snapshot and rebuilds the
 optimizer, preventing cross-episode leakage.
 
 The implementation shares AdaJEPA's model-specific loss and parameterization closely

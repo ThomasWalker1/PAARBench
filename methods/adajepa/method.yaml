@@ -36,4 +36,11 @@ params:
   grad_clip_norm: 1.0
   require_single_episode: true
 
-selection: selection:StepSizeGrid
+tunable:
+  axes:
+    pred_lr:
+      initial: [5.0e-4, 2.0e-3, 1.0e-2]
+      scale: log
+    steps:
+      initial: [1, 5, 10]
+      scale: linear

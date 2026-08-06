@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAD — inverse-dynamics encoder adaptation — PAARBench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="../index.html" style="color:inherit;text-decoration:none;">PAARBench</a></h1>
+      <p class="tagline">PlanActAdaptRepeatBench — test-time adaptation for latent world models in closed-loop control</p>
+      <nav class="site-nav">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#settings">Settings</a>
+        <a href="../index.html#leaderboards">Leaderboards</a>
+        <a href="../index.html#contribute">Contribute</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-main">
+    
+<a class="back-link" href="../index.html">← Back to leaderboard</a>
+
+<div class="method-hero">
+  <h1>PAD — inverse-dynamics encoder adaptation</h1>
+  <p class="lead">Policy Adaptation during Deployment: update the world-model encoder online with a self-supervised inverse-dynamics loss that predicts the executed action from consecutive latents. The inverse-dynamics head is pretrained offline on PushObj trajectories and is an adapter-owned module, reset alongside the encoder every episode.</p>
+  <p class='reference'><strong>Reference:</strong> Hansen et al., &#x27;Self-Supervised Policy Adaptation during Deployment&#x27;, ICLR 2021</p>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span></div>
+</div>
+
+<section>
+  <h2>Overview</h2>
+  <div class="card prose">
+    <p>PAD (Hansen et al.) adapts the world-model encoder during deployment using an inverse-dynamics objective: from the latent before and after an executed action chunk, an auxiliary head predicts that chunk. This differs materially from the existing arms: the head is a module owned by the adapter, pretrained offline and then optimized with the encoder online.</p>
+<p>The head is pretrained on 2,048 transition pairs from the existing PushObj training set, using frozen base latents. <code>train_inverse_head.py</code> records the checkpoint and is the source for <code>checkpoints/pad/pushobj_inverse_dynamics.pth</code>. At deployment PAD updates both the encoder and head on the most recently executed model transition; it declares episode isolation because the optimizer owns shared weights.</p>
+<p>The original PAD head is jointly pretrained with the policy. This benchmark has a world model and MPC planner rather than that policy, so the shipped head is the closest honest substitute: it is pretrained on the available offline transitions but never on selection or test episodes. Results should be read as a test of whether this auxiliary signal transfers to latent world-model control, not a bit-identical reproduction of the original policy architecture.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Frozen Hyperparameters</h2>
+  <ul class='param-list'><li><span>action_dim</span> = 10</li><li><span>buffer_size</span> = 1</li><li><span>checkpoint_path</span> = checkpoints/pad/pushobj_inverse_dynamics.pth</li><li><span>encoder_lr</span> = 1e-05</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>head_hidden_dim</span> = 256</li><li><span>head_lr</span> = 0.0001</li><li><span>latent_dim</span> = 394</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 1</li></ul>
+</section>
+
+<section>
+  <h2>Results Summary</h2>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th><th class='num'>Selection cost</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.553</td>
+  <td class="num">+0.068</td>
+  <td class="num">600</td>
+  <td class="num">0</td>
+</tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Leaderboard Row</h2>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.553</td>
+  <td class="num">0.020</td>
+  <td class="num delta-pos">+0.065</td>
+  <td class="num">+5 [-0, +11]</td>
+  <td class="num">6.7% [4%, 10%]</td>
+  <td class="num">+0.26 [-0.04, +0.53]</td>
+  <td class="num">56% / +96</td>
+  <td class="num">0.029</td>
+  <td class="num">290</td>
+  <td class="num">600</td>
+  <td class="num">0 (authored)</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
+    </div>
+  </footer>
+</body>
+</html>

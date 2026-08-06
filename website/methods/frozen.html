@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frozen base model (no adaptation) — PAARBench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="../index.html" style="color:inherit;text-decoration:none;">PAARBench</a></h1>
+      <p class="tagline">PlanActAdaptRepeatBench — test-time adaptation for latent world models in closed-loop control</p>
+      <nav class="site-nav">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#settings">Settings</a>
+        <a href="../index.html#leaderboards">Leaderboards</a>
+        <a href="../index.html#contribute">Contribute</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-main">
+    
+<a class="back-link" href="../index.html">← Back to leaderboard</a>
+
+<div class="method-hero">
+  <h1>Frozen base model (no adaptation)</h1>
+  <p class="lead">The built-in baseline: no test-time adaptation. The world model and planner run with frozen pretrained weights. Every other method is measured against this reference on paired episodes.</p>
+  
+  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+</div>
+
+<section>
+  <h2>Overview</h2>
+  <div class="card prose">
+    <p>The built-in baseline: no test-time adaptation. The world model and planner run with frozen pretrained weights. Every other method is measured against this reference on paired episodes.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Frozen Hyperparameters</h2>
+  <p>No tunable hyperparameters.</p>
+</section>
+
+<section>
+  <h2>Results Summary</h2>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th><th class='num'>Selection cost</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.485</td>
+  <td class="num">+0.000</td>
+  <td class="num">600</td>
+  <td class="num">0</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.293</td>
+  <td class="num">+0.000</td>
+  <td class="num">150</td>
+  <td class="num">0</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.350</td>
+  <td class="num"></td>
+  <td class="num">300</td>
+  <td class="num">0</td>
+</tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Leaderboard Row</h2>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="baseline-row">
+  <td><span class="method-link">Frozen base model (no adaptation)</span></td>
+  <td class="num">0.485</td>
+  <td class="num">0.020</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">157</td>
+  <td class="num">600</td>
+  <td class="num">0</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="baseline-row">
+  <td><span class="method-link">Frozen base model (no adaptation)</span></td>
+  <td class="num">0.293</td>
+  <td class="num">0.037</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">157</td>
+  <td class="num">150</td>
+  <td class="num">0</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="baseline-row">
+  <td><span class="method-link">Frozen base model (no adaptation)</span></td>
+  <td class="num">0.350</td>
+  <td class="num">0.028</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">157</td>
+  <td class="num">300</td>
+  <td class="num">0</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restore TTA — online gradient TTA with stochastic restoration — PAARBench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="../index.html" style="color:inherit;text-decoration:none;">PAARBench</a></h1>
+      <p class="tagline">PlanActAdaptRepeatBench — test-time adaptation for latent world models in closed-loop control</p>
+      <nav class="site-nav">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#settings">Settings</a>
+        <a href="../index.html#leaderboards">Leaderboards</a>
+        <a href="../index.html#contribute">Contribute</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-main">
+    
+<a class="back-link" href="../index.html">← Back to leaderboard</a>
+
+<div class="method-hero">
+  <h1>Restore TTA — online gradient TTA with stochastic restoration</h1>
+  <p class="lead">Online gradient adaptation of the world model&#x27;s prediction loss over executed transitions, with stochastic restoration after every optimizer update. Each optimizable scalar is reset to its pretrained value independently with probability p, leaking the accumulating correction back toward the base model to test whether it flattens the compounding slope without sacrificing success.</p>
+  <p class='reference'><strong>Reference:</strong> Wang et al., &#x27;Continual Test-Time Domain Adaptation&#x27;, CVPR 2022 (restoration mechanism only)</p>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+</div>
+
+<section>
+  <h2>Overview</h2>
+  <div class="card prose">
+    <p><code>restore_tta</code> is online gradient TTA over the world model&#x27;s own latent prediction loss, with stochastic restoration after each optimizer update. For every scalar an optimizer can change, it independently copies the pretrained snapshot back with probability <code>p</code>. The correction can still accumulate across replans, but restoration creates a persistent leak against drift.</p>
+<p>It is deliberately <strong>not</strong> named <code>cotta</code>. Full CoTTA (Wang et al., CVPR 2022) combines a teacher-student EMA, augmentation-averaged pseudo-labels, and stochastic restoration. This world-model setting has no prediction target for the first two mechanisms, so this directory implements and claims only the restoration mechanism.</p>
+<p>The question is narrowly useful: AdaJEPA&#x27;s compounding slope is positive on PushObj (+0.91 per replan, 95% CI [+0.40, +1.68]), whereas recomputed corrections are flat. Does restoring random parameter elements flatten that slope, and what does it cost in success rate? A null result is reported as such; the declared selection objective is the paired compounding slope, not success: restoration exists to limit the accumulation mechanism, and success was too coarse to distinguish the rates on the selection cohort. Selection uses the benchmark-standard 3-point grid on <code>restore_probability</code> (log-spaced).</p>
+<p>Like AdaJEPA, this method owns shared world-model weights and AdamW state, so it declares episode isolation. Its base gradient configuration is AdaJEPA&#x27;s already declared selected cell; the only additional search cost is the standard 3-point sweep over restoration probability. Each reset also restores the full pretrained snapshot and rebuilds the optimizer, preventing cross-episode leakage.</p>
+<p>The implementation shares AdaJEPA&#x27;s model-specific loss and parameterization closely by design. That makes it a focused mechanism comparison, but it is a weaker test of the adapter interface&#x27;s generality than a method with a different update structure.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Frozen Hyperparameters</h2>
+  <ul class='param-list'><li><span>action_lr</span> = 0.0005</li><li><span>buffer_size</span> = 5</li><li><span>buffer_strategy</span> = recent</li><li><span>enc_lr</span> = 1e-05</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>lora_rank</span> = 2</li><li><span>lora_scale</span> = 1.0</li><li><span>pred_lr</span> = 0.0005</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>restore_probability</span> = 0.01</li><li><span>steps</span> = 10</li><li><span>stop_grad</span> = True</li><li><span>update_scope</span> = lora_predlast_all</li></ul>
+</section>
+
+<section>
+  <h2>Results Summary</h2>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th><th class='num'>Selection cost</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.678</td>
+  <td class="num">+0.193</td>
+  <td class="num">600</td>
+  <td class="num">4</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.340</td>
+  <td class="num">+0.047</td>
+  <td class="num">150</td>
+  <td class="num">4</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.347</td>
+  <td class="num">-0.003</td>
+  <td class="num">300</td>
+  <td class="num">4</td>
+</tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Leaderboard Row</h2>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
+  <td class="num">0.678</td>
+  <td class="num">0.019</td>
+  <td class="num delta-pos">+0.190</td>
+  <td class="num">+6 [+3, +11]</td>
+  <td class="num">7.5% [4%, 12%]</td>
+  <td class="num">+0.38 [+0.07, +0.79]</td>
+  <td class="num">61% / +146</td>
+  <td class="num">0.651</td>
+  <td class="num">177</td>
+  <td class="num">600</td>
+  <td class="num">4</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
+  <td class="num">0.340</td>
+  <td class="num">0.039</td>
+  <td class="num delta-pos">+0.047</td>
+  <td class="num">+11 [-5, +24]</td>
+  <td class="num">10.4% [5%, 17%]</td>
+  <td class="num">+0.58 [-0.35, +1.13]</td>
+  <td class="num">54% / +105</td>
+  <td class="num">0.658</td>
+  <td class="num">177</td>
+  <td class="num">150</td>
+  <td class="num">4 (inherited)</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
+  <td class="num">0.347</td>
+  <td class="num">0.027</td>
+  <td class="num delta-neg">-0.010</td>
+  <td class="num">-0 [-3, +2]</td>
+  <td class="num">5.4% [3%, 9%]</td>
+  <td class="num">+0.01 [-0.08, +0.14]</td>
+  <td class="num">48% / +68</td>
+  <td class="num">0.665</td>
+  <td class="num">177</td>
+  <td class="num">300</td>
+  <td class="num">4</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
+    </div>
+  </footer>
+</body>
+</html>

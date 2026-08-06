@@ -47,7 +47,9 @@ def main() -> int:
             for p in problems:
                 print(f"        - {p}")
         else:
-            selection = method.selection_ref or "none (params used as-is, 0 columns)"
+            selection = ((method.tunable and "standard tunable axes")
+                         or method.selection_ref
+                         or "none (params used as-is, 0 columns)")
             print(f"ok    {method.name:20} settings={','.join(method.settings):20} "
                   f"selection={selection}")
 

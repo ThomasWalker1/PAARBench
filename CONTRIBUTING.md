@@ -1,10 +1,11 @@
 # Contributing to PAARBench
 
-A submission is **an adaptation method together with its hyperparameter-selection rule**,
-evaluated under the fixed protocol, with its result record included. Everything about *how*
-to write one is in [`methods/README.md`](methods/README.md) — that is the document to read,
-and this one does not duplicate it. What follows is the part that is about the pull request
-rather than about the method.
+A submission is **an adaptation method with its hyperparameters chosen by the fixed
+selection protocol** (`tunable:` in `method.yaml`), evaluated under that protocol,
+with its result record included. Everything about *how* to write one is in
+[`methods/README.md`](methods/README.md) — that is the document to read, and this one
+does not duplicate it. What follows is the part that is about the pull request rather
+than about the method.
 
 ## Before you start: what you need that is not in this repository
 
@@ -35,9 +36,10 @@ The frozen baseline reproduces exactly, so use it as a self-test:
 If a column reports `MEAN: incomplete` while also reporting `0 failed`, your outputs are not
 landing where the harness reads them — that is a plumbing problem, not a method problem.
 
-A full submission on `pushobj` is roughly: your selection sweep, plus one column per test
-cohort, plus the frozen columns you need to pair against (see below). A batched method's
-column is ~2 min on 4 GPUs; an episode-isolated method's is `n_evals` times that.
+A full submission on `pushobj` is roughly: the standard selection sweep (3–9 cells
+initially, plus any boundary expansions), plus one column per test cohort, plus the
+frozen columns you need to pair against (see below). A batched method's column is ~2
+min on 4 GPUs; an episode-isolated method's is `n_evals` times that.
 
 ## You will need to run the frozen baseline too
 
@@ -91,8 +93,8 @@ no selection rule can reach a test cohort — so it verifies that your submissio
 *well-formed*, and cannot verify your numbers. Maintainers re-run submitted results before
 merging. Two things follow:
 
-1. Your record must be reproducible from what you committed: the declared rule, the frozen
-   parameters in `method.yaml`, and the settings you declare.
+1. Your record must be reproducible from what you committed: the `tunable` axes (or
+   authored `params` if none), and the settings you declare.
 2. Determinism matters. The planner is deterministic, and this is load-bearing — the paired
    metrics compare method against frozen episode by episode. If your method introduces
    nondeterminism, it must be seeded from something you declare.

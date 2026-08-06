@@ -5,14 +5,12 @@ benchmark:
   version: 0.0.1
   description: >-
     PlanActAdaptRepeatBench (PAARBench) evaluates test-time adaptation strategies
-    for latent world models in closed-loop control. A submission pairs an adaptation
-    method with a hyperparameter-selection rule that may inspect only a fixed
-    selection cohort; the frozen choice is then evaluated on held-out cohorts.
-    Results are a metric frontier (success, paired distance change, catastrophe,
-    compounding, regret, adaptation latency, peak memory, selection cost), not a
-    single aggregate rank. This open-turtles/PAARBench tree is a Turtle Research
-    canonical fork that preserves ThomasWalker1/PAARBench and does not claim Turtle
-    authorship of the scientific benchmark.
+    for latent world models in closed-loop control. Each submission declares at most
+    two tunable hyperparameters; the harness sweeps a 3-point grid per axis on a
+    fixed selection cohort (up to two boundary expansions), freezes the best
+    configuration, and evaluates once on held-out test cohorts. Results are a metric
+    frontier (success, paired distance change, catastrophe, compounding, regret,
+    adaptation latency, peak memory, selection cost), not a single aggregate rank.
 
 license: MIT
 

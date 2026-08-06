@@ -10,9 +10,8 @@ saying what you needed, because the interface is supposed to absorb it.
 
 ```
 methods/my_method/
-    method.yaml     required   metadata, and the frozen hyperparameters
+    method.yaml     required   metadata, frozen hyperparameters, and tunable axes
     adapter.py      required   your TestTimeAdapter implementation
-    selection.py    optional   how those hyperparameters were chosen
     README.md       expected   what it is, and what it reports
 ```
 
@@ -59,7 +58,7 @@ Three rules that the harness enforces rather than trusts:
   quietly inherits the previous episode's correction produces results that look real.
 - **You never see episode outcome.** No hook is passed success or distance-to-goal, and
   there is no back channel. An episode's outcome is only knowable once it is over;
-  a method that needs outcomes to tune belongs in `selection.py`, below.
+  hyperparameter selection belongs in `method.yaml`, not in the adapter.
 - **Everything is batched — unless you say otherwise.** The whole cohort is planned as
   one batch, so every observation has a leading batch dimension and all episodes step in
   lockstep. That is fine for a method whose state is naturally batched (a per-episode
@@ -99,70 +98,82 @@ reference: "Author et al., 2025, arXiv:..."      # optional
 adapter: adapter:MyAdapter      # <module>:<attribute>, resolved in this directory
 settings: [pushobj, pusht]      # which settings you claim to support
 
-params:                         # the frozen hyperparameters, passed to __init__
+params:                         # fixed defaults; selection overrides tunable keys
   lr: 5.0e-4
   steps: 10
-
-selection: selection:MyRule     # optional; omit if you have no hyperparameters
 ```
 
-## 3. Declare how you chose the hyperparameters
+## 3. Declare tunable hyperparameters (if any)
 
-This is the part the benchmark exists for. **A submission is a method together with its
-hyperparameter-selection rule**, because a score at a best-found hyperparameter says
-more about the search than about the method.
+**A submission is a method together with how its hyperparameters were chosen.** The
+benchmark fixes that procedure so selection cost is comparable across methods:
 
-Your rule may read **only the selection cohort**, and it is handed an object that has no
-way to reach a test cohort:
+1. Declare **at most two** tunable axes under `tunable:` in `method.yaml`.
+2. On the **selection cohort** only, evaluate a **3-point grid** per axis (3 cells for
+   one axis, 3×3 for two).
+3. If the best cell lies on a grid boundary, **expand** that axis outward (log/linear
+   step for continuous values; adjacent pool members for discrete axes). Repeat at most
+   **twice** (default `max_expansions: 2`).
+4. **Freeze** the best configuration and evaluate **once** on each held-out test cohort.
 
-```python
-class MyRule:
-    def select(self, harness):
-        best, least_harm = None, float("inf")
-        for lr in (1e-4, 5e-4, 1e-3):
-            result = harness.run(lr=lr)            # one column on the selection cohort
-            if result.median_distance_delta < least_harm:
-                best, least_harm = {"lr": lr}, result.median_distance_delta
-        return best                                # frozen, then run once on test
+Every evaluated grid cell is counted as **selection cost** and reported next to your
+score. The harness enforces cohort separation structurally: selection never sees test
+seeds.
+
+### Continuous axes (1 or 2)
+
+```yaml
+tunable:
+  objective: success            # optional: success (default), median_distance_delta,
+                                # catastrophe_rate, or compounding_slope
+  axes:
+    pred_lr:
+      initial: [5.0e-4, 2.0e-3, 1.0e-2]
+      scale: log
+    steps:
+      initial: [1, 5, 10]
+      scale: linear
 ```
 
-Every `harness.run` is counted, and the count is reported next to your score as your
-**selection cost**. That is deliberate: a method needing a 16-cell sweep pays for it
-visibly, and a method with no hyperparameters pays nothing. Off-the-shelf rules
-Each result exposes `success` plus paired `median_distance_delta`,
-`catastrophe_rate`, and `compounding_slope` values measured against the harness-owned
-frozen column on that same selection cohort. `GridSearch` accepts one of those names
-as its `objective` (success is the default); the paired-harm objectives are minimized.
-The frozen reference is never handed to the rule and never reaches a test cohort.
-Off-the-shelf rules (`GridSearch`, `FixedParams`) are in
-[`paarbench/selection.py`](../paarbench/selection.py).
+### Discrete axes (e.g. checkpoint epoch)
 
-**If your method has no hyperparameters, omit `selection` entirely.** The `params` in
-your `method.yaml` are used as-is at a cost of zero columns.
+Map a semantic axis to an adapter parameter with `maps_to`:
+
+```yaml
+tunable:
+  axes:
+    training_epoch:
+      scale: discrete
+      initial: [1, 2, 3]
+      pool_by_setting:
+        pushobj: [1, 2, 3, 4, 5]
+        pusht: [1, 2, 3, 4]
+      maps_to:
+        param: checkpoint_path
+        by_setting:
+          pushobj: checkpoints/.../hyper_lora_epoch_{}.pth
+          pusht: checkpoints/.../hyper_lora_epoch_{}.pth
+```
+
+Implementation: [`paarbench/tunable.py`](../paarbench/tunable.py).
+
+### No tunable hyperparameters
+
+Omit `tunable` entirely. The `params` in your `method.yaml` are used as-is at a cost of
+zero columns — but only if they truly are not hyperparameters you chose by inspecting
+benchmark episodes.
 
 ### Which zero you are claiming
-
-Omitting `selection` is honest for a method that genuinely has nothing to tune, and
-misleading for one whose hyperparameters you simply wrote down. The leaderboard
-distinguishes the two, so pick the one that is true of your submission:
 
 | what the record says | what you are claiming |
 |---|---|
 | `0` | the method has no hyperparameters. Only the built-in `frozen` arm reports this. |
 | `0 (authored)` | it has hyperparameters, and they were **authored, not selected** — no column was run to choose them. |
-| `4`, `16`, … | a declared rule ran that many columns on the selection cohort. |
-| `unknown` | a rule is declared but was skipped (`--skip-selection`), so the tuning happened somewhere this record cannot price. |
+| `3`, `9`, … | the standard protocol ran that many columns on the selection cohort. |
+| `unknown` | selection was skipped (`--skip-selection`), so the tuning happened somewhere this record cannot price. |
 
-`0 (authored)` is a legitimate thing to submit — a method whose settings come from the
-original paper has not tuned on this benchmark, and that is worth stating. What it is
-not is the same claim as `frozen`'s `0`, which is why the column does not render them
-identically. If your authored values came from a search you ran elsewhere, say so in
-your `README.md`; the column can only price what the harness watched.
-
-To move from `0 (authored)` to a real cost, write the rule that would have chosen those
-values and let it run. That is also the cheapest bug-finder in the repo: running
-`EpochSelection` for real is what caught a HyperJEPA checkpoint transcribed from the
-wrong column of a results table (`docs/CHECKPOINTS.md`).
+`0 (authored)` is legitimate for a method whose settings come from the original paper.
+If your authored values came from a search you ran elsewhere, say so in your `README.md`.
 
 ## 4. Check and run it
 
@@ -171,9 +182,9 @@ wrong column of a results table (`docs/CHECKPOINTS.md`).
 .venv/bin/python scripts/evaluate.py my_method --setting pushobj --gpus 0,1,2,3
 ```
 
-`evaluate.py` runs your selection rule on the selection cohort, freezes what it returns,
-then evaluates once on each test cohort and writes a result record. That record is what
-populates the leaderboard.
+`evaluate.py` runs the standard selection protocol on the selection cohort, freezes what
+it returns, then evaluates once on each test cohort and writes a result record. That
+record is what populates the leaderboard.
 
 ## 5. Open a pull request
 

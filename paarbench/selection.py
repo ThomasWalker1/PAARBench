@@ -20,9 +20,14 @@ Writing a rule::
                     best, best_score = {"lr": lr}, result.success
             return best
 
-A method with no hyperparameters needs no rule at all: omit ``selection`` from
-``method.yaml`` and the params in the file are used as-is, at a declared cost of zero
-columns.
+A method with no hyperparameters needs no rule at all: omit ``tunable`` and
+``selection`` from ``method.yaml`` and the params in the file are used as-is, at a
+declared cost of zero columns.
+
+Methods with one or two tunable hyperparameters declare them under ``tunable:`` in
+``method.yaml``.  The harness runs the fixed protocol in ``paarbench.tunable`` — a
+3-point grid per axis on the selection cohort, up to two boundary expansions, then
+freeze — rather than accepting a custom ``selection.py`` rule.
 """
 
 from __future__ import annotations

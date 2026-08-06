@@ -1,9 +1,10 @@
 # PAARBench — PlanActAdaptRepeatBench
 
 PAARBench evaluates test-time adaptation (TTA) strategies for latent world models in
-closed-loop control. A submission consists of both an adaptation method and its
-hyperparameter-selection rule: the rule may inspect only a fixed selection cohort,
-then its frozen choice is evaluated once on held-out cohorts.
+closed-loop control. A submission declares up to two tunable hyperparameters in
+`method.yaml`; the harness runs a fixed selection protocol (3-point grid per axis on
+the selection cohort, up to two boundary expansions, then freeze) before evaluating
+once on held-out test cohorts.
 
 The benchmark reports a metric frontier rather than a single rank. Alongside success
 rate it measures paired final-distance change, catastrophe rate, compounding error,
@@ -69,8 +70,8 @@ selectable cohort; methods use the parameters selected on `pushobj`.
 
 ## Evaluate a method
 
-Run the full protocol—selection, parameter freeze, held-out evaluation, and result
-record—with:
+Run the full protocol—standard hyperparameter selection on the selection cohort,
+parameter freeze, held-out evaluation, and result record—with:
 
 ```bash
 .venv/bin/python scripts/evaluate.py adajepa \
@@ -96,8 +97,8 @@ Regenerate the comparison table from checked-in result records with:
 
 ## Add an adaptation strategy
 
-Copy `methods/_template/` and implement one adapter, one manifest, and optionally one
-selection rule. No benchmark registry or planner changes are required.
+Copy `methods/_template/` and implement one adapter, one manifest, and optionally
+`tunable` axes. No benchmark registry or planner changes are required.
 
 ```bash
 cp -r methods/_template methods/my_method

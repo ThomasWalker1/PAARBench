@@ -22,7 +22,16 @@ settings: [pushobj]
 params:
   scale: 1.0
 
-# Optional. "<module>:<attribute>" of a selection rule. Omit it entirely if your
-# method has no hyperparameters: `params` above are then used as-is, at a declared
-# selection cost of zero columns.
-# selection: selection:TemplateRule
+# Optional. Declare one or two tunable hyperparameters; the harness runs the fixed
+# 3-point grid + boundary-expansion protocol on the selection cohort. Omit both
+# `tunable` and `selection` if the method has nothing to tune (0 selection cost).
+#
+# tunable:
+#   objective: success          # optional; default success
+#   max_expansions: 2          # optional; default 2
+#   axes:
+#     lr:
+#       initial: [1.0e-4, 1.0e-3, 1.0e-2]
+#       scale: log              # log, linear, or discrete
+#
+# Custom selection.py rules are not used when `tunable` is present.

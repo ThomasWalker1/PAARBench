@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Static LoRA — unconditioned correction — PAARBench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="../index.html" style="color:inherit;text-decoration:none;">PAARBench</a></h1>
+      <p class="tagline">PlanActAdaptRepeatBench — test-time adaptation for latent world models in closed-loop control</p>
+      <nav class="site-nav">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#settings">Settings</a>
+        <a href="../index.html#leaderboards">Leaderboards</a>
+        <a href="../index.html#contribute">Contribute</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-main">
+    
+<a class="back-link" href="../index.html">← Back to leaderboard</a>
+
+<div class="method-hero">
+  <h1>Static LoRA — unconditioned correction</h1>
+  <p class="lead">A learned rank-2 correction on the predictor&#x27;s last block, applied identically to every episode and never updated. No optimizer, no context: nothing about the correction depends on what the controller observed. This is the control that asks whether conditioning buys anything — if a conditioned method barely beats it, the conditioning is decorative rather than load-bearing.</p>
+  <p class='reference'><strong>Reference:</strong> Predecessor project ~/HyperJEPA, the &#x27;static&#x27; control arm @ 628dff7</p>
+  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+</div>
+
+<section>
+  <h2>Overview</h2>
+  <div class="card prose">
+    <p>A learned rank-2 correction on the predictor&#x27;s last block, applied identically to every episode and never updated. No optimizer, no context: nothing about the correction depends on what the controller observed. This is the control that asks whether conditioning buys anything — if a conditioned method barely beats it, the conditioning is decorative rather than load-bearing.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Frozen Hyperparameters</h2>
+  <ul class='param-list'><li><span>checkpoint_path</span> = checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth</li><li><span>lora_scale</span> = 1.0</li><li><span>rank</span> = 2</li><li><span>target_scope</span> = predlast_all</li></ul>
+</section>
+
+<section>
+  <h2>Results Summary</h2>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th><th class='num'>Selection cost</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.567</td>
+  <td class="num">+0.082</td>
+  <td class="num">600</td>
+  <td class="num">5</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.287</td>
+  <td class="num">-0.006</td>
+  <td class="num">150</td>
+  <td class="num">5</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.363</td>
+  <td class="num">+0.013</td>
+  <td class="num">300</td>
+  <td class="num">5</td>
+</tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Leaderboard Row</h2>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.567</td>
+  <td class="num">0.020</td>
+  <td class="num delta-pos">+0.082</td>
+  <td class="num">-5 [-9, +1]</td>
+  <td class="num">6.2% [3%, 10%]</td>
+  <td class="num">-0.08 [-0.24, +0.04]</td>
+  <td class="num">46% / +73</td>
+  <td class="num">0.000</td>
+  <td class="num">157</td>
+  <td class="num">600</td>
+  <td class="num">5</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.287</td>
+  <td class="num">0.037</td>
+  <td class="num delta-neg">-0.007</td>
+  <td class="num">-4 [-14, +8]</td>
+  <td class="num">9.1% [4%, 15%]</td>
+  <td class="num">-0.45 [-1.01, +0.24]</td>
+  <td class="num">48% / +93</td>
+  <td class="num">0.000</td>
+  <td class="num">157</td>
+  <td class="num">150</td>
+  <td class="num">5 (inherited)</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th class="num">Success</th>
+        <th class="num">±1 SE</th>
+        <th class="num">vs Frozen</th>
+        <th class="num">Median dist Δ</th>
+        <th class="num">Catastrophe</th>
+        <th class="num">Compounding</th>
+        <th class="num">Regret</th>
+        <th class="num">Adapt s/replan</th>
+        <th class="num">Peak MB</th>
+        <th class="num">n</th>
+        <th class="num">Selection cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.363</td>
+  <td class="num">0.028</td>
+  <td class="num delta-pos">+0.013</td>
+  <td class="num">+4 [-10, +13]</td>
+  <td class="num">11.2% [7%, 16%]</td>
+  <td class="num">+0.08 [-0.38, +0.30]</td>
+  <td class="num">54% / +180</td>
+  <td class="num">0.000</td>
+  <td class="num">157</td>
+  <td class="num">300</td>
+  <td class="num">5</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
+    </div>
+  </footer>
+</body>
+</html>

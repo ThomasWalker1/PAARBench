@@ -29,6 +29,18 @@ params_by_setting:
     # where epoch 2 is correct, rather than selected here.
     checkpoint_path: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_1.pth
 
-# Same hyperparameter as hyperjepa: which training epoch to deploy. Selected on the
-# selection cohort, not hand-picked.
-selection: selection:EpochSelection
+tunable:
+  axes:
+    training_epoch:
+      scale: discrete
+      initial: [1, 2, 3]
+      pool_by_setting:
+        pushobj: [1, 2, 3, 4, 5]
+        pushobj_shift: [1, 2, 3, 4, 5]
+        pusht: [1, 2, 3, 4, 5]
+      maps_to:
+        param: checkpoint_path
+        by_setting:
+          pushobj: checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_{}.pth
+          pushobj_shift: checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_{}.pth
+          pusht: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_{}.pth

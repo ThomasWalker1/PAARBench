@@ -31,6 +31,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from paarbench.tunable import TunableSpec, parse_tunable, validate_tunable
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 METHODS_DIR = REPO_ROOT / "methods"
 
@@ -102,6 +104,9 @@ class Method:
 
     selection_ref: Optional[str] = None
     """``"<module>:<attr>"`` of a SelectionRule, or None for no hyperparameters."""
+
+    tunable: Optional[TunableSpec] = None
+    """Declarative tunable axes; triggers the benchmark-standard selection protocol."""
 
     requires_episode_isolation: bool = False
     """Must each episode get its own process, with its own adapter instance?
@@ -257,6 +262,11 @@ def load(name: str, methods_dir: Optional[Path] = None) -> Method:
             f"they must match so results are attributable"
         )
 
+    try:
+        tunable = parse_tunable(raw.get("tunable"), manifest=str(manifest))
+    except ValueError as exc:
+        raise MethodError(str(exc)) from exc
+
     return Method(
         name=name,
         path=path,
@@ -266,6 +276,7 @@ def load(name: str, methods_dir: Optional[Path] = None) -> Method:
         params=params,
         params_by_setting=by_setting,
         selection_ref=(str(raw["selection"]) if raw.get("selection") else None),
+        tunable=tunable,
         requires_episode_isolation=bool(raw.get("requires_episode_isolation", False)),
         description=str(raw.get("description", "")),
         reference=str(raw.get("reference", "")),
@@ -337,7 +348,9 @@ def validate(method: Method) -> List[str]:
         )
     del TestTimeAdapter  # imported for the docstring reference above
 
-    if method.selection_ref is not None:
+    problems.extend(validate_tunable(method))
+
+    if method.tunable is None and method.selection_ref is not None:
         try:
             rule = method.load_selection_rule()
         except MethodError as exc:
