@@ -82,15 +82,17 @@ class SelectionHarness:
         verbose: bool = True,
     ):
         if not setting.has_selection_cohort:
+            if setting.inherits_selection_from:
+                raise CohortViolation(
+                    f"setting {setting.id!r} has no selection cohort; hyperparameters "
+                    f"are inherited from {setting.inherits_selection_from!r}. Evaluate "
+                    f"with the parameters selected there instead."
+                )
             raise CohortViolation(
                 f"setting {setting.id!r} declares selection seed "
                 f"{setting.selection_seed}, which is also one of its test seeds "
                 f"{list(setting.test_seeds)}. Every column this harness could run "
-                f"would be read off the cohort the submission is then scored on. "
-                + (f"Evaluate with the parameters selected on "
-                   f"{setting.inherits_selection_from!r} instead."
-                   if setting.inherits_selection_from else
-                   "Declare inherits_selection_from on the setting.")
+                f"would be read off the cohort the submission is then scored on."
             )
         self._setting = setting
         self._method_name = method_name

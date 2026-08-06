@@ -48,7 +48,7 @@ settings:
     direction: maximize
     description: >-
       Selectable PushObj setting (base pushobj_shape_shift; shapes T/L/Z/+).
-      Selection cohort seed 300; held-out test seeds 100, 200, 400. Reports the
+      Selection cohort seed 0; held-out test seeds 100, 200, 300. Reports the
       multi-objective frontier in LEADERBOARD.md, not a single rank.
   - id: pushobj_shift
     primary_metric: success
@@ -56,11 +56,12 @@ settings:
     description: >-
       Held-out shape condition (shapes I/small_tee/square) on the same base model.
       Not independently selectable: methods inherit hyperparameters frozen on
-      pushobj. Same frontier metrics; not comparable to other settings as one scalar.
+      pushobj. Test seeds 100, 200, 300; same frontier metrics; not comparable to
+      other settings as one scalar.
   - id: pusht
     primary_metric: success
     direction: maximize
     description: >-
       Selectable PushT setting (base pusht_visual_shift; shapes T/L/Z). Selection
-      cohort seed 100; held-out test seeds 200, 400. Same multi-objective frontier;
-      not comparable to other settings as one scalar.
+      cohort seed 0; held-out test seeds 100, 200, 300. Same multi-objective
+      frontier; not comparable to other settings as one scalar.

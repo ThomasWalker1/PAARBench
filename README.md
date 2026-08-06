@@ -65,9 +65,9 @@ Settings and cohort seeds are fixed in [`paarbench/settings.py`](paarbench/setti
 
 | id | base checkpoint | shapes | selection | held-out test |
 |---|---|---|---|---|
-| `pushobj` | `pushobj_shape_shift` | T, L, Z, + | seed 300 | seeds 100, 200, 400 |
-| `pushobj_shift` | `pushobj_shape_shift` | I, small_tee, square | inherited from `pushobj` | seed 100 |
-| `pusht` | `pusht_visual_shift` | T, L, Z | seed 100 | seeds 200, 400 |
+| `pushobj` | `pushobj_shape_shift` | T, L, Z, + | seed 0 | seeds 100, 200, 300 |
+| `pushobj_shift` | `pushobj_shape_shift` | I, small_tee, square | inherited from `pushobj` | seeds 100, 200, 300 |
+| `pusht` | `pusht_visual_shift` | T, L, Z | seed 0 | seeds 100, 200, 300 |
 
 `pushobj_shift` is a held-out shape condition, not a separate environment. It has no
 selectable cohort; methods use the parameters selected on `pushobj`.

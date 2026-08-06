@@ -22,6 +22,11 @@ from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# Shared across settings. Selection and test draws must use disjoint seeds; test
+# cohorts are always the same three held-out draws from the segment pool.
+SELECTION_SEED = 0
+TEST_SEEDS = (100, 200, 300)
+
 
 @dataclass(frozen=True)
 class Setting:
@@ -58,11 +63,13 @@ class Setting:
     def has_selection_cohort(self) -> bool:
         """Is there a cohort a selection rule may legitimately read?
 
-        False when the declared selection seed is also a test seed. That is not a
-        misconfiguration to fix by picking another seed -- for a held-out-shape
-        condition there is no other seed -- it is a setting where selection has to
-        come from somewhere else.
+        False when the setting inherits its hyperparameters from elsewhere, or when
+        the declared selection seed is also a test seed (legacy layout). For a
+        held-out-shape condition there is no other seed -- it is a setting where
+        selection has to come from somewhere else.
         """
+        if self.inherits_selection_from:
+            return False
         return self.selection_seed not in self.test_seeds
 
     @property
@@ -144,11 +151,11 @@ PUSHOBJ = _register(
         id="pushobj",
         base="pushobj_shape_shift",
         shapes=("T", "L", "Z", "+"),
-        selection_seed=300,
-        test_seeds=(100, 200, 400),
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
         n_evals=50,
-        frozen_success={"selection": 0.490, "test": 0.485},
-        frozen_success_by_shape={"T": 0.50, "L": 0.44, "Z": 0.60, "+": 0.42},
+        frozen_success={},
+        frozen_success_by_shape={},
     )
 )
 
@@ -157,18 +164,13 @@ PUSHOBJ_SHIFT = _register(
         id="pushobj_shift",
         base="pushobj_shape_shift",
         shapes=("I", "small_tee", "square"),
-        # A distribution-shift condition on the pushobj base. Held-out shapes were never trained on,
-        # so there is no selection/test distinction to draw within them; seed 100
-        # is the single declared cohort and it is scored as a test cohort.
-        selection_seed=100,
-        test_seeds=(100,),
-        # ...which means a selection rule run here would read the cohort it is then
-        # scored on. The harness refuses to do that (see has_selection_cohort), and
-        # a submission is instead evaluated with what it froze on pushobj -- the
-        # same base model, the same rule, shifted shapes.
+        # Distribution-shift condition: held-out shapes, no selection here.
+        # Hyperparameters are inherited from pushobj; selection_seed is unused.
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
         inherits_selection_from="pushobj",
         n_evals=50,
-        frozen_success={"test": 0.293},
+        frozen_success={},
     )
 )
 
@@ -177,11 +179,11 @@ PUSHT = _register(
         id="pusht",
         base="pusht_visual_shift",
         shapes=("T", "L", "Z"),
-        selection_seed=100,
-        test_seeds=(200, 400),
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
         n_evals=50,
-        frozen_success={"selection": 0.360, "test": 0.350},
-        frozen_success_by_shape={"T": 0.640, "L": 0.260, "Z": 0.180},
+        frozen_success={},
+        frozen_success_by_shape={},
     )
 )
 

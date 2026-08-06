@@ -51,8 +51,8 @@
     </div>
     <div class="stat-card">
       <h4>Metric frontier</h4>
-      <p>Success rate plus paired distance change, catastrophe rate, compounding error, regret,
-      adaptation latency, peak memory, and selection cost — not a single rank.</p>
+      <p>Success rate (with binomial SE in parentheses) plus paired distance change,
+      catastrophe rate, regret, adaptation latency, and peak memory — not a single rank.</p>
     </div>
   </div>
 </section>
@@ -78,41 +78,11 @@
 
 <section id="settings">
   <h2>Settings</h2>
-  <div class="table-wrap">
-    <table class="settings-table">
-      <thead>
-        <tr>
-          <th>Setting</th>
-          <th>Base checkpoint</th>
-          <th>Shapes</th>
-          <th>Selection cohort</th>
-          <th>Test cohorts</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>pushobj</code></td>
-          <td><code>pushobj_shape_shift</code></td>
-          <td>T, L, Z, +</td>
-          <td>seed 300</td>
-          <td>seeds 100, 200, 400</td>
-        </tr>
-        <tr>
-          <td><code>pushobj_shift</code></td>
-          <td><code>pushobj_shape_shift</code></td>
-          <td>I, small_tee, square</td>
-          <td>inherited from pushobj</td>
-          <td>seed 100</td>
-        </tr>
-        <tr>
-          <td><code>pusht</code></td>
-          <td><code>pusht_visual_shift</code></td>
-          <td>T, L, Z</td>
-          <td>seed 100</td>
-          <td>seeds 200, 400</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="card prose">
+    <p>Each setting pairs a base world model with a fixed episode distribution. Hyperparameter tuning uses one selection cohort (seed&nbsp;0); leaderboard scores are pooled over three held-out test cohorts (seeds&nbsp;100, 200, and 300). Selection and test draws are always disjoint.</p>
+    <p><strong>PushObj</strong> (<code>pushobj</code>) is the primary object-pushing setting: checkpoint <code>pushobj_shape_shift</code>, shapes T, L, Z, and +. Methods select hyperparameters on seed&nbsp;0, then run once on each test seed.</p>
+    <p><strong>PushObj Shift</strong> (<code>pushobj_shift</code>) holds out different shapes (I, small_tee, square) on the same checkpoint. There is no selection cohort — parameters are frozen from PushObj — but evaluation still uses the same three test seeds.</p>
+    <p><strong>PushT</strong> (<code>pusht</code>) is the visual pushing setting on <code>pusht_visual_shift</code> with shapes T, L, and Z. It follows the same one-seed selection, three-seed evaluation layout as PushObj.</p>
   </div>
 </section>
 
@@ -122,104 +92,49 @@
   
 <section class="setting-block" id="pushobj">
   <h3>PushObj</h3>
-  <p class="setting-meta">Test cohorts: seeds 100, 200, 400 — 4 shapes (T, L, Z, +), 50 episodes per shape per cohort (n=600). Selection cohort: seed 300 (never scored on the leaderboard).</p>
+  <p class="setting-meta">Four shapes (T, L, Z, +) on the pushobj_shape_shift checkpoint — 50 episodes per shape per cohort (n=600 pooled across test seeds).</p>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Method</th>
           <th class="num">Success</th>
-          <th class="num">±1 SE</th>
           <th class="num">vs Frozen</th>
           <th class="num">Median dist Δ</th>
           <th class="num">Catastrophe</th>
-          <th class="num">Compounding</th>
           <th class="num">Regret</th>
           <th class="num">Adapt s/replan</th>
           <th class="num">Peak MB</th>
-          <th class="num">n</th>
-          <th class="num">Selection cost</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
-  <td class="num">0.678</td>
-  <td class="num">0.019</td>
-  <td class="num delta-pos">+0.190</td>
-  <td class="num">+14 [+8, +23]</td>
-  <td class="num">14.5% [9%, 20%]</td>
-  <td class="num">+0.75 [+0.32, +1.36]</td>
-  <td class="num">63% / +198</td>
-  <td class="num">0.568</td>
-  <td class="num">177</td>
-  <td class="num">600</td>
-  <td class="num">16</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
-  <td class="num">0.678</td>
-  <td class="num">0.019</td>
-  <td class="num delta-pos">+0.190</td>
-  <td class="num">+6 [+3, +11]</td>
-  <td class="num">7.5% [4%, 12%]</td>
-  <td class="num">+0.38 [+0.07, +0.79]</td>
-  <td class="num">61% / +146</td>
-  <td class="num">0.651</td>
-  <td class="num">177</td>
-  <td class="num">600</td>
-  <td class="num">4</td>
-</tr><tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.610</td>
-  <td class="num">0.020</td>
+  <td class="num">0.610 (±0.020)</td>
   <td class="num delta-pos">+0.125</td>
   <td class="num">-6 [-14, -1]</td>
   <td class="num">8.3% [5%, 12%]</td>
-  <td class="num">+0.01 [-0.16, +0.09]</td>
   <td class="num">43% / +93</td>
-  <td class="num">0.147</td>
+  <td class="num">0.139</td>
   <td class="num">977</td>
-  <td class="num">600</td>
-  <td class="num">5</td>
 </tr><tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.567</td>
-  <td class="num">0.020</td>
+  <td class="num">0.567 (±0.020)</td>
   <td class="num delta-pos">+0.082</td>
   <td class="num">-5 [-9, +1]</td>
   <td class="num">6.2% [3%, 10%]</td>
-  <td class="num">-0.08 [-0.24, +0.04]</td>
   <td class="num">46% / +73</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">600</td>
-  <td class="num">5</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
-  <td class="num">0.553</td>
-  <td class="num">0.020</td>
-  <td class="num delta-pos">+0.065</td>
-  <td class="num">+5 [-0, +11]</td>
-  <td class="num">6.7% [4%, 10%]</td>
-  <td class="num">+0.26 [-0.04, +0.53]</td>
-  <td class="num">56% / +96</td>
-  <td class="num">0.029</td>
-  <td class="num">290</td>
-  <td class="num">600</td>
-  <td class="num">0 (authored)</td>
 </tr><tr class="baseline-row">
   <td><span class="method-link">Frozen base model (no adaptation)</span></td>
-  <td class="num">0.485</td>
-  <td class="num">0.020</td>
+  <td class="num">0.485 (±0.020)</td>
   <td class="num ">—</td>
   <td class="num">—</td>
   <td class="num">—</td>
   <td class="num">—</td>
-  <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">600</td>
-  <td class="num">0</td>
 </tr>
       </tbody>
     </table>
@@ -228,91 +143,49 @@
 
 <section class="setting-block" id="pushobj_shift">
   <h3>PushObj Shift</h3>
-  <p class="setting-meta">Held-out shape distribution shift (I, small_tee, square). Test cohort: seed 100, n=150. No selection cohort — parameters are inherited from PushObj.</p>
+  <p class="setting-meta">Held-out shapes (I, small_tee, square) on the same base model — n=450 pooled. Hyperparameters are inherited from PushObj; no selection here.</p>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Method</th>
           <th class="num">Success</th>
-          <th class="num">±1 SE</th>
           <th class="num">vs Frozen</th>
           <th class="num">Median dist Δ</th>
           <th class="num">Catastrophe</th>
-          <th class="num">Compounding</th>
           <th class="num">Regret</th>
           <th class="num">Adapt s/replan</th>
           <th class="num">Peak MB</th>
-          <th class="num">n</th>
-          <th class="num">Selection cost</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
-  <td class="num">0.387</td>
-  <td class="num">0.040</td>
-  <td class="num delta-pos">+0.093</td>
-  <td class="num">+9 [-4, +31]</td>
-  <td class="num">13.3% [7%, 21%]</td>
-  <td class="num">+0.80 [-0.03, +1.83]</td>
-  <td class="num">56% / +146</td>
-  <td class="num">0.569</td>
-  <td class="num">177</td>
-  <td class="num">150</td>
-  <td class="num">16 (inherited)</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
-  <td class="num">0.340</td>
-  <td class="num">0.039</td>
-  <td class="num delta-pos">+0.047</td>
-  <td class="num">+11 [-5, +24]</td>
-  <td class="num">10.4% [5%, 17%]</td>
-  <td class="num">+0.58 [-0.35, +1.13]</td>
-  <td class="num">54% / +105</td>
-  <td class="num">0.658</td>
-  <td class="num">177</td>
-  <td class="num">150</td>
-  <td class="num">4 (inherited)</td>
-</tr><tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.320</td>
-  <td class="num">0.038</td>
+  <td class="num">0.320 (±0.038)</td>
   <td class="num delta-pos">+0.027</td>
   <td class="num">-2 [-11, +17]</td>
   <td class="num">7.5% [3%, 13%]</td>
-  <td class="num">+0.06 [-0.42, +0.56]</td>
   <td class="num">46% / +81</td>
-  <td class="num">0.152</td>
+  <td class="num">0.156</td>
   <td class="num">977</td>
-  <td class="num">150</td>
-  <td class="num">5 (inherited)</td>
 </tr><tr class="baseline-row">
   <td><span class="method-link">Frozen base model (no adaptation)</span></td>
-  <td class="num">0.293</td>
-  <td class="num">0.037</td>
+  <td class="num">0.293 (±0.037)</td>
   <td class="num ">—</td>
   <td class="num">—</td>
   <td class="num">—</td>
   <td class="num">—</td>
-  <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">150</td>
-  <td class="num">0</td>
 </tr><tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.287</td>
-  <td class="num">0.037</td>
+  <td class="num">0.287 (±0.037)</td>
   <td class="num delta-neg">-0.007</td>
   <td class="num">-4 [-14, +8]</td>
   <td class="num">9.1% [4%, 15%]</td>
-  <td class="num">-0.45 [-1.01, +0.24]</td>
   <td class="num">48% / +93</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">150</td>
-  <td class="num">5 (inherited)</td>
 </tr>
       </tbody>
     </table>
@@ -321,91 +194,49 @@
 
 <section class="setting-block" id="pusht">
   <h3>PushT</h3>
-  <p class="setting-meta">Visual pushing task. Test cohorts: seeds 200, 400 — 3 shapes (T, L, Z), 50 episodes per shape per cohort (n=300). Selection cohort: seed 100.</p>
+  <p class="setting-meta">Visual pushing on pusht_visual_shift with three shapes (T, L, Z) — 50 episodes per shape per cohort (n=450 pooled).</p>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Method</th>
           <th class="num">Success</th>
-          <th class="num">±1 SE</th>
           <th class="num">vs Frozen</th>
           <th class="num">Median dist Δ</th>
           <th class="num">Catastrophe</th>
-          <th class="num">Compounding</th>
           <th class="num">Regret</th>
           <th class="num">Adapt s/replan</th>
           <th class="num">Peak MB</th>
-          <th class="num">n</th>
-          <th class="num">Selection cost</th>
         </tr>
       </thead>
       <tbody>
         <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.440</td>
-  <td class="num">0.029</td>
+  <td class="num">0.440 (±0.029)</td>
   <td class="num delta-pos">+0.090</td>
   <td class="num">-13 [-30, +7]</td>
   <td class="num">4.7% [2%, 9%]</td>
-  <td class="num">-0.55 [-1.16, -0.07]</td>
   <td class="num">46% / +81</td>
-  <td class="num">0.141</td>
+  <td class="num">0.140</td>
   <td class="num">977</td>
-  <td class="num">300</td>
-  <td class="num">4</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
-  <td class="num">0.420</td>
-  <td class="num">0.028</td>
-  <td class="num delta-pos">+0.063</td>
-  <td class="num">+27 [+13, +52]</td>
-  <td class="num">24.5% [18%, 31%]</td>
-  <td class="num">+1.62 [+0.66, +2.89]</td>
-  <td class="num">59% / +296</td>
-  <td class="num">0.570</td>
-  <td class="num">177</td>
-  <td class="num">300</td>
-  <td class="num">16</td>
 </tr><tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.363</td>
-  <td class="num">0.028</td>
+  <td class="num">0.363 (±0.028)</td>
   <td class="num delta-pos">+0.013</td>
   <td class="num">+4 [-10, +13]</td>
   <td class="num">11.2% [7%, 16%]</td>
-  <td class="num">+0.08 [-0.38, +0.30]</td>
   <td class="num">54% / +180</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">300</td>
-  <td class="num">5</td>
 </tr><tr class="baseline-row">
   <td><span class="method-link">Frozen base model (no adaptation)</span></td>
-  <td class="num">0.350</td>
-  <td class="num">0.028</td>
+  <td class="num">0.350 (±0.028)</td>
   <td class="num ">—</td>
   <td class="num">—</td>
   <td class="num">—</td>
   <td class="num">—</td>
-  <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">300</td>
-  <td class="num">0</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
-  <td class="num">0.347</td>
-  <td class="num">0.027</td>
-  <td class="num delta-neg">-0.010</td>
-  <td class="num">-0 [-3, +2]</td>
-  <td class="num">5.4% [3%, 9%]</td>
-  <td class="num">+0.01 [-0.08, +0.14]</td>
-  <td class="num">48% / +68</td>
-  <td class="num">0.665</td>
-  <td class="num">177</td>
-  <td class="num">300</td>
-  <td class="num">4</td>
 </tr>
       </tbody>
     </table>
@@ -421,14 +252,10 @@ columns carry far more information:</p>
   model on the same episodes (both-fail episodes only). Negative is better.</li>
   <li><strong>catastrophe</strong> — fraction of episodes ending more than 2× further from the goal
   than frozen. How often adapting actively hurts.</li>
-  <li><strong>compounding</strong> — slope of the paired distance gap vs. replan index. Positive
-  means the correction degrades as it accumulates; ~0 means it is recomputed rather than accumulated.</li>
   <li><strong>regret</strong> — fraction of episodes where adapting ended further from the goal than
   not adapting, and the 90th-percentile size of that loss.</li>
   <li><strong>adapt s/replan</strong> and <strong>peak MB</strong> — adaptation cost around the
   adapter hooks only.</li>
-  <li><strong>selection cost</strong> — evaluation columns consumed by the hyperparameter-selection
-  rule. <code>0 (authored)</code> means parameters were written down, not selected.</li>
 </ul>
 <p>Intervals are 95% percentile bootstrap over episodes (2000 resamples). There is deliberately
 no overall rank — sort by whichever column matters for your use case.</p>
@@ -455,7 +282,7 @@ no overall rank — sort by whichever column matters for your use case.</p>
           </tr>
           <tr>
             <td>Goal files <code>data/pushobj_eval/val_&lt;shape&gt;/plan_targets.pkl</code></td>
-            <td>Not distributed — see docs/CHECKPOINTS.md</td>
+            <td><code>scripts/download_targets.py</code></td>
             <td>Everything</td>
           </tr>
           <tr>

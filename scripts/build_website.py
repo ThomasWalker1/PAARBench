@@ -20,27 +20,50 @@ SETTING_INFO = {
     "pushobj": {
         "title": "PushObj",
         "description": (
-            "Test cohorts: seeds 100, 200, 400 — 4 shapes (T, L, Z, +), "
-            "50 episodes per shape per cohort (n=600). "
-            "Selection cohort: seed 300 (never scored on the leaderboard)."
+            "Four shapes (T, L, Z, +) on the pushobj_shape_shift checkpoint — "
+            "50 episodes per shape per cohort (n=600 pooled across test seeds)."
         ),
     },
     "pushobj_shift": {
         "title": "PushObj Shift",
         "description": (
-            "Held-out shape distribution shift (I, small_tee, square). "
-            "Test cohort: seed 100, n=150. No selection cohort — parameters "
-            "are inherited from PushObj."
+            "Held-out shapes (I, small_tee, square) on the same base model — "
+            "n=450 pooled. Hyperparameters are inherited from PushObj; no selection here."
         ),
     },
     "pusht": {
         "title": "PushT",
         "description": (
-            "Visual pushing task. Test cohorts: seeds 200, 400 — 3 shapes (T, L, Z), "
-            "50 episodes per shape per cohort (n=300). "
-            "Selection cohort: seed 100."
+            "Visual pushing on pusht_visual_shift with three shapes (T, L, Z) — "
+            "50 episodes per shape per cohort (n=450 pooled)."
         ),
     },
+}
+
+SETTINGS_INTRO = (
+    "Each setting pairs a base world model with a fixed episode distribution. "
+    "Hyperparameter tuning uses one selection cohort (seed&nbsp;0); leaderboard "
+    "scores are pooled over three held-out test cohorts (seeds&nbsp;100, 200, and 300). "
+    "Selection and test draws are always disjoint."
+)
+
+SETTINGS_PARAGRAPHS = {
+    "pushobj": (
+        "<strong>PushObj</strong> (<code>pushobj</code>) is the primary object-pushing "
+        "setting: checkpoint <code>pushobj_shape_shift</code>, shapes T, L, Z, and +. "
+        "Methods select hyperparameters on seed&nbsp;0, then run once on each test seed."
+    ),
+    "pushobj_shift": (
+        "<strong>PushObj Shift</strong> (<code>pushobj_shift</code>) holds out different "
+        "shapes (I, small_tee, square) on the same checkpoint. There is no selection "
+        "cohort — parameters are frozen from PushObj — but evaluation still uses the "
+        "same three test seeds."
+    ),
+    "pusht": (
+        "<strong>PushT</strong> (<code>pusht</code>) is the visual pushing setting on "
+        "<code>pusht_visual_shift</code> with shapes T, L, and Z. It follows the same "
+        "one-seed selection, three-seed evaluation layout as PushObj."
+    ),
 }
 
 METRICS_EXPLAINER = """
@@ -52,14 +75,10 @@ columns carry far more information:</p>
   model on the same episodes (both-fail episodes only). Negative is better.</li>
   <li><strong>catastrophe</strong> — fraction of episodes ending more than 2× further from the goal
   than frozen. How often adapting actively hurts.</li>
-  <li><strong>compounding</strong> — slope of the paired distance gap vs. replan index. Positive
-  means the correction degrades as it accumulates; ~0 means it is recomputed rather than accumulated.</li>
   <li><strong>regret</strong> — fraction of episodes where adapting ended further from the goal than
   not adapting, and the 90th-percentile size of that loss.</li>
   <li><strong>adapt s/replan</strong> and <strong>peak MB</strong> — adaptation cost around the
   adapter hooks only.</li>
-  <li><strong>selection cost</strong> — evaluation columns consumed by the hyperparameter-selection
-  rule. <code>0 (authored)</code> means parameters were written down, not selected.</li>
 </ul>
 <p>Intervals are 95% percentile bootstrap over episodes (2000 resamples). There is deliberately
 no overall rank — sort by whichever column matters for your use case.</p>
@@ -229,6 +248,17 @@ def page_shell(title: str, body: str, *, depth: int = 0) -> str:
 """
 
 
+def format_success(row: dict[str, str]) -> str:
+    """Render success with binomial SE in parentheses, e.g. ``0.485 (±0.020)``."""
+    success = row.get("success", "").strip()
+    se = row.get("±1 se", row.get("±1 SE", "")).strip()
+    if not success or success.startswith("*"):
+        return success
+    if se and se not in ("—", "-", ""):
+        return f"{success} (±{se.lstrip('±')})"
+    return success
+
+
 def render_leaderboard_row(row: dict[str, str], slug: str | None) -> str:
     method_name = row.get("method", "")
     is_baseline = slug == "frozen"
@@ -245,17 +275,13 @@ def render_leaderboard_row(row: dict[str, str], slug: str | None) -> str:
 
     return f"""<tr{row_class}>
   <td>{method_cell}</td>
-  <td class="num">{esc(row.get("success", ""))}</td>
-  <td class="num">{esc(row.get("±1 se", ""))}</td>
+  <td class="num">{esc(format_success(row))}</td>
   <td class="num {vs_class}">{esc(vs)}</td>
   <td class="num">{esc(row.get("median dist δ [95% ci]", row.get("median dist Δ [95% CI]", "")))}</td>
   <td class="num">{esc(row.get("catastrophe [95% ci]", row.get("catastrophe [95% CI]", "")))}</td>
-  <td class="num">{esc(row.get("compounding [95% ci]", row.get("compounding [95% CI]", "")))}</td>
   <td class="num">{esc(row.get("regret", ""))}</td>
   <td class="num">{esc(row.get("adapt s/replan", ""))}</td>
   <td class="num">{esc(row.get("peak mb", row.get("peak MB", "")))}</td>
-  <td class="num">{esc(row.get("n", ""))}</td>
-  <td class="num">{esc(row.get("selection cost", ""))}</td>
 </tr>"""
 
 
@@ -278,16 +304,12 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
         <tr>
           <th>Method</th>
           <th class="num">Success</th>
-          <th class="num">±1 SE</th>
           <th class="num">vs Frozen</th>
           <th class="num">Median dist Δ</th>
           <th class="num">Catastrophe</th>
-          <th class="num">Compounding</th>
           <th class="num">Regret</th>
           <th class="num">Adapt s/replan</th>
           <th class="num">Peak MB</th>
-          <th class="num">n</th>
-          <th class="num">Selection cost</th>
         </tr>
       </thead>
       <tbody>
@@ -326,8 +348,8 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
     </div>
     <div class="stat-card">
       <h4>Metric frontier</h4>
-      <p>Success rate plus paired distance change, catastrophe rate, compounding error, regret,
-      adaptation latency, peak memory, and selection cost — not a single rank.</p>
+      <p>Success rate (with binomial SE in parentheses) plus paired distance change,
+      catastrophe rate, regret, adaptation latency, and peak memory — not a single rank.</p>
     </div>
   </div>
 </section>
@@ -353,41 +375,11 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
 
 <section id="settings">
   <h2>Settings</h2>
-  <div class="table-wrap">
-    <table class="settings-table">
-      <thead>
-        <tr>
-          <th>Setting</th>
-          <th>Base checkpoint</th>
-          <th>Shapes</th>
-          <th>Selection cohort</th>
-          <th>Test cohorts</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>pushobj</code></td>
-          <td><code>pushobj_shape_shift</code></td>
-          <td>T, L, Z, +</td>
-          <td>seed 300</td>
-          <td>seeds 100, 200, 400</td>
-        </tr>
-        <tr>
-          <td><code>pushobj_shift</code></td>
-          <td><code>pushobj_shape_shift</code></td>
-          <td>I, small_tee, square</td>
-          <td>inherited from pushobj</td>
-          <td>seed 100</td>
-        </tr>
-        <tr>
-          <td><code>pusht</code></td>
-          <td><code>pusht_visual_shift</code></td>
-          <td>T, L, Z</td>
-          <td>seed 100</td>
-          <td>seeds 200, 400</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="card prose">
+    <p>{SETTINGS_INTRO}</p>
+    <p>{SETTINGS_PARAGRAPHS["pushobj"]}</p>
+    <p>{SETTINGS_PARAGRAPHS["pushobj_shift"]}</p>
+    <p>{SETTINGS_PARAGRAPHS["pusht"]}</p>
   </div>
 </section>
 
@@ -418,7 +410,7 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
           </tr>
           <tr>
             <td>Goal files <code>data/pushobj_eval/val_&lt;shape&gt;/plan_targets.pkl</code></td>
-            <td>Not distributed — see docs/CHECKPOINTS.md</td>
+            <td><code>scripts/download_targets.py</code></td>
             <td>Everything</td>
           </tr>
           <tr>
@@ -571,7 +563,6 @@ def render_method_page(
   <td class="num">{success_str}</td>
   <td class="num">{esc(vs)}</td>
   <td class="num">{res.get("n", "")}</td>
-  <td class="num">{res.get("selection_cost_columns", "—")}</td>
 </tr>""")
 
     leaderboard_sections = []
@@ -587,16 +578,12 @@ def render_method_page(
       <tr>
         <th>Method</th>
         <th class="num">Success</th>
-        <th class="num">±1 SE</th>
         <th class="num">vs Frozen</th>
         <th class="num">Median dist Δ</th>
         <th class="num">Catastrophe</th>
-        <th class="num">Compounding</th>
         <th class="num">Regret</th>
         <th class="num">Adapt s/replan</th>
         <th class="num">Peak MB</th>
-        <th class="num">n</th>
-        <th class="num">Selection cost</th>
       </tr>
     </thead>
     <tbody>
@@ -633,7 +620,7 @@ def render_method_page(
 
 <section>
   <h2>Results Summary</h2>
-  {"<div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th><th class='num'>Selection cost</th></tr></thead><tbody>" + "".join(result_rows) + "</tbody></table></div>" if result_rows else "<p>No result records checked in for this method.</p>"}
+  {"<div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody>" + "".join(result_rows) + "</tbody></table></div>" if result_rows else "<p>No result records checked in for this method.</p>"}
 </section>
 
 <section>

@@ -42,30 +42,12 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <ul class='param-list'><li><span>checkpoint_path</span> = checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_2.pth</li><li><span>lora_scale</span> = 1.0</li><li><span>rank</span> = 2</li><li><span>target_scope</span> = predlast_all</li></ul>
+  <p>No tunable hyperparameters.</p>
 </section>
 
 <section>
   <h2>Results Summary</h2>
-  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th><th class='num'>Selection cost</th></tr></thead><tbody><tr>
-  <td><code>pushobj</code></td>
-  <td class="num">0.567</td>
-  <td class="num">+0.082</td>
-  <td class="num">600</td>
-  <td class="num">5</td>
-</tr><tr>
-  <td><code>pushobj_shift</code></td>
-  <td class="num">0.287</td>
-  <td class="num">-0.006</td>
-  <td class="num">150</td>
-  <td class="num">5</td>
-</tr><tr>
-  <td><code>pusht</code></td>
-  <td class="num">0.363</td>
-  <td class="num">+0.013</td>
-  <td class="num">300</td>
-  <td class="num">5</td>
-</tr></tbody></table></div>
+  <p>No result records checked in for this method.</p>
 </section>
 
 <section>
@@ -78,32 +60,24 @@
       <tr>
         <th>Method</th>
         <th class="num">Success</th>
-        <th class="num">±1 SE</th>
         <th class="num">vs Frozen</th>
         <th class="num">Median dist Δ</th>
         <th class="num">Catastrophe</th>
-        <th class="num">Compounding</th>
         <th class="num">Regret</th>
         <th class="num">Adapt s/replan</th>
         <th class="num">Peak MB</th>
-        <th class="num">n</th>
-        <th class="num">Selection cost</th>
       </tr>
     </thead>
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.567</td>
-  <td class="num">0.020</td>
+  <td class="num">0.567 (±0.020)</td>
   <td class="num delta-pos">+0.082</td>
   <td class="num">-5 [-9, +1]</td>
   <td class="num">6.2% [3%, 10%]</td>
-  <td class="num">-0.08 [-0.24, +0.04]</td>
   <td class="num">46% / +73</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">600</td>
-  <td class="num">5</td>
 </tr>
     </tbody>
   </table>
@@ -116,32 +90,24 @@
       <tr>
         <th>Method</th>
         <th class="num">Success</th>
-        <th class="num">±1 SE</th>
         <th class="num">vs Frozen</th>
         <th class="num">Median dist Δ</th>
         <th class="num">Catastrophe</th>
-        <th class="num">Compounding</th>
         <th class="num">Regret</th>
         <th class="num">Adapt s/replan</th>
         <th class="num">Peak MB</th>
-        <th class="num">n</th>
-        <th class="num">Selection cost</th>
       </tr>
     </thead>
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.287</td>
-  <td class="num">0.037</td>
+  <td class="num">0.287 (±0.037)</td>
   <td class="num delta-neg">-0.007</td>
   <td class="num">-4 [-14, +8]</td>
   <td class="num">9.1% [4%, 15%]</td>
-  <td class="num">-0.45 [-1.01, +0.24]</td>
   <td class="num">48% / +93</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">150</td>
-  <td class="num">5 (inherited)</td>
 </tr>
     </tbody>
   </table>
@@ -154,32 +120,24 @@
       <tr>
         <th>Method</th>
         <th class="num">Success</th>
-        <th class="num">±1 SE</th>
         <th class="num">vs Frozen</th>
         <th class="num">Median dist Δ</th>
         <th class="num">Catastrophe</th>
-        <th class="num">Compounding</th>
         <th class="num">Regret</th>
         <th class="num">Adapt s/replan</th>
         <th class="num">Peak MB</th>
-        <th class="num">n</th>
-        <th class="num">Selection cost</th>
       </tr>
     </thead>
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
-  <td class="num">0.363</td>
-  <td class="num">0.028</td>
+  <td class="num">0.363 (±0.028)</td>
   <td class="num delta-pos">+0.013</td>
   <td class="num">+4 [-10, +13]</td>
   <td class="num">11.2% [7%, 16%]</td>
-  <td class="num">+0.08 [-0.38, +0.30]</td>
   <td class="num">54% / +180</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-  <td class="num">300</td>
-  <td class="num">5</td>
 </tr>
     </tbody>
   </table>
