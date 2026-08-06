@@ -185,6 +185,7 @@ th,
 td {
   padding: 0.65rem 0.75rem;
   text-align: left;
+  vertical-align: middle;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -197,18 +198,15 @@ th {
   color: var(--text-muted);
 }
 
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
-tbody tr:hover {
-  background: #fafbfc;
-}
-
 td.num,
 th.num {
   font-family: var(--mono);
   font-size: 0.82rem;
+  text-align: center;
+}
+
+tbody tr:hover {
+  background: #fafbfc;
 }
 
 .method-link {

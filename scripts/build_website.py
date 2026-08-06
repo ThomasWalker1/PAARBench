@@ -356,7 +356,7 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
 
 <section id="how-it-works">
   <h2>How It Works</h2>
-  <div class="card prose">
+  <div class="prose">
     <p>The evaluation protocol has four stages:</p>
     <ol>
       <li><strong>Selection</strong> — On settings with a selection cohort, the standard protocol
@@ -375,7 +375,7 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
 
 <section id="settings">
   <h2>Settings</h2>
-  <div class="card prose">
+  <div class="prose">
     <p>{SETTINGS_INTRO}</p>
     <p>{SETTINGS_PARAGRAPHS["pushobj"]}</p>
     <p>{SETTINGS_PARAGRAPHS["pushobj_shift"]}</p>

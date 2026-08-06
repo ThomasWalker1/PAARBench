@@ -59,7 +59,7 @@
 
 <section id="how-it-works">
   <h2>How It Works</h2>
-  <div class="card prose">
+  <div class="prose">
     <p>The evaluation protocol has four stages:</p>
     <ol>
       <li><strong>Selection</strong> — On settings with a selection cohort, the standard protocol
@@ -78,7 +78,7 @@
 
 <section id="settings">
   <h2>Settings</h2>
-  <div class="card prose">
+  <div class="prose">
     <p>Each setting pairs a base world model with a fixed episode distribution. Hyperparameter tuning uses one selection cohort (seed&nbsp;0); leaderboard scores are pooled over three held-out test cohorts (seeds&nbsp;100, 200, and 300). Selection and test draws are always disjoint.</p>
     <p><strong>PushObj</strong> (<code>pushobj</code>) is the primary object-pushing setting: checkpoint <code>pushobj_shape_shift</code>, shapes T, L, Z, and +. Methods select hyperparameters on seed&nbsp;0, then run once on each test seed.</p>
     <p><strong>PushObj Shift</strong> (<code>pushobj_shift</code>) holds out different shapes (I, small_tee, square) on the same checkpoint. There is no selection cohort — parameters are frozen from PushObj — but evaluation still uses the same three test seeds.</p>
