@@ -1,0 +1,31 @@
+name: Update portfolio site
+
+# When PAARBench content changes, trigger a Cloudflare Pages rebuild of thomasw.org.
+# The portfolio build clones this repo at deploy time, so no commit to personal_webpage is needed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'LEADERBOARD.md'
+      - 'results/**'
+      - 'scripts/build_website.py'
+      - 'methods/**'
+      - 'benchmark.yaml'
+  workflow_dispatch:
+
+jobs:
+  trigger-redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger thomasw.org rebuild
+        env:
+          DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "CLOUDFLARE_PAGES_DEPLOY_HOOK secret is not set on PAARBench."
+            exit 1
+          fi
+          curl -sf -X POST "$DEPLOY_HOOK"
+          echo "Cloudflare Pages rebuild triggered."
