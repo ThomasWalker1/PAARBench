@@ -215,7 +215,7 @@ def _claim_column(column_dir: Path) -> Optional[Path]:
 
     Two launchers pointed at one column interleave their writes into the same
     ``episodes.jsonl`` files, and the result does not look like corruption -- it looks
-    like a *result*. It has now happened twice in this repo: once to the Restore TTA
+    like a *result*. It has now happened twice in this repo: once during a method
     retest, and once to a determinism check that was investigating the first, where the
     interleaved data read as planner nondeterminism convincingly enough to be written
     up before the replan counts gave it away.

@@ -37,14 +37,10 @@ echo "[method] static_lora pushobj_shift (inherits selection)"
 "${EVAL[@]}" static_lora --setting pushobj_shift
 
 for setting in pushobj pusht; do
-  echo "[method] restore_tta $setting"
-  "${EVAL[@]}" --per-gpu "$PER_GPU" restore_tta --setting "$setting"
   echo "[method] adajepa $setting"
   "${EVAL[@]}" --per-gpu "$PER_GPU" adajepa --setting "$setting"
 done
 
-echo "[method] restore_tta pushobj_shift (inherits selection)"
-"${EVAL[@]}" --per-gpu "$PER_GPU" restore_tta --setting pushobj_shift
 echo "[method] adajepa pushobj_shift (inherits selection)"
 "${EVAL[@]}" --per-gpu "$PER_GPU" adajepa --setting pushobj_shift
 

@@ -70,18 +70,19 @@
   
 <h3>PushObj</h3>
 <div class="table-wrap">
-  <table>
+  <table class="sortable">
     <thead>
-      <tr>
-        <th>Method</th>
-        <th class="num">Success</th>
-        <th class="num">vs Frozen</th>
-        <th class="num">Median dist Δ</th>
-        <th class="num">Catastrophe</th>
-        <th class="num">Regret</th>
-        <th class="num">Adapt s/replan</th>
-        <th class="num">Peak MB</th>
-      </tr>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
     </thead>
     <tbody>
       <tr class="baseline-row">
@@ -100,18 +101,19 @@
 
 <h3>PushObj Shift</h3>
 <div class="table-wrap">
-  <table>
+  <table class="sortable">
     <thead>
-      <tr>
-        <th>Method</th>
-        <th class="num">Success</th>
-        <th class="num">vs Frozen</th>
-        <th class="num">Median dist Δ</th>
-        <th class="num">Catastrophe</th>
-        <th class="num">Regret</th>
-        <th class="num">Adapt s/replan</th>
-        <th class="num">Peak MB</th>
-      </tr>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
     </thead>
     <tbody>
       <tr class="baseline-row">
@@ -130,18 +132,19 @@
 
 <h3>PushT</h3>
 <div class="table-wrap">
-  <table>
+  <table class="sortable">
     <thead>
-      <tr>
-        <th>Method</th>
-        <th class="num">Success</th>
-        <th class="num">vs Frozen</th>
-        <th class="num">Median dist Δ</th>
-        <th class="num">Catastrophe</th>
-        <th class="num">Regret</th>
-        <th class="num">Adapt s/replan</th>
-        <th class="num">Peak MB</th>
-      </tr>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
     </thead>
     <tbody>
       <tr class="baseline-row">
@@ -166,5 +169,6 @@
       <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
     </div>
   </footer>
+  <script src="../js/sort-tables.js" defer></script>
 </body>
 </html>

@@ -6,9 +6,9 @@ half-populated and the finished units are kept: the column then reports the mean
 two configurations as though it were one. That is the same class of silent error the
 benchmark exists to expose in other people's evaluations, so the harness refuses it.
 
-This nearly happened: the p=0.01 Restore TTA retest was launched at the default
-out-root, on top of the committed p=0.001 evidence. It survived only because the
-earlier data had been moved aside by hand first.
+This nearly happened: a hyperparameter retest was launched at the default out-root
+on top of committed evidence from a different configuration. It survived only
+because the earlier data had been moved aside by hand first.
 """
 
 import json
@@ -70,8 +70,8 @@ def test_result_records_use_repo_relative_output_paths():
 # --- concurrent launchers -----------------------------------------------------
 #
 # Two processes writing one column interleave their episodes.jsonl writes, and the
-# result reads as a result rather than as corruption. It has happened twice: to the
-# Restore TTA retest, and to a determinism check investigating that retest, where the
+# result reads as a result rather than as corruption. It has happened twice: to a
+# method retest, and to a determinism check investigating that retest, where the
 # interleaved data looked convincingly like planner nondeterminism.
 
 def test_a_column_can_be_claimed_once(tmp_path):

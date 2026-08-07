@@ -14,7 +14,7 @@ RESULTS = ROOT / "results"
 METHODS = ROOT / "methods"
 LEADERBOARD = ROOT / "LEADERBOARD.md"
 
-METHOD_ORDER = ["adajepa", "restore_tta", "hyperjepa", "static_lora", "pad", "frozen"]
+METHOD_ORDER = ["adajepa", "hyperjepa", "static_lora", "pad", "frozen"]
 
 SETTING_INFO = {
     "pushobj": {
@@ -243,9 +243,23 @@ def page_shell(title: str, body: str, *, depth: int = 0) -> str:
       <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
     </div>
   </footer>
+  <script src="{prefix}js/sort-tables.js" defer></script>
 </body>
 </html>
 """
+
+
+LEADERBOARD_HEAD = """
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>"""
 
 
 def format_success(row: dict[str, str]) -> str:
@@ -299,18 +313,9 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
   <h3>{esc(info["title"])}</h3>
   <p class="setting-meta">{esc(info["description"])}</p>
   <div class="table-wrap">
-    <table>
+    <table class="sortable">
       <thead>
-        <tr>
-          <th>Method</th>
-          <th class="num">Success</th>
-          <th class="num">vs Frozen</th>
-          <th class="num">Median dist Δ</th>
-          <th class="num">Catastrophe</th>
-          <th class="num">Regret</th>
-          <th class="num">Adapt s/replan</th>
-          <th class="num">Peak MB</th>
-        </tr>
+{LEADERBOARD_HEAD}
       </thead>
       <tbody>
         {"".join(row_html)}
@@ -381,7 +386,7 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
 
 <section id="leaderboards">
   <h2>Leaderboards</h2>
-  <p class="lead">Multi-objective by design — sort by whichever column you care about. Click a method name for details.</p>
+  <p class="lead">Multi-objective by design — click a column header to sort, or a method name for details.</p>
   {"".join(leaderboard_html)}
   <div class="metrics-explainer">{METRICS_EXPLAINER}</div>
 </section>
@@ -393,7 +398,7 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
 
   <div class="card" style="margin-bottom:1.5rem;">
     <h3 style="margin-top:0;">Prerequisites</h3>
-    <div class="table-wrap" style="box-shadow:none;border:none;">
+    <div class="table-wrap table-wrap--center">
       <table class="settings-table">
         <thead>
           <tr><th>Artifact</th><th>How to get it</th><th>Needed for</th></tr>
@@ -569,18 +574,9 @@ def render_method_page(
                 leaderboard_sections.append(f"""
 <h3>{esc(SETTING_INFO.get(setting_id, {}).get("title", setting_id))}</h3>
 <div class="table-wrap">
-  <table>
+  <table class="sortable">
     <thead>
-      <tr>
-        <th>Method</th>
-        <th class="num">Success</th>
-        <th class="num">vs Frozen</th>
-        <th class="num">Median dist Δ</th>
-        <th class="num">Catastrophe</th>
-        <th class="num">Regret</th>
-        <th class="num">Adapt s/replan</th>
-        <th class="num">Peak MB</th>
-      </tr>
+{LEADERBOARD_HEAD}
     </thead>
     <tbody>
       {render_leaderboard_row(row, slug)}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Continue the benchmark rerun from restore_tta onward (skips completed methods).
+# Continue the benchmark rerun from adajepa onward (skips completed methods).
 # Requires checkpoints/, data/pushobj_eval/, and 8 GPUs by default.
 set -euo pipefail
 
@@ -20,14 +20,10 @@ print("goal files ok")
 PY
 
 for setting in pushobj pusht; do
-  echo "[method] restore_tta $setting"
-  "${EVAL[@]}" --per-gpu "$PER_GPU" restore_tta --setting "$setting"
   echo "[method] adajepa $setting"
   "${EVAL[@]}" --per-gpu "$PER_GPU" adajepa --setting "$setting"
 done
 
-echo "[method] restore_tta pushobj_shift (inherits selection)"
-"${EVAL[@]}" --per-gpu "$PER_GPU" restore_tta --setting pushobj_shift
 echo "[method] adajepa pushobj_shift (inherits selection)"
 "${EVAL[@]}" --per-gpu "$PER_GPU" adajepa --setting pushobj_shift
 

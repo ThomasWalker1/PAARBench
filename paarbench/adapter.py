@@ -192,11 +192,10 @@ class BaseWeightGuard:
         Public because a method may legitimately need the pretrained value of an
         individual weight rather than an all-or-nothing ``restore()`` -- CoTTA-style
         stochastic restoration is the motivating case. Reaching into the guard's
-        internals for this instead is what broke ``restore_tta``: it read a private
-        ``_snapshot`` dict that became a list when owned modules were added for PAD,
-        and every unit of the next column died with an ``AttributeError``. Anything a
-        method needs is on this class, so that a change here is a change to a
-        declared interface.
+        internals instead is fragile: a past method read a private ``_snapshot`` dict
+        that became a list when owned modules were added for PAD, and every unit of
+        the next column died with an ``AttributeError``. Anything a method needs is
+        on this class, so that a change here is a change to a declared interface.
         """
         snapshot = self._snapshots[module_index]
         if name not in snapshot:

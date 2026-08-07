@@ -84,23 +84,24 @@
 
 <section id="leaderboards">
   <h2>Leaderboards</h2>
-  <p class="lead">Multi-objective by design — sort by whichever column you care about. Click a method name for details.</p>
+  <p class="lead">Multi-objective by design — click a column header to sort, or a method name for details.</p>
   
 <section class="setting-block" id="pushobj">
   <h3>PushObj</h3>
   <p class="setting-meta">Four shapes (T, L, Z, +) on the pushobj_shape_shift checkpoint — 50 episodes per shape per cohort (n=600 pooled across test seeds).</p>
   <div class="table-wrap">
-    <table>
+    <table class="sortable">
       <thead>
+
         <tr>
-          <th>Method</th>
-          <th class="num">Success</th>
-          <th class="num">vs Frozen</th>
-          <th class="num">Median dist Δ</th>
-          <th class="num">Catastrophe</th>
-          <th class="num">Regret</th>
-          <th class="num">Adapt s/replan</th>
-          <th class="num">Peak MB</th>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
         </tr>
       </thead>
       <tbody>
@@ -149,15 +150,6 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
-  <td class="num">0.500 (±0.020)</td>
-  <td class="num delta-pos">+0.000</td>
-  <td class="num">-0 [-0, +0]</td>
-  <td class="num">1.0% [0%, 2%]</td>
-  <td class="num">46% / +6</td>
-  <td class="num">0.660</td>
-  <td class="num">177</td>
 </tr>
       </tbody>
     </table>
@@ -168,17 +160,18 @@
   <h3>PushObj Shift</h3>
   <p class="setting-meta">Held-out shapes (I, small_tee, square) on the same base model — n=450 pooled. Hyperparameters are inherited from PushObj; no selection here.</p>
   <div class="table-wrap">
-    <table>
+    <table class="sortable">
       <thead>
+
         <tr>
-          <th>Method</th>
-          <th class="num">Success</th>
-          <th class="num">vs Frozen</th>
-          <th class="num">Median dist Δ</th>
-          <th class="num">Catastrophe</th>
-          <th class="num">Regret</th>
-          <th class="num">Adapt s/replan</th>
-          <th class="num">Peak MB</th>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
         </tr>
       </thead>
       <tbody>
@@ -219,15 +212,6 @@
   <td class="num">0.000</td>
   <td class="num">157</td>
 </tr><tr>
-  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
-  <td class="num">0.300 (±0.022)</td>
-  <td class="num delta-pos">+0.000</td>
-  <td class="num">-0 [-0, -0]</td>
-  <td class="num">1.0% [0%, 2%]</td>
-  <td class="num">43% / +15</td>
-  <td class="num">0.664</td>
-  <td class="num">177</td>
-</tr><tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
   <td class="num">0.296 (±0.022)</td>
   <td class="num delta-neg">-0.004</td>
@@ -246,17 +230,18 @@
   <h3>PushT</h3>
   <p class="setting-meta">Visual pushing on pusht_visual_shift with three shapes (T, L, Z) — 50 episodes per shape per cohort (n=450 pooled).</p>
   <div class="table-wrap">
-    <table>
+    <table class="sortable">
       <thead>
+
         <tr>
-          <th>Method</th>
-          <th class="num">Success</th>
-          <th class="num">vs Frozen</th>
-          <th class="num">Median dist Δ</th>
-          <th class="num">Catastrophe</th>
-          <th class="num">Regret</th>
-          <th class="num">Adapt s/replan</th>
-          <th class="num">Peak MB</th>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
         </tr>
       </thead>
       <tbody>
@@ -305,15 +290,6 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr>
-  <td><a class="method-link" href="methods/restore_tta.html">Restore TTA — online gradient TTA with stochastic restoration</a></td>
-  <td class="num">0.344 (±0.022)</td>
-  <td class="num delta-neg">-0.004</td>
-  <td class="num">+0 [-0, +1]</td>
-  <td class="num">3.9% [2%, 6%]</td>
-  <td class="num">53% / +65</td>
-  <td class="num">0.659</td>
-  <td class="num">177</td>
 </tr>
       </tbody>
     </table>
@@ -346,7 +322,7 @@ no overall rank — sort by whichever column matters for your use case.</p>
 
   <div class="card" style="margin-bottom:1.5rem;">
     <h3 style="margin-top:0;">Prerequisites</h3>
-    <div class="table-wrap" style="box-shadow:none;border:none;">
+    <div class="table-wrap table-wrap--center">
       <table class="settings-table">
         <thead>
           <tr><th>Artifact</th><th>How to get it</th><th>Needed for</th></tr>
@@ -410,5 +386,6 @@ no overall rank — sort by whichever column matters for your use case.</p>
       <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
     </div>
   </footer>
+  <script src="js/sort-tables.js" defer></script>
 </body>
 </html>
