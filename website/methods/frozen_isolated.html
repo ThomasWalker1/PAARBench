@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Frozen (Batched) — PAARBench</title>
+  <title>Frozen (Individual) — PAARBench</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -27,16 +27,16 @@
 <a class="back-link" href="../index.html">← Back to leaderboard</a>
 
 <div class="method-hero">
-  <h1>Frozen (Batched)</h1>
-  <p class="lead">The built-in do-nothing baseline evaluated as a batched cohort: the world model and planner run with frozen pretrained weights, all episodes of a shape planned in one process. Batched methods are measured against this reference on paired episodes.</p>
+  <h1>Frozen (Individual)</h1>
+  <p class="lead">The same NullAdapter baseline evaluated one process per episode. Required as the mode-matched reference for methods that declare requires_episode_isolation: the batched and isolated execution modes are not bit-identical even for frozen weights.</p>
   
-  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
 </div>
 
 <section>
   <h2>Overview</h2>
   <div class="card prose">
-    <p>The built-in do-nothing baseline evaluated as a batched cohort: the world model and planner run with frozen pretrained weights, all episodes of a shape planned in one process. Batched methods are measured against this reference on paired episodes.</p>
+    <p>The same NullAdapter baseline evaluated one process per episode. Required as the mode-matched reference for methods that declare requires_episode_isolation: the batched and isolated execution modes are not bit-identical even for frozen weights.</p>
   </div>
 </section>
 
@@ -59,7 +59,7 @@
   <td class="num">450</td>
 </tr><tr>
   <td><code>pusht</code></td>
-  <td class="num">0.349</td>
+  <td class="num">0.344</td>
   <td class="num"></td>
   <td class="num">450</td>
 </tr></tbody></table></div>
@@ -86,7 +86,7 @@
     </thead>
     <tbody>
       <tr class="baseline-row">
-  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
   <td class="num">0.500 (±0.020)</td>
   <td class="num ">—</td>
   <td class="num">—</td>
@@ -117,7 +117,7 @@
     </thead>
     <tbody>
       <tr class="baseline-row">
-  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
   <td class="num">0.300 (±0.022)</td>
   <td class="num ">—</td>
   <td class="num">—</td>
@@ -148,8 +148,8 @@
     </thead>
     <tbody>
       <tr class="baseline-row">
-  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
-  <td class="num">0.349 (±0.022)</td>
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
+  <td class="num">0.344 (±0.022)</td>
   <td class="num ">—</td>
   <td class="num">—</td>
   <td class="num">—</td>

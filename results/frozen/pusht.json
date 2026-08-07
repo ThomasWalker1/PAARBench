@@ -1,7 +1,7 @@
 {
   "method": "frozen",
   "method_dir": "frozen",
-  "display_name": "Frozen base model (no adaptation)",
+  "display_name": "Frozen (Batched)",
   "setting": "pusht",
   "params": {},
   "submission": true,

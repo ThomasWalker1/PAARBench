@@ -41,6 +41,14 @@ COST_BASIS = {
     "skipped": "unknown",
 }
 
+# Built-in do-nothing arms. Batched and episode-isolated are separate leaderboard
+# rows because the two evaluation modes are not interchangeable (see metrics).
+FROZEN_METHODS = frozenset({"frozen", "frozen_isolated"})
+
+
+def is_frozen(method: str) -> bool:
+    return method in FROZEN_METHODS
+
 
 def render_cost(record: dict) -> str:
     cost = record.get("selection_cost_columns")
@@ -52,7 +60,7 @@ def render_cost(record: dict) -> str:
     if basis is None:
         # Written before the basis field existed. A recorded 0 from that era came
         # from FixedParams unless it is frozen, which has no rule at all.
-        basis = ("none" if record.get("method") == "frozen"
+        basis = ("none" if is_frozen(record.get("method", ""))
                  else "skipped" if cost is None
                  else "authored" if cost == 0 else "selected")
     label = COST_BASIS.get(basis)
@@ -127,7 +135,7 @@ HEADER = ("| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | "
 RULE = "|---|---|---|---|---|---|---|---|---|---|---|---|"
 
 
-def _table(rows, baseline, detail) -> list:
+def _table(rows, baseline, detail, *, isolated_baseline=None) -> list:
     out = [HEADER, RULE]
     for r in rows:
         s = r.get("success")
@@ -142,9 +150,12 @@ def _table(rows, baseline, detail) -> list:
         # different frozen success rates (pushobj 0.4883 isolated vs 0.4850 batched), and
         # charging that difference to the method is exactly the artifact being removed.
         ref = baseline
-        if r.get("episode_isolated") and detail.get("frozen_isolated", {}).get("_success") is not None:
-            ref = detail["frozen_isolated"]["_success"]
-        delta = "—" if ref is None or r["method"] == "frozen" else f"{s - ref:+.3f}"
+        if r.get("episode_isolated"):
+            if isolated_baseline is not None:
+                ref = isolated_baseline
+            elif detail.get("frozen_isolated", {}).get("_success") is not None:
+                ref = detail["frozen_isolated"]["_success"]
+        delta = "—" if ref is None or is_frozen(r["method"]) else f"{s - ref:+.3f}"
         # The continuous metrics come from the per-episode record on disk, the
         # success rate from the stored result record. If a re-run is in flight they
         # can disagree, and a row mixing a complete success with partial distance
@@ -172,6 +183,11 @@ def render(records, setting_id: str) -> str:
 
     frozen = next((r for r in rows if r["method"] == "frozen"), None)
     baseline = frozen["success"] if frozen and frozen.get("success") is not None else None
+    frozen_iso = next((r for r in rows if r["method"] == "frozen_isolated"), None)
+    isolated_baseline = (
+        frozen_iso["success"]
+        if frozen_iso and frozen_iso.get("success") is not None else None
+    )
 
     # Sort by success, but only among complete records; incomplete ones go last and
     # are labelled, never silently dropped.
@@ -203,7 +219,8 @@ def render(records, setting_id: str) -> str:
 
     detail = _metric_detail(setting_id)
     _warn_unmatched_reference(setting_id, detail, records)
-    out.extend(_table(submissions, baseline, detail))
+    out.extend(_table(submissions, baseline, detail,
+                      isolated_baseline=isolated_baseline))
     out.append("")
     out.append(
         "**Success rate is the weakest column here.** At these n its binomial SE is "
@@ -231,7 +248,10 @@ def render(records, setting_id: str) -> str:
         "`0` means the method has no hyperparameters to tune; `0 (authored)` means it "
         "has them and they were written down rather than selected, which is a weaker "
         "claim and must not read as the same number; `unknown` means the declared rule "
-        "was skipped, so the tuning happened somewhere this record cannot price."
+        "was skipped, so the tuning happened somewhere this record cannot price.\n"
+        "- **vs frozen** — absolute success change vs the mode-matched frozen arm: "
+        "Frozen (Batched) for batched methods, Frozen (Individual) for "
+        "episode-isolated methods."
     )
     out.append("")
     out.append(
@@ -256,7 +276,8 @@ def render(records, setting_id: str) -> str:
             "evidence about the protocol itself. Same cohorts, same n, same metrics."
         )
         out.append("")
-        out.extend(_table(ablations, baseline, detail))
+        out.extend(_table(ablations, baseline, detail,
+                          isolated_baseline=isolated_baseline))
         out.append("")
     return "\n".join(out)
 
@@ -275,8 +296,8 @@ def _warn_unmatched_reference(setting_id: str, detail: dict, records) -> None:
         print(f"warning: {setting_id}: {', '.join(unmatched)} are episode-isolated but "
               f"were paired against the BATCHED frozen column; no frozen_isolated "
               f"reference exists for this setting. Run "
-              f"`scripts/evaluate.py --frozen --setting {setting_id}` with episode "
-              f"isolation to remove the evaluation-mode artifact.", file=sys.stderr)
+              f"`scripts/evaluate.py --frozen --isolated --setting {setting_id}` "
+              f"to remove the evaluation-mode artifact.", file=sys.stderr)
 
 
 def _metric_detail(setting_id: str) -> dict:

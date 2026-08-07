@@ -14,7 +14,46 @@ RESULTS = ROOT / "results"
 METHODS = ROOT / "methods"
 LEADERBOARD = ROOT / "LEADERBOARD.md"
 
-METHOD_ORDER = ["adajepa", "hyperjepa", "static_lora", "pad", "frozen"]
+METHOD_ORDER = [
+    "adajepa", "hyperjepa", "static_lora", "pad", "frozen", "frozen_isolated",
+]
+
+FROZEN_SLUGS = frozenset({"frozen", "frozen_isolated"})
+
+FROZEN_META = {
+    "frozen": {
+        "name": "frozen",
+        "display_name": "Frozen (Batched)",
+        "description": (
+            "The built-in do-nothing baseline evaluated as a batched cohort: the world "
+            "model and planner run with frozen pretrained weights, all episodes of a "
+            "shape planned in one process. Batched methods are measured against this "
+            "reference on paired episodes."
+        ),
+        "reference": "",
+        "settings": ["pushobj", "pushobj_shift", "pusht"],
+        "requires_episode_isolation": False,
+        "selection": "",
+        "params": {},
+        "readme": "",
+    },
+    "frozen_isolated": {
+        "name": "frozen_isolated",
+        "display_name": "Frozen (Individual)",
+        "description": (
+            "The same NullAdapter baseline evaluated one process per episode. Required "
+            "as the mode-matched reference for methods that declare "
+            "requires_episode_isolation: the batched and isolated execution modes are "
+            "not bit-identical even for frozen weights."
+        ),
+        "reference": "",
+        "settings": ["pushobj", "pushobj_shift", "pusht"],
+        "requires_episode_isolation": True,
+        "selection": "",
+        "params": {},
+        "readme": "",
+    },
+}
 
 SETTING_INFO = {
     "pushobj": {
@@ -165,22 +204,8 @@ def parse_leaderboard_tables() -> dict[str, list[dict[str, str]]]:
 def load_method_info() -> dict[str, dict]:
     info: dict[str, dict] = {}
     for name in METHOD_ORDER:
-        if name == "frozen":
-            info[name] = {
-                "name": "frozen",
-                "display_name": "Frozen base model (no adaptation)",
-                "description": (
-                    "The built-in baseline: no test-time adaptation. The world model and planner "
-                    "run with frozen pretrained weights. Every other method is measured against this "
-                    "reference on paired episodes."
-                ),
-                "reference": "",
-                "settings": ["pushobj", "pushobj_shift", "pusht"],
-                "requires_episode_isolation": False,
-                "selection": "",
-                "params": {},
-                "readme": "",
-            }
+        if name in FROZEN_META:
+            info[name] = dict(FROZEN_META[name])
             continue
         method_dir = METHODS / name
         yaml_data = load_yaml_simple(method_dir / "method.yaml")
@@ -275,9 +300,9 @@ def format_success(row: dict[str, str]) -> str:
 
 def render_leaderboard_row(row: dict[str, str], slug: str | None) -> str:
     method_name = row.get("method", "")
-    is_baseline = slug == "frozen"
+    is_baseline = slug in FROZEN_SLUGS
     row_class = ' class="baseline-row"' if is_baseline else ""
-    if slug and slug != "frozen":
+    if slug:
         method_cell = (
             f'<a class="method-link" href="methods/{esc(slug)}.html">{esc(method_name)}</a>'
         )
@@ -439,8 +464,10 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
     <li>
       <strong>Run the full protocol</strong>
 <pre><code>.venv/bin/python scripts/evaluate.py my_method --setting pushobj --gpus 0,1,2,3</code></pre>
-      Also run the frozen baseline for paired metrics:
-<pre><code>.venv/bin/python scripts/evaluate.py --frozen --setting pushobj</code></pre>
+      Also run the frozen baseline for paired metrics. Batched methods need
+      Frozen (Batched); episode-isolated methods also need Frozen (Individual):
+<pre><code>.venv/bin/python scripts/evaluate.py --frozen --setting pushobj
+.venv/bin/python scripts/evaluate.py --frozen --isolated --setting pushobj --per-gpu 4</code></pre>
     </li>
     <li>
       <strong>Open a pull request</strong>

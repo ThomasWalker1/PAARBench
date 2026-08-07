@@ -194,8 +194,15 @@ Include your directory and the result record `evaluate.py` produced. CI re-runs
 ## The frozen baseline
 
 `frozen` is built in, not a directory here: it is `NullAdapter`, whose hooks do nothing.
-It is reported on every setting as the do-nothing reference that every metric is measured
-against. You do not need to add it, and you cannot override it.
+It appears on every setting as two leaderboard arms:
+
+- **Frozen (Batched)** — `scripts/evaluate.py --frozen` — one process per shape cohort.
+- **Frozen (Individual)** — `scripts/evaluate.py --frozen --isolated` — one process per
+  episode, tagged `frozen_isolated` on disk.
+
+Batched methods pair against Batched; episode-isolated methods pair against Individual.
+The modes are not interchangeable even for NullAdapter. You do not need to add either
+arm, and you cannot override them.
 
 ## Carrying different weights per setting
 

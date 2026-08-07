@@ -19,10 +19,13 @@ for setting_id in ("pushobj", "pushobj_shift", "pusht"):
 print("goal files ok")
 PY
 
-echo "[frozen] baseline columns ..."
+echo "[frozen] baseline columns (batched + individual) ..."
 "${EVAL[@]}" --frozen --setting pushobj
 "${EVAL[@]}" --frozen --setting pushobj_shift
 "${EVAL[@]}" --frozen --setting pusht
+"${EVAL[@]}" --frozen --isolated --per-gpu "$PER_GPU" --setting pushobj
+"${EVAL[@]}" --frozen --isolated --per-gpu "$PER_GPU" --setting pushobj_shift
+"${EVAL[@]}" --frozen --isolated --per-gpu "$PER_GPU" --setting pusht
 
 for setting in pushobj pusht; do
   echo "[method] hyperjepa $setting"

@@ -3,6 +3,7 @@
 
     scripts/evaluate.py adajepa --setting pushobj --gpus 0,1,2,3
     scripts/evaluate.py --frozen --setting pushobj --gpus 0,1,2,3
+    scripts/evaluate.py --frozen --isolated --setting pushobj --gpus 0,1,2,3
 
 The protocol is:
 
@@ -43,6 +44,11 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("method", nargs="?", help="method directory name under methods/")
     ap.add_argument("--frozen", action="store_true",
                     help="evaluate the built-in do-nothing baseline instead of a method")
+    ap.add_argument("--isolated", action="store_true",
+                    help="with --frozen: evaluate one process per episode "
+                         "(Frozen Individual) instead of a batched cohort "
+                         "(Frozen Batched). Required for mode-matched pairing "
+                         "against episode-isolated methods.")
     ap.add_argument("--setting", default="pushobj")
     ap.add_argument("--tag", default=None,
                     help="name the test columns and the result record under this "
@@ -180,6 +186,9 @@ def main() -> int:
     args = parse_args()
     if bool(args.method) == bool(args.frozen):
         raise SystemExit("give exactly one of: a method name, or --frozen")
+    if args.isolated and not args.frozen:
+        raise SystemExit("--isolated only applies with --frozen "
+                         "(methods declare requires_episode_isolation instead)")
 
     setting = settings_mod.get(args.setting)
     # Up front, before the selection rule spends anything: a missing goal file is a
@@ -198,12 +207,25 @@ def main() -> int:
 
     # ---- 1. selection -----------------------------------------------------------
     if args.frozen:
-        name, display = "frozen", "Frozen base model (no adaptation)"
+        # Two leaderboard arms: batched and episode-isolated. The modes do not agree
+        # even for NullAdapter (measured 4% outcome flips on pushobj), so isolated
+        # methods must pair against Frozen (Individual) and batched methods against
+        # Frozen (Batched). Tags match paarbench.metrics.ISOLATED_REFERENCE.
+        isolation = bool(args.isolated)
+        if isolation:
+            name = "frozen_isolated"
+            display = "Frozen (Individual)"
+        else:
+            name = "frozen"
+            display = "Frozen (Batched)"
         params, selection_cost, selection_rule = {}, 0, "none (no hyperparameters)"
         # Frozen's zero is the only unqualified one on the board: it has nothing to
         # tune. Every other zero means something weaker -- see COST_BASIS below.
         cost_basis = "none"
-        isolation = False
+        if isolation:
+            print(f"[isolate] {name}: one process per episode "
+                  f"({setting.n_evals} per shape). Mode-matched reference for "
+                  f"requires_episode_isolation methods.", flush=True)
     else:
         method = methods.load(args.method)
         problems = methods.validate(method)

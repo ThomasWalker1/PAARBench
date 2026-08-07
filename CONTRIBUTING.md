@@ -50,9 +50,13 @@ per-episode records are not distributed. So before your rows can have continuous
 .venv/bin/python scripts/evaluate.py --frozen --setting pushobj
 ```
 
-If your method declares `requires_episode_isolation: true`, you also need a frozen column
-run in isolated mode — the two evaluation modes do not agree, and pairing across them folds
-that difference into your method's effect.
+That records **Frozen (Batched)**. If your method declares `requires_episode_isolation: true`,
+you also need **Frozen (Individual)** — the two evaluation modes do not agree, and pairing
+across them folds that difference into your method's effect:
+
+```bash
+.venv/bin/python scripts/evaluate.py --frozen --isolated --setting pushobj --per-gpu 4
+```
 
 ## Do not regenerate `LEADERBOARD.md`
 
@@ -71,8 +75,9 @@ existing table, leaving every other row byte-identical.
 - your `methods/<name>/` directory, including a `README.md`
 - the `results/<name>/<setting>.json` records `evaluate.py` produced
 - your row(s) added to `LEADERBOARD.md`
-- **no** changes to `results/frozen/*.json`. If your re-run of the baseline differs from the
-  committed record, say so in the PR — that is a finding, not a file to overwrite.
+- **no** changes to `results/frozen/*.json` or `results/frozen_isolated/*.json`. If your
+  re-run of either baseline differs from the committed record, say so in the PR — that is a
+  finding, not a file to overwrite.
 
 If your method ships tests of its own, name the file so it cannot collide with another
 method's (`test_<method>_*.py`); CI collects `methods/` as well as `tests/`.
