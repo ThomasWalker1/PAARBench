@@ -30,3 +30,14 @@ params:
 params_by_setting:
   pusht:
     checkpoint_path: checkpoints/pad/pusht_inverse_dynamics.pth
+
+tunable:
+  objective: success
+  axes:
+    encoder_lr:
+      initial: [1.0e-6, 1.0e-5, 1.0e-4]
+      scale: log
+    steps:
+      initial: [1, 3, 5]
+      scale: discrete
+      pool: [0, 1, 3, 5, 10]
