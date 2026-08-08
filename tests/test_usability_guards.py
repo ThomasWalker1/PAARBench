@@ -1,13 +1,15 @@
-"""Two guards against silent failure modes a contributor hits before doing anything wrong.
+"""Guards against silent failure modes a contributor hits before doing anything wrong.
 
-Both are about artifacts that are *not* distributed with the repository -- the goal files
-that define each setting's episodes, and the per-episode records the leaderboard's
-continuous columns are computed from. Neither absence is a mistake; both used to surface as
-something other than an error.
+Goal files that define each setting's episodes are *not* distributed with the repository
+and must fail loudly when missing. Held-out ``episodes.jsonl`` records for published
+methods *are* tracked (see ``docs/EVAL_RECORDS.md``); regenerating the leaderboard must
+still refuse to blank other methods' continuous columns when those records are absent
+locally.
 
 GPU-free, so CI runs them.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -19,6 +21,8 @@ from paarbench.settings import MissingTargets, get  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import leaderboard  # noqa: E402
+
+REPO = Path(__file__).resolve().parent.parent
 
 
 # -- missing goal files fail before a single process is launched ---------------
@@ -75,6 +79,34 @@ def test_every_setting_checks_its_targets_before_launching_a_column():
         "run_column must fail fast when the goal files are absent; otherwise each shape "
         "dies separately inside eval_outputs/<...>/logs/<shape>.log"
     )
+
+
+# -- published held-out episode records are present for every result out_dir --
+
+
+def test_published_result_out_dirs_have_episodes_jsonl():
+    """Continuous columns need episodes.jsonl at each results record's out_dir."""
+    from paarbench.schema import EPISODES_FILE, iter_units
+
+    missing = []
+    empty = []
+    for path in sorted((REPO / "results").glob("*/*.json")):
+        record = json.loads(path.read_text())
+        for cohort, rec in (record.get("test_cohorts") or {}).items():
+            out_dir = rec.get("out_dir")
+            if not out_dir:
+                continue
+            root = REPO / out_dir
+            if not root.is_dir():
+                missing.append(f"{path.relative_to(REPO)}:{cohort} missing dir {out_dir}")
+                continue
+            units = list(iter_units(root))
+            if not units:
+                empty.append(
+                    f"{path.relative_to(REPO)}:{cohort} no {EPISODES_FILE} under {out_dir}"
+                )
+    assert not missing, "\n".join(missing)
+    assert not empty, "\n".join(empty)
 
 
 # -- regenerating the leaderboard must not silently delete other rows ---------

@@ -82,9 +82,12 @@ parameter freeze, held-out evaluation, and result record—with:
   --setting pushobj --gpus 0,1,2,3
 ```
 
-The command writes a compact record to `results/<method>/<setting>.json`. Raw episode
-records and planner logs go under `eval_outputs/`, which is intentionally ignored by
-git. Interrupted columns resume from completed units.
+The command writes a compact record to `results/<method>/<setting>.json`. Held-out
+per-episode records (`eval_outputs/<method>/<setting>/test*/**/episodes.jsonl`) are
+tracked so continuous leaderboard columns regenerate from a fresh clone; selection
+sweeps, planner logs, and target copies stay git-ignored (see
+[`docs/EVAL_RECORDS.md`](docs/EVAL_RECORDS.md)). Interrupted columns resume from
+completed units.
 
 For debugging one fixed configuration without running the submission protocol:
 

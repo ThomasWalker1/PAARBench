@@ -52,7 +52,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 742.2,
-      "out_dir": "eval_outputs/pad_selection_20260807/pad/pusht/test100",
+      "out_dir": "eval_outputs/pad/pusht/test100",
       "paired_metrics": null
     },
     "test200": {
@@ -84,7 +84,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 753.2,
-      "out_dir": "eval_outputs/pad_selection_20260807/pad/pusht/test200",
+      "out_dir": "eval_outputs/pad/pusht/test200",
       "paired_metrics": null
     },
     "test300": {
@@ -116,7 +116,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 793.8,
-      "out_dir": "eval_outputs/pad_selection_20260807/pad/pusht/test300",
+      "out_dir": "eval_outputs/pad/pusht/test300",
       "paired_metrics": null
     }
   },

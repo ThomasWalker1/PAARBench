@@ -52,7 +52,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 751.4,
-      "out_dir": "eval_outputs/pad_selection_20260807/pad/pushobj_shift/test100",
+      "out_dir": "eval_outputs/pad/pushobj_shift/test100",
       "paired_metrics": null
     },
     "test200": {
@@ -84,7 +84,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 744.3,
-      "out_dir": "eval_outputs/pad_selection_20260807/pad/pushobj_shift/test200",
+      "out_dir": "eval_outputs/pad/pushobj_shift/test200",
       "paired_metrics": null
     },
     "test300": {
@@ -116,7 +116,7 @@
       "complete": true,
       "failures": [],
       "wall_seconds": 756.1,
-      "out_dir": "eval_outputs/pad_selection_20260807/pad/pushobj_shift/test300",
+      "out_dir": "eval_outputs/pad/pushobj_shift/test300",
       "paired_metrics": null
     }
   },

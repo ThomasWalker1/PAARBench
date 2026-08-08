@@ -41,40 +41,42 @@ initially, plus any boundary expansions), plus one column per test cohort, plus 
 frozen columns you need to pair against (see below). A batched method's column is ~2
 min on 4 GPUs; an episode-isolated method's is `n_evals` times that.
 
-## You will need to run the frozen baseline too
+## Frozen baselines are already in the tree
 
-Every metric is defined against a frozen column on the *same* episodes, and the frozen
-per-episode records are not distributed. So before your rows can have continuous columns:
+Every continuous metric is defined against a frozen column on the *same* episodes.
+Held-out `episodes.jsonl` for published methods — including **Frozen (Batched)** and
+**Frozen (Individual)** — are tracked under `eval_outputs/` (see
+[`docs/EVAL_RECORDS.md`](docs/EVAL_RECORDS.md)). You do **not** need to re-run frozen just
+to populate continuous columns on a fresh clone.
+
+You may still re-run frozen as a self-test of your stack. If your method declares
+`requires_episode_isolation: true`, pair against **Frozen (Individual)** — the two
+evaluation modes do not agree, and pairing across them folds that difference into your
+method's effect:
 
 ```bash
 .venv/bin/python scripts/evaluate.py --frozen --setting pushobj
-```
-
-That records **Frozen (Batched)**. If your method declares `requires_episode_isolation: true`,
-you also need **Frozen (Individual)** — the two evaluation modes do not agree, and pairing
-across them folds that difference into your method's effect:
-
-```bash
 .venv/bin/python scripts/evaluate.py --frozen --isolated --setting pushobj --per-gpu 4
 ```
 
-## Do not regenerate `LEADERBOARD.md`
+## Regenerating `LEADERBOARD.md`
 
-`scripts/leaderboard.py --out LEADERBOARD.md` recomputes the continuous columns from
-per-episode records under `eval_outputs/`, which is git-ignored. If you have only your own
-method and the frozen baseline on disk — which is the normal case — regenerating blanks
-`median dist Δ`, `catastrophe`, `compounding`, `regret`, `adapt s/replan` and `peak MB` for
-**every other method**, and shifts `vs frozen` for the episode-isolated rows. The script now
-refuses to do that, and says which rows it would have damaged.
+`scripts/leaderboard.py --out LEADERBOARD.md` recomputes continuous columns from
+`eval_outputs/**/episodes.jsonl`. With the tracked published records present, a full
+regenerate is safe once your method's held-out episodes are on disk too.
 
-Instead: run `scripts/leaderboard.py --setting <s>` to stdout, and copy *your* row into the
-existing table, leaving every other row byte-identical.
+If some published records are missing locally, regenerating blanks those rows' continuous
+columns. The script refuses to overwrite `LEADERBOARD.md` in that case. Safer for a PR:
+run `scripts/leaderboard.py --setting <s>` to stdout and copy *your* row into the existing
+table, or commit your `episodes.jsonl` files and regenerate with every method present.
 
 ## What goes in the pull request
 
 - your `methods/<name>/` directory, including a `README.md`
 - the `results/<name>/<setting>.json` records `evaluate.py` produced
-- your row(s) added to `LEADERBOARD.md`
+- your held-out `eval_outputs/<name>/<setting>/test*/**/episodes.jsonl` files (not
+  selection sweeps, planner logs, or `plan_targets.pkl`)
+- your row(s) added to `LEADERBOARD.md` (or a regenerate that keeps other rows intact)
 - **no** changes to `results/frozen/*.json` or `results/frozen_isolated/*.json`. If your
   re-run of either baseline differs from the committed record, say so in the PR — that is a
   finding, not a file to overwrite.

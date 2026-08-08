@@ -1,0 +1,1 @@
+{"replan": 0, "episode_local": 0, "success": true, "state_dist": 37.44026565551758, "visual_dist": 8548.064810236292, "proprio_dist": 36.61531448364258, "cumulative_success": true, "planner_s": 5.589884355664253, "adapt_s": 0.011446148157119751, "adapt_peak_mb": 171.93798828125}

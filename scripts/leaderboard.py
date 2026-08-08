@@ -75,9 +75,9 @@ recomputed columns, then n and selection cost -- both of which come from the res
 and are therefore always populated, so including them would mask a total loss as a partial
 one.
 
-Everything in this range comes from ``eval_outputs/**/episodes.jsonl``, which is
-git-ignored -- so on a machine that has only *some* methods' raw records, exactly these
-cells go blank. See ``rows_losing_columns``.
+Everything in this range comes from held-out ``eval_outputs/**/test*/**/episodes.jsonl``
+(tracked for published methods; see ``docs/EVAL_RECORDS.md``). On a machine that has only
+*some* methods' raw records, exactly these cells go blank. See ``rows_losing_columns``.
 """
 
 
@@ -98,13 +98,11 @@ def _continuous_cells(text: str) -> dict:
 def rows_losing_columns(previous: str, current: str) -> dict:
     """Methods whose continuous columns are *less* populated than before.
 
-    The leaderboard's continuous metrics are recomputed from raw per-episode records that
-    are not distributed with the repository. A contributor who has run only their own
-    method and the frozen baseline therefore regenerates a table in which five columns of
-    every *other* method silently become "—", and `vs frozen` shifts for the
-    episode-isolated rows because their mode-matched reference is missing too. That is a
-    destructive edit disguised as a rebuild, and the only current signal is one stderr
-    line saying "per-episode metrics unavailable".
+    The leaderboard's continuous metrics are recomputed from held-out per-episode records.
+    Published methods ship those files in git; a contributor who has only their own new
+    method's episodes (and deleted or never checked out the tracked ones) would still
+    regenerate a table in which other methods' continuous columns silently become "—".
+    That is a destructive edit disguised as a rebuild.
 
     Returns ``{display name: (before, after)}`` for rows that lost cells.
     """
@@ -388,18 +386,17 @@ def main() -> int:
             if lost and not args.force:
                 print(
                     f"refusing to overwrite {args.out}: {len(lost)} row(s) would lose "
-                    f"continuous columns, because their per-episode records are not on "
-                    f"this machine (eval_outputs/ is git-ignored).",
+                    f"continuous columns, because their held-out episodes.jsonl records "
+                    f"are not on this machine (see docs/EVAL_RECORDS.md).",
                     file=sys.stderr,
                 )
                 for name, (before, after) in sorted(lost.items()):
                     print(f"    {name}: {before} populated cell(s) -> {after}",
                           file=sys.stderr)
                 print(
-                    "  This is what a contributor's regenerate looks like: it deletes "
-                    "other methods' published metrics. Add your row to the existing table "
-                    "instead (see CONTRIBUTING.md), or pass --force if you really do have "
-                    "every method's raw records.",
+                    "  Add your row to the existing table instead (see CONTRIBUTING.md), "
+                    "restore the tracked eval_outputs/**/episodes.jsonl files, or pass "
+                    "--force if the loss is intentional.",
                     file=sys.stderr,
                 )
                 return 1

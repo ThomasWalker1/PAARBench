@@ -57,6 +57,12 @@ large-file storage, cached concurrent downloads, and selective snapshot download
 Publish the same release on Zenodo when a citable archival DOI is needed. Confirm that
 the upstream licenses permit redistribution before making inherited weights public.
 
+## Held-out evaluation records
+
+Per-episode records used to regenerate continuous leaderboard columns are tracked in
+git under `eval_outputs/<method>/<setting>/test*/**/episodes.jsonl`. See
+[`EVAL_RECORDS.md`](EVAL_RECORDS.md). Checkpoints and goal files below remain external.
+
 ## Evaluation targets and training data
 
 PushObj and PushT goal files are expected at:

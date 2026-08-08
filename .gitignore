@@ -27,8 +27,20 @@ __pycache__/
 *.tar.gz
 *.mp4
 
-# Run outputs
-/eval_outputs/
+# Run outputs. Bulk planner dumps stay local; held-out per-episode records needed to
+# regenerate continuous leaderboard columns are tracked (see docs/EVAL_RECORDS.md).
+/eval_outputs/**
+!/eval_outputs/
+!/eval_outputs/*/
+!/eval_outputs/*/*/
+!/eval_outputs/*/*/test100/
+!/eval_outputs/*/*/test200/
+!/eval_outputs/*/*/test300/
+!/eval_outputs/*/*/test*/**/
+/eval_outputs/*/*/test*/**/*
+!/eval_outputs/*/*/test*/**/
+!/eval_outputs/*/*/test*/**/episodes.jsonl
+
 /logs/
 /outputs/
 /multirun/
