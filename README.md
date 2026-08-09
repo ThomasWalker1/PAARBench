@@ -148,3 +148,11 @@ The adapter lifecycle and contribution requirements are documented in
 The planner is fixed within each setting family (Push*: goal horizon 25; maze: 50),
 with 100 gradient-descent steps, zero action initialization, and no action noise.
 Determinism is required for paired episode comparisons.
+
+## License
+
+PAARBench is released under the [MIT License](LICENSE).
+Portions are derived from [AdaJEPA](https://github.com/agentic-learning-ai-lab/adajepa)
+(MIT); see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for that notice and for
+Apache-2.0 code in `models/vqvae.py`. Checkpoint and dataset artifacts follow their
+upstream terms.

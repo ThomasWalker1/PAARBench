@@ -3,6 +3,7 @@ name = "paarbench"
 version = "0.0.1"
 description = "PlanActAdaptRepeatBench - a benchmark for test-time adaptation of latent world models"
 readme = "README.md"
+license = "MIT"
 # Pinned to 3.9 so existing checkpoints and evaluation numbers remain comparable.
 requires-python = "==3.9.*"
 
