@@ -455,18 +455,11 @@ pre code {
   margin-bottom: 0;
 }
 
-/* Lead paragraphs of the about blurb span the full content column. */
-#about .prose {
-  max-width: none;
-}
-
-#about .prose > p:nth-child(-n+2) {
+/* About copy spans the full content column. */
+#about .prose,
+#about .prose > p {
   max-width: none;
   width: 100%;
-}
-
-#about .prose > p:nth-child(n+3) {
-  max-width: 42rem;
 }
 
 .site-footer {
