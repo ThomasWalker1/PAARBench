@@ -1,0 +1,131 @@
+{
+  "method": "hover",
+  "method_dir": "hover",
+  "display_name": "HOVER \u2014 horizon-matched online TTA",
+  "setting": "pusht",
+  "params": {
+    "steps": 5,
+    "pred_lr": 0.002,
+    "horizon": 5,
+    "buffer_size": 8,
+    "target_scope": "predlast_all",
+    "lora_rank": 2,
+    "lora_scale": 1.0,
+    "lora_init_seed": 0,
+    "grad_clip_norm": 1.0,
+    "brake_ratio": 1.25,
+    "refresh_interval": 1,
+    "require_single_episode": true
+  },
+  "submission": true,
+  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_cost_columns": 12,
+  "selection_cost_basis": "selected",
+  "episode_isolated": true,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pusht",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hover",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 5,
+        "pred_lr": 0.002,
+        "horizon": 5,
+        "buffer_size": 8,
+        "target_scope": "predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "lora_init_seed": 0,
+        "grad_clip_norm": 1.0,
+        "brake_ratio": 1.25,
+        "refresh_interval": 1,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "T": 0.76,
+        "L": 0.46,
+        "Z": 0.3
+      },
+      "success": 0.5066666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 401.6,
+      "out_dir": "eval_outputs/hover/pusht/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "hover",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 5,
+        "pred_lr": 0.002,
+        "horizon": 5,
+        "buffer_size": 8,
+        "target_scope": "predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "lora_init_seed": 0,
+        "grad_clip_norm": 1.0,
+        "brake_ratio": 1.25,
+        "refresh_interval": 1,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "T": 0.66,
+        "L": 0.4,
+        "Z": 0.28
+      },
+      "success": 0.4466666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 428.5,
+      "out_dir": "eval_outputs/hover/pusht/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "pusht",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "hover",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "steps": 5,
+        "pred_lr": 0.002,
+        "horizon": 5,
+        "buffer_size": 8,
+        "target_scope": "predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "lora_init_seed": 0,
+        "grad_clip_norm": 1.0,
+        "brake_ratio": 1.25,
+        "refresh_interval": 1,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "T": 0.72,
+        "L": 0.38,
+        "Z": 0.34
+      },
+      "success": 0.48000000000000004,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 406.7,
+      "out_dir": "eval_outputs/hover/pusht/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.4777777777777778,
+  "n": 450,
+  "complete": true,
+  "frozen_reference": null
+}
