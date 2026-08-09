@@ -30,7 +30,7 @@
   <h1>PAD — inverse-dynamics encoder adaptation</h1>
   <p class="lead">Policy Adaptation during Deployment: update the world-model encoder online with a self-supervised inverse-dynamics loss that predicts the executed action from consecutive latents. The inverse-dynamics head is pretrained offline on the same PushObj trajectory pool used to train the released world models, then reset alongside the encoder every episode.</p>
   <p class='reference'><strong>Reference:</strong> Hansen et al., &#x27;Self-Supervised Policy Adaptation during Deployment&#x27;, ICLR 2021</p>
-  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span><span class="badge">maze_medium</span><span class="badge">maze_medium_low_density</span><span class="badge">maze_medium_high_damping</span><span class="badge">maze_diverse</span></div>
 </div>
 
 <section>
@@ -44,7 +44,7 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <ul class='param-list'><li><span>action_dim</span> = 10</li><li><span>buffer_size</span> = 1</li><li><span>checkpoint_path</span> = checkpoints/pad/pushobj_inverse_dynamics.pth</li><li><span>encoder_lr</span> = 1e-05</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>head_hidden_dim</span> = 256</li><li><span>head_lr</span> = 0.0001</li><li><span>latent_dim</span> = 394</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 1</li></ul>
+  <ul class='param-list'><li><span>action_dim</span> = 10</li><li><span>buffer_size</span> = 1</li><li><span>checkpoint_path</span> = checkpoints/pad/maze_medium_inverse_dynamics.pth</li><li><span>encoder_lr</span> = 1e-06</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>head_hidden_dim</span> = 256</li><li><span>head_lr</span> = 0.0001</li><li><span>latent_dim</span> = 394</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 1</li></ul>
 </section>
 
 <section>
@@ -64,6 +64,26 @@
   <td class="num">0.360</td>
   <td class="num"></td>
   <td class="num">450</td>
+</tr><tr>
+  <td><code>maze_medium</code></td>
+  <td class="num">0.840</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_low_density</code></td>
+  <td class="num">0.747</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_high_damping</code></td>
+  <td class="num">0.733</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_diverse</code></td>
+  <td class="num">0.640</td>
+  <td class="num"></td>
+  <td class="num">150</td>
 </tr></tbody></table></div>
 </section>
 
@@ -158,6 +178,130 @@
   <td class="num">54% / +186</td>
   <td class="num">0.061</td>
   <td class="num">290</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Medium</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.840 (±0.030)</td>
+  <td class="num delta-pos">+0.067</td>
+  <td class="num">+1 [+0, +1]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">80% / +1</td>
+  <td class="num">0.030</td>
+  <td class="num">331</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Low Density</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.747 (±0.036)</td>
+  <td class="num delta-neg">-0.053</td>
+  <td class="num">+1 [-1, +2]</td>
+  <td class="num">16.7% [0%, 33%]</td>
+  <td class="num">61% / +5</td>
+  <td class="num">0.028</td>
+  <td class="num">331</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze High Damping</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.733 (±0.036)</td>
+  <td class="num delta-pos">+0.160</td>
+  <td class="num">+0 [-0, +1]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">62% / +1</td>
+  <td class="num">0.028</td>
+  <td class="num">331</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>DiverseMaze</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.640 (±0.039)</td>
+  <td class="num delta-neg">-0.013</td>
+  <td class="num">-0 [-0, +1]</td>
+  <td class="num">9.4% [0%, 22%]</td>
+  <td class="num">47% / +3</td>
+  <td class="num">0.028</td>
+  <td class="num">331</td>
 </tr>
     </tbody>
   </table>

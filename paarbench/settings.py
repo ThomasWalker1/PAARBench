@@ -72,6 +72,21 @@ class Setting:
             return False
         return self.selection_seed not in self.test_seeds
 
+    goal_source: str = "segments"
+    """The ``plan.py`` target loader used by this setting."""
+
+    goal_horizon: int = 25
+    """Environment steps from a sampled start to its planning goal."""
+
+    target_template: str = "pushobj_eval/val_{shape}/plan_targets.pkl"
+    """Path below ``data/``; may interpolate ``shape`` and cohort ``seed``."""
+
+    planner_overrides: dict[str, object] = field(default_factory=dict)
+    """Fixed, setting-owned Hydra overrides applied by the column runner."""
+
+    dataset_path: Optional[str] = None
+    """Evaluation data used to recover the base model's normalization metadata."""
+
     @property
     def base_path(self) -> Path:
         return Path("checkpoints") / self.base
@@ -101,15 +116,22 @@ class Setting:
             f"declared: selection={self.selection_seed}, test={list(self.test_seeds)}"
         )
 
-    def targets_path(self, shape: str) -> Path:
+    def targets_path(self, shape: str, seed: Optional[int] = None) -> Path:
         """Return the staged goal file for one shape."""
-        return Path("data") / "pushobj_eval" / f"val_{shape}" / "plan_targets.pkl"
+        return Path("data") / self.target_template.format(
+            shape=shape, seed="" if seed is None else seed,
+        )
 
     def missing_targets(self, root: Optional[Path] = None) -> list:
         """Goal files this setting needs that are not staged, in shape order."""
         base = Path(root) if root is not None else REPO_ROOT
-        return [self.targets_path(shape) for shape in self.shapes
-                if not (base / self.targets_path(shape)).is_file()]
+        paths = []
+        for shape in self.shapes:
+            for seed in (self.selection_seed, *self.test_seeds):
+                path = self.targets_path(shape, seed)
+                if path not in paths:
+                    paths.append(path)
+        return [path for path in paths if not (base / path).is_file()]
 
     def require_targets(self, root: Optional[Path] = None) -> None:
         """Fail before launching anything if the goal files are not staged.
@@ -184,6 +206,89 @@ PUSHT = _register(
         n_evals=50,
         frozen_success={},
         frozen_success_by_shape={},
+    )
+)
+
+# Every maze perturbation shares the PointMaze Medium base. The two dynamics
+# perturbations and held-out DiverseMaze layouts all inherit its selection. Goals are
+# materialized per cohort seed rather than re-sampled inside workers so frozen and
+# adapted columns are paired against a stable episode definition.
+MAZE_MEDIUM = _register(
+    Setting(
+        id="maze_medium",
+        base="mediummaze_dynamics_shift",
+        shapes=("medium",),
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
+        n_evals=50,
+        frozen_success={},
+        goal_source="maze_file",
+        goal_horizon=50,
+        target_template="maze_eval/maze_medium/seed_{seed}.pkl",
+        planner_overrides={"objective.alpha": 0.0, "objective.mode": "all"},
+        dataset_path="data/point_maze_medium",
+    )
+)
+
+MAZE_MEDIUM_LOW_DENSITY = _register(
+    Setting(
+        id="maze_medium_low_density",
+        base="mediummaze_dynamics_shift",
+        shapes=("medium",),
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
+        n_evals=50,
+        frozen_success={},
+        inherits_selection_from="maze_medium",
+        goal_source="maze_file",
+        goal_horizon=50,
+        target_template="maze_eval/maze_medium/seed_{seed}.pkl",
+        planner_overrides={
+            "objective.alpha": 0.0,
+            "objective.mode": "all",
+            "env_kwargs_override.density_scale": 0.2,
+        },
+        dataset_path="data/point_maze_medium",
+    )
+)
+
+MAZE_MEDIUM_HIGH_DAMPING = _register(
+    Setting(
+        id="maze_medium_high_damping",
+        base="mediummaze_dynamics_shift",
+        shapes=("medium",),
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
+        n_evals=50,
+        frozen_success={},
+        inherits_selection_from="maze_medium",
+        goal_source="maze_file",
+        goal_horizon=50,
+        target_template="maze_eval/maze_medium/seed_{seed}.pkl",
+        planner_overrides={
+            "objective.alpha": 0.0,
+            "objective.mode": "all",
+            "env_kwargs_override.damping_scale": 20.0,
+        },
+        dataset_path="data/point_maze_medium",
+    )
+)
+
+MAZE_DIVERSE = _register(
+    Setting(
+        id="maze_diverse",
+        base="mediummaze_dynamics_shift",
+        shapes=("heldout_layouts",),
+        selection_seed=SELECTION_SEED,
+        test_seeds=TEST_SEEDS,
+        n_evals=50,
+        frozen_success={},
+        inherits_selection_from="maze_medium",
+        goal_source="maze_file",
+        goal_horizon=50,
+        target_template="maze_eval/maze_diverse/seed_{seed}.pkl",
+        planner_overrides={"objective.alpha": 0.0, "objective.mode": "all"},
+        dataset_path="data/point_maze_medium",
     )
 )
 

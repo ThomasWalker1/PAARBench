@@ -25,6 +25,15 @@ eval_episode_index: null
 eval_episode_total: null
 goal_source: dset
 goal_H: 25
+# Immutable, benchmark-generated PointMaze/DiverseMaze episode definitions.
+# Used only with goal_source=maze_file; Push settings continue to use eval_data_path.
+maze_target_path: null
+# Optional replacement for the checkpoint's saved training-data path.  Maze
+# checkpoint releases contain `<path>` placeholders, so this supplies local
+# normalization metadata without mutating their saved Hydra config.
+dataset_path: null
+# Evaluator-only dynamics overrides, e.g. density_scale=0.2 or damping_scale=20.
+env_kwargs_override: null
 n_plot_samples: 10
 decode_for_viz: true
 num_start_frames: 1

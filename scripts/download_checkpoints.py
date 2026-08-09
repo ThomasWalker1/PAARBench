@@ -20,11 +20,20 @@ MANIFEST = REPO_ROOT / "CHECKPOINTS.sha256"
 HF_REPO_ID = "ThomasWalker1/paarbench-checkpoints"
 
 # Updated to the immutable Hub commit after each published artifact release.
-DEFAULT_REVISION = "329f4215b0902d0eaa765a17290491ebe281a0b7"
+DEFAULT_REVISION = "2e1152cc8fa26217bf826f2799a7d542ed283226"
 
 GROUP_PREFIXES = {
-    "settings": ("pushobj_shape_shift/", "pusht_visual_shift/"),
-    "methods": ("pad/", "pushobj_adapters/", "pvs_adapters/"),
+    "settings": (
+        "pushobj_shape_shift/",
+        "pusht_visual_shift/",
+        "mediummaze_dynamics_shift/",
+    ),
+    "methods": (
+        "pad/",
+        "pushobj_adapters/",
+        "pvs_adapters/",
+        "maze_medium_adapters/",
+    ),
 }
 
 

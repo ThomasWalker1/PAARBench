@@ -22,6 +22,7 @@ from preprocessor import Preprocessor
 from planning.evaluator import PlanEvaluator
 from planning.image_corruption import corrupt_obs_dict
 from paarbench.world_model import ALL_MODEL_KEYS, load_ckpt, load_model
+from paarbench.maze_targets import validate_targets
 from utils import cfg_to_dict, seed
 
 warnings.filterwarnings("ignore")
@@ -179,6 +180,8 @@ class PlanWorkspace:
             self.prepare_targets_from_file(cfg_dict["goal_file_path"])
         elif self.cfg_dict["goal_source"] == "segments":
             self.prepare_targets_from_segments(cfg_dict["eval_data_path"])
+        elif self.cfg_dict["goal_source"] == "maze_file":
+            self.prepare_targets_from_maze_file(cfg_dict["maze_target_path"])
         else:
             self.prepare_targets()
 
@@ -372,6 +375,32 @@ class PlanWorkspace:
         else:
             self.gt_actions = None
 
+    def prepare_targets_from_maze_file(self, file_path):
+        """Render an immutable maze episode corpus into planning inputs."""
+        targets = torch.load(file_path, map_location="cpu")
+        validate_targets(targets)
+        total = self.eval_episode_total
+        if len(targets["start_states"]) < total:
+            raise ValueError(
+                f"{file_path} defines {len(targets['start_states'])} maze episodes, "
+                f"but this column requires {total}"
+            )
+        indices = np.arange(total)
+        if self.eval_episode_index is not None:
+            indices = indices[[int(self.eval_episode_index)]]
+        starts = np.asarray(targets["start_states"], dtype=np.float32)[indices]
+        goals = np.asarray(targets["goal_states"], dtype=np.float32)[indices]
+        # Goal and initial images are rendered from the same exact environment
+        # definition. ``rollout`` resets to starts before executing actions.
+        obs_0, _ = self.env.prepare(self.eval_seed, starts)
+        obs_g, _ = self.env.prepare(self.eval_seed, goals)
+        self.obs_0 = {key: np.expand_dims(value, axis=1) for key, value in obs_0.items()}
+        self.obs_g = {key: np.expand_dims(value, axis=1) for key, value in obs_g.items()}
+        self.context_obs_0 = self.obs_0
+        self.state_0 = starts
+        self.state_g = goals
+        self.gt_actions = None
+
     def sample_traj_segment_from_dset(self, traj_len):
         states = []
         actions = []
@@ -526,6 +555,14 @@ def planning_main(cfg_dict):
     with open(model_path / "hydra.yaml", "r") as f:
         model_cfg = OmegaConf.load(f)
 
+    # Released maze checkpoint configs intentionally redact their original data
+    # root as `<path>`.  The benchmark supplies a staged evaluation split solely
+    # to recover checkpoint-compatible preprocessing and normalization metadata.
+    dataset_path = cfg_dict.get("dataset_path")
+    if dataset_path:
+        with open_dict(model_cfg):
+            model_cfg.env.dataset.data_path = dataset_path
+
     # Segment-goal evaluation uses fixed normalization metadata and never indexes a
     # training trajectory. Swap the saved training loader for its lightweight,
     # dataset-free counterpart while retaining the saved transform and options.
@@ -553,13 +590,55 @@ def planning_main(cfg_dict):
 
     eval_env_name = cfg_dict.get("evaluation_env_name") or model_cfg.env.name
     eval_env_args = cfg_dict.get("evaluation_env_args", model_cfg.env.args)
-    eval_env_kwargs = cfg_dict.get("evaluation_env_kwargs", model_cfg.env.kwargs)
-    env = SubprocVectorEnv(
-        [
-            lambda: gym.make(eval_env_name, *eval_env_args, **eval_env_kwargs)
-            for _ in range(cfg_dict["n_evals"])
-        ]
+    eval_env_kwargs = dict(
+        cfg_dict.get("evaluation_env_kwargs", model_cfg.env.kwargs) or {}
     )
+    if cfg_dict.get("env_kwargs_override"):
+        eval_env_kwargs.update(dict(cfg_dict["env_kwargs_override"]))
+    if cfg_dict.get("goal_source") == "maze_file":
+        target_path = Path(cfg_dict["maze_target_path"])
+        if not target_path.is_file():
+            raise FileNotFoundError(f"maze target corpus does not exist: {target_path}")
+        maze_targets = torch.load(target_path, map_location="cpu")
+        validate_targets(maze_targets)
+        expected_env = maze_targets["environment"]
+        if expected_env != eval_env_name:
+            # A diverse target supplies one layout per episode; the medium corpus
+            # asserts the checkpoint's native environment to catch swapped artifacts.
+            eval_env_name = expected_env
+        specs = maze_targets.get("maze_specs")
+        if specs is not None:
+            if len(specs) < cfg_dict["n_evals"]:
+                raise ValueError(
+                    f"{target_path} has {len(specs)} maze specs for "
+                    f"{cfg_dict['n_evals']} requested episodes"
+                )
+            if cfg_dict.get("eval_episode_index") is not None:
+                specs = [specs[int(cfg_dict["eval_episode_index"])]]
+            else:
+                specs = specs[:cfg_dict["n_evals"]]
+            env = SubprocVectorEnv(
+                [
+                    lambda spec=spec: gym.make(
+                        eval_env_name, *eval_env_args, maze_spec=spec, **eval_env_kwargs
+                    )
+                    for spec in specs
+                ]
+            )
+        else:
+            env = SubprocVectorEnv(
+                [
+                    lambda: gym.make(eval_env_name, *eval_env_args, **eval_env_kwargs)
+                    for _ in range(cfg_dict["n_evals"])
+                ]
+            )
+    else:
+        env = SubprocVectorEnv(
+            [
+                lambda: gym.make(eval_env_name, *eval_env_args, **eval_env_kwargs)
+                for _ in range(cfg_dict["n_evals"])
+            ]
+        )
 
     plan_workspace = PlanWorkspace(
         cfg_dict=cfg_dict,
@@ -580,7 +659,13 @@ def planning_main(cfg_dict):
     return logs
 
 
-REPO_RELATIVE_INPUTS = ("ckpt_base_path", "eval_data_path", "goal_file_path")
+REPO_RELATIVE_INPUTS = (
+    "ckpt_base_path",
+    "eval_data_path",
+    "goal_file_path",
+    "maze_target_path",
+    "dataset_path",
+)
 """Config keys naming inputs the caller wrote relative to the repository root."""
 
 

@@ -30,19 +30,22 @@
   <h1>Static LoRA — unconditioned correction</h1>
   <p class="lead">A learned rank-2 correction on the predictor&#x27;s last block, applied identically to every episode and never updated. No optimizer, no context: nothing about the correction depends on what the controller observed. This is the control that asks whether conditioning buys anything — if a conditioned method barely beats it, the conditioning is decorative rather than load-bearing.</p>
   <p class='reference'><strong>Reference:</strong> Predecessor project ~/HyperJEPA, the &#x27;static&#x27; control arm @ 628dff7</p>
-  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span><span class="badge">maze_medium</span><span class="badge">maze_medium_low_density</span><span class="badge">maze_medium_high_damping</span><span class="badge">maze_diverse</span></div>
 </div>
 
 <section>
   <h2>Overview</h2>
   <div class="card prose">
-    <p>A learned rank-2 correction on the predictor&#x27;s last block, applied identically to every episode and never updated. No optimizer, no context: nothing about the correction depends on what the controller observed. This is the control that asks whether conditioning buys anything — if a conditioned method barely beats it, the conditioning is decorative rather than load-bearing.</p>
+    <p>Context-independent LoRA (+ LayerNorm delta) trained directly on the frozen MediumMaze / PushObj / PushT base. Same offline trainer as HyperJEPA with <code>--static-lora</code>.</p>
+<p>## Offline training</p>
+<p>``<code>bash .venv/bin/python methods/static_lora/train.py \ --ckpt-dir checkpoints/mediummaze_dynamics_shift \ --model-epoch latest \ --data-path data/point_maze_medium \ --output-dir checkpoints/maze_medium_adapters/static_r2 \ --no-distill-adapter \ --rank 2 \ --epochs 5 \ --device cuda:0 </code>``</p>
+<p>Produces <code>hyper_lora_epoch_{1..5}.pth</code> under the output directory (naming matches <code>method.yaml</code> <code>maps_to</code> templates). Selection uses the benchmark&#x27;s <code>tunable.training_epoch</code> axis on the selection cohort.</p>
   </div>
 </section>
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <ul class='param-list'><li><span>checkpoint_path</span> = checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_1.pth</li><li><span>lora_scale</span> = 1.0</li><li><span>rank</span> = 2</li><li><span>target_scope</span> = predlast_all</li></ul>
+  <ul class='param-list'><li><span>checkpoint_path</span> = checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth</li><li><span>lora_scale</span> = 1.0</li><li><span>rank</span> = 2</li><li><span>target_scope</span> = predlast_all</li></ul>
 </section>
 
 <section>
@@ -62,6 +65,26 @@
   <td class="num">0.360</td>
   <td class="num"></td>
   <td class="num">450</td>
+</tr><tr>
+  <td><code>maze_medium</code></td>
+  <td class="num">0.780</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_low_density</code></td>
+  <td class="num">0.787</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_high_damping</code></td>
+  <td class="num">0.573</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_diverse</code></td>
+  <td class="num">0.607</td>
+  <td class="num"></td>
+  <td class="num">150</td>
 </tr></tbody></table></div>
 </section>
 
@@ -156,6 +179,130 @@
   <td class="num">55% / +181</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Medium</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.780 (±0.034)</td>
+  <td class="num delta-pos">+0.007</td>
+  <td class="num">-0 [-0, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">36% / +0</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Low Density</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.787 (±0.033)</td>
+  <td class="num delta-pos">+0.040</td>
+  <td class="num">+1 [-2, +2]</td>
+  <td class="num">16.7% [0%, 33%]</td>
+  <td class="num">56% / +5</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze High Damping</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.573 (±0.040)</td>
+  <td class="num delta-pos">+0.007</td>
+  <td class="num">-0 [-0, +0]</td>
+  <td class="num">4.3% [0%, 11%]</td>
+  <td class="num">43% / +2</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>DiverseMaze</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.607 (±0.040)</td>
+  <td class="num delta-pos">+0.013</td>
+  <td class="num">+0 [-0, +1]</td>
+  <td class="num">17.9% [8%, 31%]</td>
+  <td class="num">54% / +4</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
 </tr>
     </tbody>
   </table>

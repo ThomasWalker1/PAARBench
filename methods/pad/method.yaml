@@ -9,7 +9,7 @@ description: >
 reference: "Hansen et al., 'Self-Supervised Policy Adaptation during Deployment', ICLR 2021"
 
 adapter: adapter:PADAdapter
-settings: [pushobj, pushobj_shift, pusht]
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
 requires_episode_isolation: true
 
 params:
@@ -30,6 +30,14 @@ params:
 params_by_setting:
   pusht:
     checkpoint_path: checkpoints/pad/pusht_inverse_dynamics.pth
+  maze_medium:
+    checkpoint_path: checkpoints/pad/maze_medium_inverse_dynamics.pth
+  maze_medium_low_density:
+    checkpoint_path: checkpoints/pad/maze_medium_inverse_dynamics.pth
+  maze_medium_high_damping:
+    checkpoint_path: checkpoints/pad/maze_medium_inverse_dynamics.pth
+  maze_diverse:
+    checkpoint_path: checkpoints/pad/maze_medium_inverse_dynamics.pth
 
 tunable:
   objective: success

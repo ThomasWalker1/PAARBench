@@ -34,7 +34,9 @@ sweeps (`select*`, `selection/`), planner logs, Hydra dumps, and copied
 
 A fresh clone with the tracked episode records is enough to rebuild every continuous
 column. Re-running evaluations still requires checkpoints and goal files
-(`docs/CHECKPOINTS.md`).
+(`docs/CHECKPOINTS.md`). Maze settings additionally need the MuJoCo runtime and
+staged Drive assets documented in [`MAZE.md`](MAZE.md); their tiny episode corpora
+under `data/maze_eval/` are tracked in git.
 
 ## Submissions
 

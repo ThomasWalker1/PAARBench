@@ -36,7 +36,13 @@ REMOTE_PREFIX = "pushobj_eval/"
 
 
 def manifest_entries() -> dict[str, str]:
-    """Return ``remote path -> sha256`` for the evaluation-target release."""
+    """Return ``remote path -> sha256`` for the PushObj/PushT Hub release.
+
+    ``TARGETS.sha256`` also lists the tiny tracked maze corpora under
+    ``data/maze_eval/``; those are regenerated with
+    ``scripts/generate_maze_targets.py`` (or already present in git) and are
+    not fetched from the Hub.
+    """
     entries = {}
     for line in MANIFEST.read_text().splitlines():
         digest, local_path = line.split(maxsplit=1)
@@ -46,6 +52,8 @@ def manifest_entries() -> dict[str, str]:
             raise ValueError(f"unexpected target manifest path: {local_path}")
         remote_path = local_path[len(data_prefix):]
         if remote_path == "pushobj_eval.zip":
+            continue
+        if remote_path.startswith("maze_eval/"):
             continue
         if not remote_path.startswith(REMOTE_PREFIX):
             raise ValueError(f"unexpected target manifest path: {local_path}")

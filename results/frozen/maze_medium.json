@@ -1,0 +1,73 @@
+{
+  "method": "frozen",
+  "method_dir": "frozen",
+  "display_name": "Frozen (Batched)",
+  "setting": "maze_medium",
+  "params": {},
+  "submission": true,
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test300": {
+      "setting": "maze_medium",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.78
+      },
+      "success": 0.78,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 161.2,
+      "out_dir": "eval_outputs/frozen/maze_medium/test300",
+      "paired_metrics": null
+    },
+    "test100": {
+      "setting": "maze_medium",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.78
+      },
+      "success": 0.78,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 162.4,
+      "out_dir": "eval_outputs/frozen/maze_medium/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.76
+      },
+      "success": 0.76,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 164.4,
+      "out_dir": "eval_outputs/frozen/maze_medium/test200",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.7733333333333333,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

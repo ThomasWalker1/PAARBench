@@ -37,13 +37,15 @@
     <p>
       The benchmark asks whether a world model can adapt online during MPC replanning — and whether
       that adaptation helps control without compounding error, catastrophic failures, or hidden
-      tuning cost. Tasks include <strong>PushObj</strong> (pushing objects of varied shapes) and
-      <strong>PushT</strong> (visual pushing with distribution shift).
+      tuning cost. Tasks include <strong>PushObj</strong> (pushing objects of varied shapes),
+      <strong>PushT</strong> (visual pushing with distribution shift), and
+      <strong>PointMaze / DiverseMaze</strong> (navigation under dynamics and layout shift).
     </p>
     <p>
-      Planning is held fixed across submissions: goal horizon 25, 100 gradient-descent steps, zero
-      action initialization, and no action noise, so episodes are deterministic and paired comparisons
-      against the frozen baseline are meaningful.
+      Planning is held fixed within each setting family (Push*: goal horizon 25; maze: goal
+      horizon 50), with 100 gradient-descent steps, zero action initialization, and no action
+      noise, so episodes are deterministic and paired comparisons against the frozen baseline
+      are meaningful.
     </p>
     <p>
       Results are reported as a multi-objective frontier — success rate (with binomial SE in
@@ -63,7 +65,8 @@
       counted as selection cost.</li>
       <li><strong>Freeze</strong> — The best hyperparameters (per the rule's objective) are frozen.</li>
       <li><strong>Test</strong> — The frozen configuration runs once on each held-out test cohort.
-      For <code>pushobj_shift</code>, parameters are inherited from PushObj with no new selection.</li>
+      For <code>pushobj_shift</code> and the maze OOD settings, parameters are inherited from the
+      nominal setting with no new selection.</li>
       <li><strong>Record</strong> — Compact results go to <code>results/&lt;method&gt;/&lt;setting&gt;.json</code>.
       All continuous metrics are paired against the frozen baseline on the same episodes.</li>
     </ol>
@@ -79,6 +82,10 @@
     <p><strong>PushObj</strong> (<code>pushobj</code>) is the primary object-pushing setting: checkpoint <code>pushobj_shape_shift</code>, shapes T, L, Z, and +. Methods select hyperparameters on seed&nbsp;0, then run once on each test seed.</p>
     <p><strong>PushObj Shift</strong> (<code>pushobj_shift</code>) holds out different shapes (I, small_tee, square) on the same checkpoint. There is no selection cohort — parameters are frozen from PushObj — but evaluation still uses the same three test seeds.</p>
     <p><strong>PushT</strong> (<code>pusht</code>) is the visual pushing setting on <code>pusht_visual_shift</code> with shapes T, L, and Z. It follows the same one-seed selection, three-seed evaluation layout as PushObj.</p>
+    <p><strong>PointMaze Medium</strong> (<code>maze_medium</code>) uses the <code>mediummaze_dynamics_shift</code> base and immutable hard-goal episodes.</p>
+    <p><strong>PointMaze Low Density</strong> changes only mass through density scale 0.2; it inherits parameters from <code>maze_medium</code>.</p>
+    <p><strong>PointMaze High Damping</strong> changes only joint damping to 20; it inherits parameters from <code>maze_medium</code>.</p>
+    <p><strong>DiverseMaze</strong> (<code>maze_diverse</code>) evaluates held-out layouts using the <code>mediummaze_dynamics_shift</code> base and fixed BFS-distance-controlled goal corpora. Parameters are frozen on <code>maze_medium</code>.</p>
   </div>
 </section>
 
@@ -114,7 +121,8 @@
   <td class="num">58% / +251</td>
   <td class="num">0.294</td>
   <td class="num">177</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
   <td class="num">0.615 (±0.020)</td>
   <td class="num delta-pos">+0.115</td>
@@ -123,7 +131,8 @@
   <td class="num">42% / +74</td>
   <td class="num">0.157</td>
   <td class="num">977</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
   <td class="num">0.575 (±0.020)</td>
   <td class="num delta-pos">+0.075</td>
@@ -132,7 +141,8 @@
   <td class="num">51% / +111</td>
   <td class="num">0.029</td>
   <td class="num">290</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
   <td class="num">0.547 (±0.020)</td>
   <td class="num delta-pos">+0.047</td>
@@ -141,7 +151,8 @@
   <td class="num">44% / +57</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr class="baseline-row">
+</tr>
+        <tr class="baseline-row">
   <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
   <td class="num">0.500 (±0.020)</td>
   <td class="num ">—</td>
@@ -150,7 +161,8 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr class="baseline-row">
+</tr>
+        <tr class="baseline-row">
   <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
   <td class="num">0.500 (±0.020)</td>
   <td class="num ">—</td>
@@ -193,7 +205,8 @@
   <td class="num">57% / +203</td>
   <td class="num">0.290</td>
   <td class="num">177</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
   <td class="num">0.353 (±0.023)</td>
   <td class="num delta-pos">+0.053</td>
@@ -202,7 +215,8 @@
   <td class="num">54% / +136</td>
   <td class="num">0.029</td>
   <td class="num">290</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
   <td class="num">0.324 (±0.022)</td>
   <td class="num delta-pos">+0.024</td>
@@ -211,7 +225,8 @@
   <td class="num">47% / +91</td>
   <td class="num">0.159</td>
   <td class="num">977</td>
-</tr><tr class="baseline-row">
+</tr>
+        <tr class="baseline-row">
   <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
   <td class="num">0.300 (±0.022)</td>
   <td class="num ">—</td>
@@ -220,7 +235,8 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr class="baseline-row">
+</tr>
+        <tr class="baseline-row">
   <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
   <td class="num">0.300 (±0.022)</td>
   <td class="num ">—</td>
@@ -229,7 +245,8 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
   <td class="num">0.296 (±0.022)</td>
   <td class="num delta-neg">-0.004</td>
@@ -272,7 +289,8 @@
   <td class="num">47% / +140</td>
   <td class="num">0.144</td>
   <td class="num">977</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
   <td class="num">0.440 (±0.023)</td>
   <td class="num delta-pos">+0.096</td>
@@ -281,7 +299,8 @@
   <td class="num">65% / +595</td>
   <td class="num">0.293</td>
   <td class="num">177</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
   <td class="num">0.360 (±0.023)</td>
   <td class="num delta-pos">+0.016</td>
@@ -290,7 +309,8 @@
   <td class="num">54% / +186</td>
   <td class="num">0.061</td>
   <td class="num">290</td>
-</tr><tr>
+</tr>
+        <tr>
   <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
   <td class="num">0.360 (±0.023)</td>
   <td class="num delta-pos">+0.011</td>
@@ -299,7 +319,8 @@
   <td class="num">55% / +181</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr class="baseline-row">
+</tr>
+        <tr class="baseline-row">
   <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
   <td class="num">0.349 (±0.022)</td>
   <td class="num ">—</td>
@@ -308,7 +329,8 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
-</tr><tr class="baseline-row">
+</tr>
+        <tr class="baseline-row">
   <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
   <td class="num">0.344 (±0.022)</td>
   <td class="num ">—</td>
@@ -317,6 +339,342 @@
   <td class="num">—</td>
   <td class="num">0.000</td>
   <td class="num">157</td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="setting-block" id="maze_medium">
+  <h3>PointMaze Medium</h3>
+  <p class="setting-meta">Nominal medium maze (n=150 pooled); selection happens on seed 0.</p>
+  <div class="table-wrap">
+    <table class="sortable">
+      <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.853 (±0.029)</td>
+  <td class="num delta-pos">+0.080</td>
+  <td class="num">+0 [-0, +1]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">73% / +1</td>
+  <td class="num">0.296</td>
+  <td class="num">184</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.840 (±0.030)</td>
+  <td class="num delta-pos">+0.067</td>
+  <td class="num">+1 [+0, +1]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">80% / +1</td>
+  <td class="num">0.030</td>
+  <td class="num">331</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.780 (±0.034)</td>
+  <td class="num delta-pos">+0.007</td>
+  <td class="num">-0 [-1, +0]</td>
+  <td class="num">4.5% [0%, 14%]</td>
+  <td class="num">36% / +2</td>
+  <td class="num">0.161</td>
+  <td class="num">682</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.780 (±0.034)</td>
+  <td class="num delta-pos">+0.007</td>
+  <td class="num">-0 [-0, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">36% / +0</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
+  <td class="num">0.773 (±0.034)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
+  <td class="num">0.773 (±0.034)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="setting-block" id="maze_medium_low_density">
+  <h3>PointMaze Low Density</h3>
+  <p class="setting-meta">Medium maze with density scale 0.2; parameters inherit from PointMaze Medium.</p>
+  <div class="table-wrap">
+    <table class="sortable">
+      <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.827 (±0.031)</td>
+  <td class="num delta-pos">+0.027</td>
+  <td class="num">+2 [-1, +3]</td>
+  <td class="num">12.5% [0%, 31%]</td>
+  <td class="num">62% / +5</td>
+  <td class="num">0.298</td>
+  <td class="num">184</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
+  <td class="num">0.800 (±0.033)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.787 (±0.033)</td>
+  <td class="num delta-pos">+0.040</td>
+  <td class="num">+1 [-2, +2]</td>
+  <td class="num">16.7% [0%, 33%]</td>
+  <td class="num">56% / +5</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
+  <td class="num">0.747 (±0.036)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.747 (±0.036)</td>
+  <td class="num delta-pos">+0.000</td>
+  <td class="num">+0 [-1, +4]</td>
+  <td class="num">25.0% [10%, 45%]</td>
+  <td class="num">60% / +9</td>
+  <td class="num">0.145</td>
+  <td class="num">682</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.747 (±0.036)</td>
+  <td class="num delta-neg">-0.053</td>
+  <td class="num">+1 [-1, +2]</td>
+  <td class="num">16.7% [0%, 33%]</td>
+  <td class="num">61% / +5</td>
+  <td class="num">0.028</td>
+  <td class="num">331</td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="setting-block" id="maze_medium_high_damping">
+  <h3>PointMaze High Damping</h3>
+  <p class="setting-meta">Medium maze with damping scale 20; parameters inherit from PointMaze Medium.</p>
+  <div class="table-wrap">
+    <table class="sortable">
+      <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.747 (±0.036)</td>
+  <td class="num delta-pos">+0.173</td>
+  <td class="num">+0 [-0, +1]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">61% / +2</td>
+  <td class="num">0.298</td>
+  <td class="num">184</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.733 (±0.036)</td>
+  <td class="num delta-pos">+0.160</td>
+  <td class="num">+0 [-0, +1]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">62% / +1</td>
+  <td class="num">0.028</td>
+  <td class="num">331</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.607 (±0.040)</td>
+  <td class="num delta-pos">+0.040</td>
+  <td class="num">+0 [-0, +0]</td>
+  <td class="num">2.2% [0%, 7%]</td>
+  <td class="num">54% / +2</td>
+  <td class="num">0.145</td>
+  <td class="num">682</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
+  <td class="num">0.573 (±0.040)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.573 (±0.040)</td>
+  <td class="num delta-pos">+0.007</td>
+  <td class="num">-0 [-0, +0]</td>
+  <td class="num">4.3% [0%, 11%]</td>
+  <td class="num">43% / +2</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
+  <td class="num">0.567 (±0.040)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="setting-block" id="maze_diverse">
+  <h3>DiverseMaze</h3>
+  <p class="setting-meta">Held-out DiverseMaze layouts on the PointMaze Medium base (n=150 pooled); parameters inherit from PointMaze Medium.</p>
+  <div class="table-wrap">
+    <table class="sortable">
+      <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen_isolated.html">Frozen (Individual)</a></td>
+  <td class="num">0.653 (±0.039)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/adajepa.html">AdaJEPA — online gradient TTA</a></td>
+  <td class="num">0.640 (±0.039)</td>
+  <td class="num delta-neg">-0.013</td>
+  <td class="num">-1 [-2, -0]</td>
+  <td class="num">3.6% [0%, 11%]</td>
+  <td class="num">25% / +2</td>
+  <td class="num">0.296</td>
+  <td class="num">184</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/pad.html">PAD — inverse-dynamics encoder adaptation</a></td>
+  <td class="num">0.640 (±0.039)</td>
+  <td class="num delta-neg">-0.013</td>
+  <td class="num">-0 [-0, +1]</td>
+  <td class="num">9.4% [0%, 22%]</td>
+  <td class="num">47% / +3</td>
+  <td class="num">0.028</td>
+  <td class="num">331</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.607 (±0.040)</td>
+  <td class="num delta-pos">+0.013</td>
+  <td class="num">-0 [-1, +0]</td>
+  <td class="num">12.5% [2%, 22%]</td>
+  <td class="num">48% / +3</td>
+  <td class="num">0.131</td>
+  <td class="num">682</td>
+</tr>
+        <tr>
+  <td><a class="method-link" href="methods/static_lora.html">Static LoRA — unconditioned correction</a></td>
+  <td class="num">0.607 (±0.040)</td>
+  <td class="num delta-pos">+0.013</td>
+  <td class="num">+0 [-0, +1]</td>
+  <td class="num">17.9% [8%, 31%]</td>
+  <td class="num">54% / +4</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
+</tr>
+        <tr class="baseline-row">
+  <td><a class="method-link" href="methods/frozen.html">Frozen (Batched)</a></td>
+  <td class="num">0.593 (±0.040)</td>
+  <td class="num ">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">—</td>
+  <td class="num">0.000</td>
+  <td class="num">169</td>
 </tr>
       </tbody>
     </table>
@@ -356,18 +714,28 @@ no overall rank — sort by whichever column matters for your use case.</p>
         </thead>
         <tbody>
           <tr>
-            <td>Base + adapter checkpoints (~1.1 GB)</td>
-            <td><code>scripts/download_checkpoints.py all</code></td>
+            <td>Base + adapter checkpoints</td>
+            <td><code>scripts/download_checkpoints.py all</code> (see <code>docs/CHECKPOINTS.md</code>)</td>
             <td>Everything</td>
           </tr>
           <tr>
-            <td>Goal files <code>data/pushobj_eval/val_&lt;shape&gt;/plan_targets.pkl</code></td>
+            <td>Push goal files <code>data/pushobj_eval/val_&lt;shape&gt;/plan_targets.pkl</code></td>
             <td><code>scripts/download_targets.py</code></td>
-            <td>Everything</td>
+            <td>Push settings</td>
           </tr>
           <tr>
-            <td>Training trajectories (~1 GB)</td>
-            <td><code>scripts/download_data.py</code></td>
+            <td>Maze episode corpora <code>data/maze_eval/*/seed_*.pkl</code></td>
+            <td>Tracked in git, or <code>scripts/generate_maze_targets.py</code></td>
+            <td>Maze settings</td>
+          </tr>
+          <tr>
+            <td>Maze MuJoCo runtime + staged Drive assets</td>
+            <td><code>scripts/setup_mujoco_runtime.sh</code> + <code>docs/MAZE.md</code></td>
+            <td>Maze settings</td>
+          </tr>
+          <tr>
+            <td>Training trajectories</td>
+            <td><code>scripts/download_data.py</code> (push); maze via <code>docs/MAZE.md</code></td>
             <td>Methods using offline data only</td>
           </tr>
         </tbody>

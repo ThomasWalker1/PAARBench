@@ -11,15 +11,17 @@ than about the method.
 
 | artifact | how to get it | needed for |
 |---|---|---|
-| base + adapter checkpoints (~1.1 GB) | `scripts/download_checkpoints.py all` | everything |
-| **goal files** `data/pushobj_eval/val_<shape>/plan_targets.pkl` | [`scripts/download_targets.py`](scripts/download_targets.py) → `ThomasWalker1/paarbench-data` | everything |
-| training trajectories (~1 GB) | `scripts/download_data.py` | only methods that use offline data |
+| base + adapter checkpoints | `scripts/download_checkpoints.py all` (see [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md)) | everything |
+| **Push goal files** `data/pushobj_eval/val_<shape>/plan_targets.pkl` | [`scripts/download_targets.py`](scripts/download_targets.py) → `ThomasWalker1/paarbench-data` | push settings |
+| **Maze episode corpora** `data/maze_eval/*/seed_*.pkl` | tracked in git (or `scripts/generate_maze_targets.py`) | maze settings |
+| Maze MuJoCo + Drive data | [`docs/MAZE.md`](docs/MAZE.md), verify with `MAZE_ARTIFACTS.sha256` | maze settings |
+| training trajectories | `scripts/download_data.py` (push); maze via [`docs/MAZE.md`](docs/MAZE.md) | only methods that use offline data |
 
-The goal files are the awkward one: they define each setting's episodes, they are not in git
-and not in either Hub release, and nothing here regenerates them. Any run without them fails
-up front with the list of missing files. If you cannot obtain them, open an issue rather
-than working around it — a submission evaluated on episodes you generated yourself is not
-comparable to anything on the board.
+Push goal files define each push setting's episodes; they are not in git, and nothing
+here regenerates them. Maze corpora are small and tracked. Any run without the required
+targets fails up front with the list of missing files. If you cannot obtain Push goal
+files, open an issue rather than working around it — a submission evaluated on episodes
+you generated yourself is not comparable to anything on the board.
 
 ## Check your stack before you trust your method
 
@@ -57,6 +59,10 @@ method's effect:
 ```bash
 .venv/bin/python scripts/evaluate.py --frozen --setting pushobj
 .venv/bin/python scripts/evaluate.py --frozen --isolated --setting pushobj --per-gpu 4
+# Maze (see docs/MAZE.md):
+.venv/bin/python scripts/evaluate.py --frozen --setting maze_medium --gpus 0,1,2,3,4,5,6,7
+.venv/bin/python scripts/evaluate.py --frozen --isolated --setting maze_medium \
+  --gpus 0,1,2,3,4,5,6,7 --per-gpu 4
 ```
 
 ## Regenerating `LEADERBOARD.md`

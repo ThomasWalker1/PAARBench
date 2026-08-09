@@ -1,0 +1,129 @@
+{
+  "method": "hyperjepa",
+  "method_dir": "hyperjepa",
+  "display_name": "HyperJEPA \u2014 amortized hypernetwork",
+  "setting": "maze_medium_low_density",
+  "params": {
+    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+    "rank": 2,
+    "target_scope": "predlast_all",
+    "context_mode": "transition_buffer",
+    "context_feature_kind": "residual_action",
+    "context_aggregator": "transformer_query",
+    "transition_buffer_size": 5,
+    "adapter_gate": false,
+    "freeze_lora_A": false,
+    "generator": "mlp",
+    "refresh": "every_mpc",
+    "refresh_interval": 1,
+    "fold_weights": false
+  },
+  "submission": true,
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_medium_low_density",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "medium": 0.84
+      },
+      "success": 0.84,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 247.4,
+      "out_dir": "eval_outputs/hyperjepa/maze_medium_low_density/test100",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium_low_density",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "medium": 0.72
+      },
+      "success": 0.72,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 259.2,
+      "out_dir": "eval_outputs/hyperjepa/maze_medium_low_density/test300",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium_low_density",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "medium": 0.68
+      },
+      "success": 0.68,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 259.7,
+      "out_dir": "eval_outputs/hyperjepa/maze_medium_low_density/test200",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.7466666666666667,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

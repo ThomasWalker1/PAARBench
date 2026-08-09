@@ -9,7 +9,7 @@ description: >
 reference: "Predecessor project ~/HyperJEPA, planning/hyper_adapter.py @ 628dff7"
 
 adapter: adapter:HyperJEPAAdapter
-settings: [pushobj, pushobj_shift, pusht]
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
 
 # These MUST match the adapter checkpoint's metadata.json. The adapter validates
 # them on load and raises rather than mis-loading silently -- several mismatches
@@ -40,12 +40,20 @@ tunable:
         pushobj: [1, 2, 3, 4, 5]
         pushobj_shift: [1, 2, 3, 4, 5]
         pusht: [1, 2, 3, 4]
+        maze_medium: [1, 2, 3, 4, 5]
+        maze_medium_low_density: [1, 2, 3, 4, 5]
+        maze_medium_high_damping: [1, 2, 3, 4, 5]
+        maze_diverse: [1, 2, 3, 4, 5]
       maps_to:
         param: checkpoint_path
         by_setting:
           pushobj: checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_{}.pth
           pushobj_shift: checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_{}.pth
           pusht: checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_{}.pth
+          maze_medium: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_{}.pth
+          maze_medium_low_density: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_{}.pth
+          maze_medium_high_damping: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_{}.pth
+          maze_diverse: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_{}.pth
 
 # The architecture is shared across domains; the trained weights are not. PushT has
 # its own hypernetwork, trained on the pusht_visual_shift base.
@@ -56,3 +64,12 @@ params_by_setting:
     # declared rule never considers and whose "best" was decided somewhere outside this
     # benchmark. Running the rule for real is what surfaced that.
     checkpoint_path: checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_3.pth
+  maze_medium:
+    # Epoch 2, chosen by EpochSelection on the maze_medium selection cohort.
+    checkpoint_path: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth
+  maze_medium_low_density:
+    checkpoint_path: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth
+  maze_medium_high_damping:
+    checkpoint_path: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth
+  maze_diverse:
+    checkpoint_path: checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth

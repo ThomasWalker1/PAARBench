@@ -1,0 +1,73 @@
+{
+  "method": "frozen",
+  "method_dir": "frozen",
+  "display_name": "Frozen (Batched)",
+  "setting": "maze_diverse",
+  "params": {},
+  "submission": true,
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test200": {
+      "setting": "maze_diverse",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "heldout_layouts": 0.62
+      },
+      "success": 0.62,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 232.1,
+      "out_dir": "eval_outputs/frozen/maze_diverse/test200",
+      "paired_metrics": null
+    },
+    "test100": {
+      "setting": "maze_diverse",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "heldout_layouts": 0.58
+      },
+      "success": 0.58,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 232.1,
+      "out_dir": "eval_outputs/frozen/maze_diverse/test100",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_diverse",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "heldout_layouts": 0.58
+      },
+      "success": 0.58,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 138.5,
+      "out_dir": "eval_outputs/frozen/maze_diverse/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.5933333333333334,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

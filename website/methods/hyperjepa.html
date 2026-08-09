@@ -30,19 +30,23 @@
   <h1>HyperJEPA — amortized hypernetwork</h1>
   <p class="lead">A hypernetwork reads the transitions the controller has executed this episode and emits a rank-2 LoRA correction for the predictor&#x27;s last block. The correction is regenerated from the frozen weights before every replan rather than accumulated, so adaptation cost is O(1) in the number of replans and the update cannot drift. Contrast with adajepa, which walks an optimizer trajectory.</p>
   <p class='reference'><strong>Reference:</strong> Predecessor project ~/HyperJEPA, planning/hyper_adapter.py @ 628dff7</p>
-  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span><span class="badge">maze_medium</span><span class="badge">maze_medium_low_density</span><span class="badge">maze_medium_high_damping</span><span class="badge">maze_diverse</span></div>
 </div>
 
 <section>
   <h2>Overview</h2>
   <div class="card prose">
-    <p>A hypernetwork reads the transitions the controller has executed this episode and emits a rank-2 LoRA correction for the predictor&#x27;s last block. The correction is regenerated from the frozen weights before every replan rather than accumulated, so adaptation cost is O(1) in the number of replans and the update cannot drift. Contrast with adajepa, which walks an optimizer trajectory.</p>
+    <p>Amortized hypernetwork that emits a rank-2 LoRA correction for the predictor&#x27;s last block from the episode&#x27;s recent transitions. Corrections are regenerated from the frozen base before every replan.</p>
+<p>## Offline training</p>
+<p>``<code>bash .venv/bin/python methods/hyperjepa/train.py \ --ckpt-dir checkpoints/mediummaze_dynamics_shift \ --model-epoch latest \ --data-path data/point_maze_medium \ --output-dir checkpoints/maze_medium_adapters/hyper_r2 \ --no-distill-adapter \ --rank 2 \ --target-scope predlast_all \ --context-mode transition_buffer \ --context-aggregator transformer_query \ --context-transitions 5 \ --epochs 5 \ --device cuda:0 </code>``</p>
+<p>Epoch files must be named <code>hyper_lora_epoch_{1..5}.pth</code> (see <code>method.yaml</code>). PAARBench selects the reported epoch on the selection cohort via <code>tunable.training_epoch</code>; do not use val-loss <code>best</code> for reported numbers.</p>
+<p>Or: <code>scripts/train_maze_adapters.sh</code> (HyperJEPA + Static LoRA in parallel).</p>
   </div>
 </section>
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <ul class='param-list'><li><span>adapter_gate</span> = False</li><li><span>checkpoint_path</span> = checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth</li><li><span>context_aggregator</span> = transformer_query</li><li><span>context_feature_kind</span> = residual_action</li><li><span>context_mode</span> = transition_buffer</li><li><span>fold_weights</span> = False</li><li><span>freeze_lora_A</span> = False</li><li><span>generator</span> = mlp</li><li><span>rank</span> = 2</li><li><span>refresh</span> = every_mpc</li><li><span>refresh_interval</span> = 1</li><li><span>target_scope</span> = predlast_all</li><li><span>transition_buffer_size</span> = 5</li></ul>
+  <ul class='param-list'><li><span>adapter_gate</span> = False</li><li><span>checkpoint_path</span> = checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth</li><li><span>context_aggregator</span> = transformer_query</li><li><span>context_feature_kind</span> = residual_action</li><li><span>context_mode</span> = transition_buffer</li><li><span>fold_weights</span> = False</li><li><span>freeze_lora_A</span> = False</li><li><span>generator</span> = mlp</li><li><span>rank</span> = 2</li><li><span>refresh</span> = every_mpc</li><li><span>refresh_interval</span> = 1</li><li><span>target_scope</span> = predlast_all</li><li><span>transition_buffer_size</span> = 5</li></ul>
 </section>
 
 <section>
@@ -62,6 +66,26 @@
   <td class="num">0.458</td>
   <td class="num"></td>
   <td class="num">450</td>
+</tr><tr>
+  <td><code>maze_medium</code></td>
+  <td class="num">0.780</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_low_density</code></td>
+  <td class="num">0.747</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_high_damping</code></td>
+  <td class="num">0.607</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_diverse</code></td>
+  <td class="num">0.607</td>
+  <td class="num"></td>
+  <td class="num">150</td>
 </tr></tbody></table></div>
 </section>
 
@@ -156,6 +180,130 @@
   <td class="num">47% / +140</td>
   <td class="num">0.144</td>
   <td class="num">977</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Medium</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.780 (±0.034)</td>
+  <td class="num delta-pos">+0.007</td>
+  <td class="num">-0 [-1, +0]</td>
+  <td class="num">4.5% [0%, 14%]</td>
+  <td class="num">36% / +2</td>
+  <td class="num">0.161</td>
+  <td class="num">682</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Low Density</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.747 (±0.036)</td>
+  <td class="num delta-pos">+0.000</td>
+  <td class="num">+0 [-1, +4]</td>
+  <td class="num">25.0% [10%, 45%]</td>
+  <td class="num">60% / +9</td>
+  <td class="num">0.145</td>
+  <td class="num">682</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze High Damping</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.607 (±0.040)</td>
+  <td class="num delta-pos">+0.040</td>
+  <td class="num">+0 [-0, +0]</td>
+  <td class="num">2.2% [0%, 7%]</td>
+  <td class="num">54% / +2</td>
+  <td class="num">0.145</td>
+  <td class="num">682</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>DiverseMaze</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td class="num">0.607 (±0.040)</td>
+  <td class="num delta-pos">+0.013</td>
+  <td class="num">-0 [-1, +0]</td>
+  <td class="num">12.5% [2%, 22%]</td>
+  <td class="num">48% / +3</td>
+  <td class="num">0.131</td>
+  <td class="num">682</td>
 </tr>
     </tbody>
   </table>

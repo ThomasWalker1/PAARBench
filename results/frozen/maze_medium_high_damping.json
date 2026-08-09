@@ -1,0 +1,73 @@
+{
+  "method": "frozen",
+  "method_dir": "frozen",
+  "display_name": "Frozen (Batched)",
+  "setting": "maze_medium_high_damping",
+  "params": {},
+  "submission": true,
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test200": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.52
+      },
+      "success": 0.52,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 231.7,
+      "out_dir": "eval_outputs/frozen/maze_medium_high_damping/test200",
+      "paired_metrics": null
+    },
+    "test100": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.6
+      },
+      "success": 0.6,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 233.3,
+      "out_dir": "eval_outputs/frozen/maze_medium_high_damping/test100",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "frozen",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.58
+      },
+      "success": 0.58,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 233.7,
+      "out_dir": "eval_outputs/frozen/maze_medium_high_damping/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.5666666666666667,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

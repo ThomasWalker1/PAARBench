@@ -1,0 +1,73 @@
+{
+  "method": "frozen_isolated",
+  "method_dir": "frozen_isolated",
+  "display_name": "Frozen (Individual)",
+  "setting": "maze_medium_high_damping",
+  "params": {},
+  "submission": true,
+  "selection_rule": "none (no hyperparameters)",
+  "selection_cost_columns": 0,
+  "selection_cost_basis": "none",
+  "episode_isolated": true,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "frozen_isolated",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.48
+      },
+      "success": 0.48,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 188.6,
+      "out_dir": "eval_outputs/frozen_isolated/maze_medium_high_damping/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "frozen_isolated",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.56
+      },
+      "success": 0.56,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 198.4,
+      "out_dir": "eval_outputs/frozen_isolated/maze_medium_high_damping/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "frozen_isolated",
+      "n_evals": 50,
+      "n": 50,
+      "params": {},
+      "success_by_shape": {
+        "medium": 0.68
+      },
+      "success": 0.68,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 172.7,
+      "out_dir": "eval_outputs/frozen_isolated/maze_medium_high_damping/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.5733333333333334,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

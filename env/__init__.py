@@ -15,3 +15,16 @@ register(
     max_episode_steps=300,
     reward_threshold=1.0,
 )
+
+register(
+    id="point_maze_medium",
+    entry_point="env.pointmaze.maze:PointMazeEnv",
+    kwargs={"maze_spec": "########\\#OO##OO#\\#OO#OOO#\\##OOO###\\#OO#OOO#\\#O#OO#O#\\#OOO#OG#\\########"},
+    max_episode_steps=300,
+)
+
+register(
+    id="diverse_maze",
+    entry_point="env.pointmaze.maze:PointMazeEnv",
+    max_episode_steps=300,
+)

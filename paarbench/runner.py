@@ -21,7 +21,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from paarbench.settings import Setting
 
@@ -289,6 +289,34 @@ def _worker_env(gpu: str) -> Dict[str, str]:
         OPENBLAS_NUM_THREADS="1",
         NUMEXPR_NUM_THREADS="1",
     )
+    # CI and shared GPU hosts often expose CUDA for PyTorch but not the system
+    # EGL/GLEW development stack that legacy mujoco-py needs.  When the optional
+    # user-local runtime has been staged, build a software offscreen renderer from
+    # it; torch still uses the selected CUDA device for model/planner computation.
+    prefix = REPO_ROOT / ".mujoco-build"
+    osmesa_lib = prefix / "usr" / "lib" / "x86_64-linux-gnu"
+    if (prefix / "bin" / "patchelf").is_file() and (osmesa_lib / "libOSMesa.so").is_file():
+        def prepend(value: Union[Path, str], current: str) -> str:
+            return f"{value}:{current}" if current else str(value)
+
+        env["PATH"] = prepend(prefix / "bin", env.get("PATH", ""))
+        env["C_INCLUDE_PATH"] = prepend(
+            prefix / "usr" / "include",
+            prepend(prefix / "include", env.get("C_INCLUDE_PATH", "")),
+        )
+        env["LIBRARY_PATH"] = prepend(
+            osmesa_lib,
+            prepend(prefix / "lib", env.get("LIBRARY_PATH", "")),
+        )
+        env["LD_LIBRARY_PATH"] = prepend(
+            osmesa_lib,
+            prepend(
+                prefix / "lib",
+                prepend(Path.home() / ".mujoco" / "mujoco210" / "bin",
+                        env.get("LD_LIBRARY_PATH", "")),
+            ),
+        )
+        env["MUJOCO_PY_FORCE_CPU"] = "1"
     return env
 
 
@@ -320,15 +348,21 @@ def build_command(
         "--config-name", config_name,
         f"ckpt_base_path={setting.base_path}",
         "model_epoch=latest",
-        "goal_source=segments",
+        f"goal_source={setting.goal_source}",
         "+wandb_logging=false",
         f"hydra.run.dir={_portable_command_path(out_dir)}",
         f"seed={seed}",
-        "goal_H=25",
+        f"goal_H={setting.goal_horizon}",
         "planner.sub_planner.opt_steps=100",
         "decode_for_viz=false",
     ]
-    cmd.append(f"+eval_data_path={setting.targets_path(shape)}")
+    target_path = setting.targets_path(shape, seed)
+    if setting.goal_source == "segments":
+        cmd.append(f"+eval_data_path={target_path}")
+    else:
+        cmd.append(f"+maze_target_path={target_path}")
+    if setting.dataset_path:
+        cmd.append(f"dataset_path={setting.dataset_path}")
     if episode_index is None:
         cmd.append(f"n_evals={n_evals}")
     else:
@@ -341,6 +375,8 @@ def build_command(
         cmd.append(f"+planner.adapter.method={method_name}")
         for key, value in (params or {}).items():
             cmd.append(f"+planner.adapter.params.{key}={_hydra_scalar(value)}")
+    for key, value in setting.planner_overrides.items():
+        cmd.append(f"++{key}={_hydra_scalar(value)}")
     return cmd + list(extra or [])
 
 

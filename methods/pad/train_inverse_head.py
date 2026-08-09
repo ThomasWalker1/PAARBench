@@ -15,6 +15,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from datasets.img_transforms import default_transform
+from datasets.diverse_maze_dset import DiverseMazeDataset
+from datasets.point_maze_dset import PointMazeDataset
 from datasets.pusht_dset import PushTDataset
 from paarbench.world_model import load_world_model
 
@@ -44,6 +46,12 @@ def parse_args():
                         help="environment actions represented by one model transition")
     parser.add_argument("--lr", type=float, default=1.0e-3)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--dataset-kind",
+        choices=("auto", "push", "point_maze", "diverse_maze"),
+        default="auto",
+        help="auto infers a maze loader from --base; explicit is safer for new bases",
+    )
     return parser.parse_args()
 
 
@@ -53,10 +61,28 @@ def main():
         raise SystemExit(f"dataset does not exist: {args.data}")
     torch.manual_seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dataset = PushTDataset(
-        data_path=str(args.data / "train") if (args.data / "train").is_dir() else str(args.data),
-        transform=default_transform(img_size=224), normalize_action=True, with_velocity=True,
-    )
+    kind = args.dataset_kind
+    if kind == "auto":
+        kind = (
+            "diverse_maze" if "diverse" in str(args.base)
+            else "point_maze" if "maze" in str(args.base)
+            else "push"
+        )
+    data_path = args.data / "train" if (args.data / "train").is_dir() else args.data
+    transform = default_transform(img_size=224)
+    if kind == "push":
+        dataset = PushTDataset(
+            data_path=str(data_path), transform=transform,
+            normalize_action=True, with_velocity=True,
+        )
+    elif kind == "point_maze":
+        dataset = PointMazeDataset(
+            data_path=str(data_path), transform=transform, normalize_action=True,
+        )
+    else:
+        dataset = DiverseMazeDataset(
+            data_path=str(data_path), transform=transform, normalize_action=True,
+        )
     wm = load_world_model(args.base, device=device)
     wm.eval()
     generator = torch.Generator().manual_seed(args.seed)

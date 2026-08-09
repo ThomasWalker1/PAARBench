@@ -9,7 +9,7 @@ description: >
 reference: "Predecessor project ~/HyperJEPA, planning/adaptation.py @ 628dff7"
 
 adapter: adapter:AdaJEPAAdapter
-settings: [pushobj, pushobj_shift, pusht]
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
 
 # This method owns mutable shared state -- world-model parameters and an AdamW
 # trajectory -- so it cannot be evaluated as a batched cohort: one gradient step would

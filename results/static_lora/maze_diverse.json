@@ -1,0 +1,93 @@
+{
+  "method": "static_lora",
+  "method_dir": "static_lora",
+  "display_name": "Static LoRA \u2014 unconditioned correction",
+  "setting": "maze_diverse",
+  "params": {
+    "checkpoint_path": "checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth",
+    "target_scope": "predlast_all",
+    "rank": 2,
+    "lora_scale": 1.0
+  },
+  "submission": true,
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_diverse",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "heldout_layouts": 0.68
+      },
+      "success": 0.68,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 244.0,
+      "out_dir": "eval_outputs/static_lora/maze_diverse/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_diverse",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "heldout_layouts": 0.58
+      },
+      "success": 0.58,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 247.3,
+      "out_dir": "eval_outputs/static_lora/maze_diverse/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_diverse",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "static_lora",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "heldout_layouts": 0.56
+      },
+      "success": 0.56,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 154.6,
+      "out_dir": "eval_outputs/static_lora/maze_diverse/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.6066666666666667,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

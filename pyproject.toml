@@ -57,6 +57,13 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
 ]
+maze = [
+    # The released AdaJEPA maze bases use Gym's legacy MuJoCoEnv API.
+    "mujoco==3.2.7",
+    "mujoco-py==2.1.2.14",
+    # mujoco-py cannot compile against Cython 3.
+    "Cython<3",
+]
 
 [tool.uv]
 # The repo is run in place (`.venv/bin/python plan.py ...`), not installed, so

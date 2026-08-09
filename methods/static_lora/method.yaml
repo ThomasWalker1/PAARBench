@@ -9,7 +9,7 @@ description: >
 reference: "Predecessor project ~/HyperJEPA, the 'static' control arm @ 628dff7"
 
 adapter: adapter:StaticLoRAAdapter
-settings: [pushobj, pushobj_shift, pusht]
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
 
 # Must match the checkpoint's metadata.json; the adapter checks shapes on load.
 params:
@@ -28,6 +28,15 @@ params_by_setting:
     # 0.347/0.367/0.340/0.347). It read epoch 2 before -- carried across from pushobj,
     # where epoch 2 is correct, rather than selected here.
     checkpoint_path: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_1.pth
+  maze_medium:
+    # Epoch 2, chosen by EpochSelection on the maze_medium selection cohort.
+    checkpoint_path: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth
+  maze_medium_low_density:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth
+  maze_medium_high_damping:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth
+  maze_diverse:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_2.pth
 
 tunable:
   axes:
@@ -38,9 +47,17 @@ tunable:
         pushobj: [1, 2, 3, 4, 5]
         pushobj_shift: [1, 2, 3, 4, 5]
         pusht: [1, 2, 3, 4, 5]
+        maze_medium: [1, 2, 3, 4, 5]
+        maze_medium_low_density: [1, 2, 3, 4, 5]
+        maze_medium_high_damping: [1, 2, 3, 4, 5]
+        maze_diverse: [1, 2, 3, 4, 5]
       maps_to:
         param: checkpoint_path
         by_setting:
           pushobj: checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_{}.pth
           pushobj_shift: checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_{}.pth
           pusht: checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_{}.pth
+          maze_medium: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_{}.pth
+          maze_medium_low_density: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_{}.pth
+          maze_medium_high_damping: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_{}.pth
+          maze_diverse: checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_{}.pth

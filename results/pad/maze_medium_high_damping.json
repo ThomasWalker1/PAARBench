@@ -1,0 +1,121 @@
+{
+  "method": "pad",
+  "method_dir": "pad",
+  "display_name": "PAD \u2014 inverse-dynamics encoder adaptation",
+  "setting": "maze_medium_high_damping",
+  "params": {
+    "checkpoint_path": "checkpoints/pad/maze_medium_inverse_dynamics.pth",
+    "latent_dim": 394,
+    "action_dim": 10,
+    "head_hidden_dim": 256,
+    "encoder_lr": 1e-06,
+    "head_lr": 0.0001,
+    "steps": 1,
+    "buffer_size": 1,
+    "grad_clip_norm": 1.0,
+    "refresh_interval": 1,
+    "require_single_episode": true
+  },
+  "submission": true,
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 18 column(s) there)",
+  "selection_cost_columns": 18,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": true,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "pad",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/pad/maze_medium_inverse_dynamics.pth",
+        "latent_dim": 394,
+        "action_dim": 10,
+        "head_hidden_dim": 256,
+        "encoder_lr": 1e-06,
+        "head_lr": 0.0001,
+        "steps": 1,
+        "buffer_size": 1,
+        "grad_clip_norm": 1.0,
+        "refresh_interval": 1,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "medium": 0.72
+      },
+      "success": 0.72,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 1182.2,
+      "out_dir": "eval_outputs/pad/maze_medium_high_damping/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "pad",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/pad/maze_medium_inverse_dynamics.pth",
+        "latent_dim": 394,
+        "action_dim": 10,
+        "head_hidden_dim": 256,
+        "encoder_lr": 1e-06,
+        "head_lr": 0.0001,
+        "steps": 1,
+        "buffer_size": 1,
+        "grad_clip_norm": 1.0,
+        "refresh_interval": 1,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "medium": 0.76
+      },
+      "success": 0.76,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 1194.7,
+      "out_dir": "eval_outputs/pad/maze_medium_high_damping/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "pad",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/pad/maze_medium_inverse_dynamics.pth",
+        "latent_dim": 394,
+        "action_dim": 10,
+        "head_hidden_dim": 256,
+        "encoder_lr": 1e-06,
+        "head_lr": 0.0001,
+        "steps": 1,
+        "buffer_size": 1,
+        "grad_clip_norm": 1.0,
+        "refresh_interval": 1,
+        "require_single_episode": true
+      },
+      "success_by_shape": {
+        "medium": 0.72
+      },
+      "success": 0.72,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 1171.8,
+      "out_dir": "eval_outputs/pad/maze_medium_high_damping/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.7333333333333333,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

@@ -38,12 +38,17 @@ adapter checkpoints, or the complete artifact set:
 
 Evaluating an adaptation method requires both groups, so use `all` on a new checkout.
 Each download is filtered to its group and verified against `CHECKPOINTS.sha256`.
-Evaluation targets — the goal files defining each setting's episodes — are **not** tracked
-in git. Fetch them from Hugging Face Hub and verify against `TARGETS.sha256`:
+PushObj/PushT evaluation targets — the goal files defining those settings' episodes —
+are **not** tracked in git. Fetch them from Hugging Face Hub and verify against
+`TARGETS.sha256`:
 
 ```bash
 .venv/bin/python scripts/download_targets.py
 ```
+
+Maze episode corpora under `data/maze_eval/` are tracked in git. Maze MuJoCo setup,
+Drive-sourced trajectory staging, and adapter training are documented in
+[`docs/MAZE.md`](docs/MAZE.md).
 
 A run missing any goal file fails immediately, naming the files, instead of launching one
 process per shape and letting each die separately. See
@@ -51,7 +56,8 @@ process per shape and letting each die separately. See
 
 Standard evaluation does not require the training dataset. To reproduce training or
 develop a method that explicitly uses offline trajectories, download the separately
-versioned and verified dataset:
+versioned and verified PushObj/PushT dataset (maze offline data is staged per
+[`docs/MAZE.md`](docs/MAZE.md)):
 
 ```bash
 .venv/bin/python scripts/download_data.py
@@ -68,9 +74,19 @@ Settings and cohort seeds are fixed in [`paarbench/settings.py`](paarbench/setti
 | `pushobj` | `pushobj_shape_shift` | T, L, Z, + | seed 0 | seeds 100, 200, 300 |
 | `pushobj_shift` | `pushobj_shape_shift` | I, small_tee, square | inherited from `pushobj` | seeds 100, 200, 300 |
 | `pusht` | `pusht_visual_shift` | T, L, Z | seed 0 | seeds 100, 200, 300 |
+| `maze_medium` | `mediummaze_dynamics_shift` | medium maze | seed 0 | seeds 100, 200, 300 |
+| `maze_medium_low_density` | same as `maze_medium` | density scale 0.2 | inherited | seeds 100, 200, 300 |
+| `maze_medium_high_damping` | same as `maze_medium` | damping scale 20 | inherited | seeds 100, 200, 300 |
+| `maze_diverse` | `mediummaze_dynamics_shift` | held-out DiverseMaze layouts | inherited from `maze_medium` | seeds 100, 200, 300 |
 
 `pushobj_shift` is a held-out shape condition, not a separate environment. It has no
 selectable cohort; methods use the parameters selected on `pushobj`.
+
+The maze shifts share the PointMaze Medium base and parameters selected on
+`maze_medium`. Their evaluation episodes are immutable, generated target corpora
+rather than runtime samples. See
+[`docs/MAZE.md`](docs/MAZE.md) for MuJoCo setup, artifact staging, target generation,
+and evaluation commands.
 
 ## Evaluate a method
 
@@ -123,11 +139,12 @@ The adapter lifecycle and contribution requirements are documented in
 | `paarbench/` | settings, adapter protocol, selection harness, schema, metrics, runner |
 | `methods/` | self-contained adaptation strategies and contribution template |
 | `planning/`, `plan.py` | closed-loop MPC evaluation |
-| `env/`, `datasets/`, `models/` | PushObj/PushT simulation and world-model components |
+| `env/`, `datasets/`, `models/` | PushObj/PushT/PointMaze simulation and world-model components |
 | `scripts/evaluate.py` | protocol-enforcing submission evaluation |
 | `scripts/leaderboard.py` | comparison table generated from `results/` |
+| `docs/MAZE.md` | maze install, artifact staging, training, and evaluation |
 | `tests/` | GPU-free protocol and interface checks |
 
-The planner is fixed across methods (goal horizon 25, 100 gradient-descent steps,
-zero action initialization, and no action noise). Determinism is required for paired
-episode comparisons.
+The planner is fixed within each setting family (Push*: goal horizon 25; maze: 50),
+with 100 gradient-descent steps, zero action initialization, and no action noise.
+Determinism is required for paired episode comparisons.
