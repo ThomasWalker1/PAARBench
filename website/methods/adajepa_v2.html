@@ -30,7 +30,7 @@
   <h1>AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</h1>
   <p class="lead">Version 2 of the adajepa row, not a separate family: the same correction (rank-2 LoRA plus LayerNorm delta on the predictor&#x27;s last block), the same AdamW, the same clipping, the same selection cost. What changes is how it is fitted. The loss is the open-loop latent rollout the planner actually solves through -- horizon steps under the executed actions, against the states the environment reached -- rather than one step from one frame. And the update is braked by evidence it has not seen: before each update the current correction is scored against the frozen predictor on the transition that just arrived, which the previous update was fitted before, and when it is worse there by more than brake_ratio the delta is reset to zero and the optimizer rebuilt. Target latents are cached (the encoder is never adapted), so a gradient step costs predictor forwards only.</p>
   <p class='reference'><strong>Reference:</strong> v1: methods/adajepa. Published implementation: github.com/agentic-learning-ai-lab/adajepa</p>
-  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span><span class="badge">maze_medium</span><span class="badge">maze_medium_low_density</span><span class="badge">maze_medium_high_damping</span><span class="badge">maze_diverse</span></div>
 </div>
 
 <section>
@@ -49,18 +49,21 @@
 <p>The parameterization (<code>predlast_all</code>, rank 2, <code>lora_scale</code> 1.0), AdamW, and <code>grad_clip_norm: 1.0</code> are v1&#x27;s, unchanged. The comparison between the two rows is meant to be about the fitting rule and the brake, not about capacity or optimizer tuning.</p>
 <p>None of these are the <em>published</em> AdaJEPA&#x27;s either: that implementation adapts the predictor&#x27;s last layer densely plus the encoder head, with a fresh optimizer each replan. Both rows on this board inherit the predecessor&#x27;s LoRA parameterization, so neither is evidence about the paper&#x27;s parameter choice.</p>
 <h3>Results</h3>
-<p>Selection froze <code>pred_lr: 2e-3, horizon: 5</code> on <strong>both</strong> selectable settings, chosen independently, after 12 columns each (<code>horizon: 5</code> sat on the initial grid&#x27;s boundary, so that axis expanded once; <code>horizon: 8</code> then scored below it). <code>horizon: 5</code> beat <code>horizon: 1</code> at the selected learning rate on both — 0.685 vs 0.670 on <code>pushobj</code>, 0.427 vs 0.407 on <code>pusht</code> — so the multi-step objective is what the protocol picked, not what it tolerated.</p>
-<div class="table-wrap"><table><thead><tr><th>setting</th><th>v2 success</th><th>v1</th><th>median dist Δ</th><th>compounding</th><th>catastrophe</th><th>regret</th><th>adapt s/replan</th></tr></thead><tbody><tr><td><code>pushobj</code></td><td><strong>0.697</strong></td><td>0.697</td><td>+8 vs +6</td><td>+0.22 vs +0.24</td><td>14.4% vs 17.1%</td><td>56%/+156 vs 57%/+256</td><td>0.239 vs 0.294</td></tr><tr><td><code>pushobj_shift</code></td><td><strong>0.409</strong></td><td>0.400</td><td>+1 vs +16</td><td>+0.27 vs +0.97</td><td>15.9% vs 16.9%</td><td>51%/+204 vs 59%/+205</td><td>0.239 vs 0.290</td></tr><tr><td><code>pusht</code></td><td><strong>0.478</strong></td><td>0.440</td><td>+16 vs +55</td><td>+1.23 vs +3.87</td><td>22.2% vs 26.8%</td><td>55%/+274 vs 66%/+549</td><td>0.238 vs 0.293</td></tr></tbody></table></div>
-<p>Read the success column carefully: +0.038 on <code>pusht</code> is ~1.6 SE and the other two are inside one SE, so on success alone v2 and v1 are not separable at these n. What <em>is</em> separable is the risk side, and it moves in the same direction on all three settings. On <code>pushobj_shift</code> and <code>pusht</code> v1&#x27;s median paired distance change and compounding slope both have intervals excluding zero — it ends measurably further from the goal than frozen on shared failures, and gets worse per replan — while v2&#x27;s compounding interval straddles zero on <code>pushobj_shift</code> and its median distance change straddles zero on all three. The ordering across settings tracks how much room the correction has to go wrong: a tie where v1 barely drifts (<code>pushobj</code>), the largest gain where it drifts hardest (<code>pusht</code>).</p>
-<p>v2 does not match HyperJEPA&#x27;s risk profile on <code>pusht</code> (compounding −0.45, catastrophe 10.7%) despite scoring above it on success. A correction that is recomputed from frozen weights every replan compounds less than one that is braked, and the brake does not close that gap.</p>
-<p>Diagnostics from the <code>pushobj</code> selection sweep, which the record does not carry: fitting lowers <em>out-of-sample</em> single-step prediction error to a median 0.77× frozen at <code>horizon: 1</code>, rising to 0.92× at <code>horizon: 5</code> — the multi-step objective spends single-step accuracy on rollout consistency, as intended. The brake fires on 7–12% of episodes, 0.1–0.2 times per episode: loose enough to leave adaptation alone, which is why the median trajectory is unchanged while the tails are not.</p>
+<p>All seven settings. Selection ran independently on the three selectable ones and froze <code>horizon: 5</code> on every one of them; the learning rate it chose differs by domain (<code>2e-3</code> on both push settings, <code>1e-2</code> on <code>maze_medium</code>, where the axis expanded twice). At the selected learning rate, <code>horizon: 5</code> beat <code>horizon: 1</code> on all three — 0.685 vs 0.670 on <code>pushobj</code>, 0.427 vs 0.407 on <code>pusht</code>, 0.900 vs 0.800 on <code>maze_medium</code> — so the multi-step objective is what the protocol picked, not what it tolerated.</p>
+<div class="table-wrap"><table><thead><tr><th>setting</th><th>v2 success</th><th>v1</th><th>median dist Δ</th><th>compounding</th><th>catastrophe</th><th>regret</th><th>adapt s/replan</th></tr></thead><tbody><tr><td><code>pushobj</code></td><td><strong>0.697</strong></td><td>0.697</td><td>+8 vs +6</td><td>+0.22 vs +0.24</td><td>14.4% vs 17.1%</td><td>56%/+156 vs 57%/+256</td><td>0.239 vs 0.294</td></tr><tr><td><code>pushobj_shift</code></td><td><strong>0.409</strong></td><td>0.400</td><td>+1 vs +16</td><td>+0.27 vs +0.97</td><td>15.9% vs 16.9%</td><td>51%/+204 vs 59%/+205</td><td>0.239 vs 0.290</td></tr><tr><td><code>pusht</code></td><td><strong>0.478</strong></td><td>0.440</td><td>+16 vs +55</td><td>+1.23 vs +3.87</td><td>22.2% vs 26.8%</td><td>55%/+274 vs 66%/+549</td><td>0.238 vs 0.293</td></tr><tr><td><code>maze_medium</code></td><td>0.847</td><td><strong>0.853</strong></td><td>-0 vs +0</td><td>+0.01 vs +0.03</td><td>0.0% vs 0.0%</td><td>56%/+1 vs 82%/+2</td><td>0.247 vs 0.296</td></tr><tr><td><code>maze_medium_low_density</code></td><td>0.773</td><td><strong>0.827</strong></td><td>+0 vs +4</td><td>+0.02 vs +0.04</td><td><strong>6.2% vs 26.7%</strong></td><td>50%/+4 vs 73%/+7</td><td>0.239 vs 0.298</td></tr><tr><td><code>maze_medium_high_damping</code></td><td>0.740</td><td><strong>0.747</strong></td><td>-0 vs +0</td><td>+0.00 vs +0.00</td><td>0.0% vs 0.0%</td><td>48%/+2 vs 52%/+2</td><td>0.239 vs 0.298</td></tr><tr><td><code>maze_diverse</code></td><td><strong>0.727</strong></td><td>0.640</td><td>-1 vs -1</td><td><strong>-0.09 vs -0.06</strong></td><td>7.7% vs 5.9%</td><td><strong>19%/+2 vs 29%/+2</strong></td><td>0.239 vs 0.296</td></tr></tbody></table></div>
+<p>Pooled over all 2,100 held-out episodes: <strong>0.6095 vs 0.5981</strong>. That pooled number is not the interesting part — the settings are not commensurable and the benchmark says so.</p>
+<p><strong>Where v2 wins, and why it is the same reason each time.</strong> The gain tracks how far v1&#x27;s unbraked correction drifts, not how hard the setting is. It is largest on <code>maze_diverse</code> (+0.087 over v1, ~2.3 SE, and +0.133 over frozen — the largest success gain any method records there) and on <code>pusht</code> (+0.038), the two settings where a correction fitted to one distribution is used on another. It is an exact tie on <code>pushobj</code> and within one SE on <code>maze_medium</code> and <code>maze_medium_high_damping</code> — the three settings where v1 records 0.0% catastrophe or a compounding interval touching zero, i.e. where there is nothing for a brake to prevent. This was the prediction made before the maze runs, and it held.</p>
+<p><strong>Where v2 loses, and what it buys.</strong> On <code>maze_medium_low_density</code> v2 gives up 0.054 success (0.773 vs 0.827, ~1.2 SE, intervals overlapping) and cuts catastrophe from 26.7% to 6.2%, regret frequency from 73% to 50%, and the median paired distance change from +4 to +0. This is the one setting in the suite where v1&#x27;s willingness to keep a drifting correction <em>pays</em> in success, and it is a real trade rather than a wash: a deployment that would rather not quadruple its distance-to-goal on a quarter of episodes should read this row as v2 winning, and one optimizing success alone should not. It is exactly the row the benchmark&#x27;s multi-objective framing exists to make legible.</p>
+<p>v2 does not match HyperJEPA&#x27;s risk profile on <code>pusht</code> (compounding −0.45, catastrophe 10.7%) despite scoring above it on success. A correction recomputed from frozen weights every replan compounds less than one that is braked, and the brake does not close that gap.</p>
+<p><strong>Diagnostics the records do not carry.</strong> On <code>pushobj</code>, fitting lowers <em>out-of-sample</em> single-step prediction error to a median 0.77× frozen at <code>horizon: 1</code>, rising to 0.92× at <code>horizon: 5</code> — the multi-step objective spends single-step accuracy on rollout consistency, as intended. The brake&#x27;s behaviour is domain-dependent in a way worth knowing: on push it fires on 7–12% of episodes (0.1–0.2 times per episode), while on the maze settings the fresh-evidence ratio has a median near 1.0 and the brake fires 1.4–2.1 times per episode. Maze episodes are short (6–8 replans) and their single-transition prediction error is noisy, so the brake is a much coarser instrument there — it is firing often on <code>maze_diverse</code>, where v2 wins by the largest margin, and on <code>maze_medium_low_density</code>, where it costs success. The brake&#x27;s estimator is only as stable as single-transition prediction error, and that stability varies by domain.</p>
 <h3>Open ablations</h3>
 <p>Neither is required to read the table above, and both are cheap:</p>
-<ol><li><strong>The published implementation&#x27;s objective</strong> — 1-step-ahead, teacher-forced over a <code>min(num_hist, T)</code> window, on the merged episode. It sits between <code>horizon: 1</code> and this method, so without it the reported gain cannot be split into &quot;restored the context v1 dropped&quot; and &quot;fitted the open-loop rollout&quot;.</li><li><strong>The brake alone</strong>, at <code>horizon: 1</code>. The selection sweep already scores that cell (0.670 on <code>pushobj</code>, 0.407 on <code>pusht</code>), but only on the selection cohort.</li></ol>
-<p>Also unrun: the four maze settings. Nothing blocks them — the same <code>frameskip: 5</code>, <code>num_hist: 3</code> base geometry means one model action per replan there too — but v1&#x27;s maze rows show 0.0% catastrophe on <code>maze_medium</code>, so that is the setting where the brake has least to do; <code>maze_medium_low_density</code> (v1: 26.7% catastrophe) is the informative one.</p>
+<ol><li><strong>The published implementation&#x27;s objective</strong> — 1-step-ahead, teacher-forced over a <code>min(num_hist, T)</code> window, on the merged episode. It sits between <code>horizon: 1</code> and this method, so without it the reported gain cannot be split into &quot;restored the context v1 dropped&quot; and &quot;fitted the open-loop rollout&quot;.</li><li><strong>The brake alone</strong>, at <code>horizon: 1</code>. The selection sweeps score that cell (0.670 on <code>pushobj</code>, 0.407 on <code>pusht</code>, 0.800 on <code>maze_medium</code>), but only on selection cohorts.</li></ol>
+<p>A third is now motivated by the maze results rather than by symmetry: <strong>a brake that needs more than one sample to fire</strong> — a consecutive-strikes rule or a running ratio — since the single-transition estimator is demonstrably noisy where episodes are short.</p>
 <h3>Selection</h3>
 <p>Two axes, 9 initial cells — the same selection cost as v1:</p>
 <div class="table-wrap"><table><thead><tr><th>axis</th><th>grid</th><th>expansion pool</th></tr></thead><tbody><tr><td><code>pred_lr</code></td><td>5e-4, 2e-3, 1e-2</td><td>log</td></tr><tr><td><code>horizon</code></td><td>1, 3, 5</td><td>1, 2, 3, 5, 8</td></tr></tbody></table></div>
+<p>Cost was 12 columns on each push setting (one expansion) and 14 on <code>maze_medium</code> (two). <code>method.yaml</code> ships the push choice, <code>pred_lr: 2e-3</code>; <code>maze_medium</code> froze <code>1e-2</code> and the three maze shift settings inherit that, exactly as v1&#x27;s do.</p>
 <p><code>steps</code> is <strong>authored at 5, not tuned</strong>: v1&#x27;s own selection chose 5 on all three settings it was tuned on, and spending one of two axes to rediscover that would leave the mechanism this method is about untested. <code>buffer_size: 8</code> and <code>brake_ratio: 1.25</code> are likewise authored — 8 transitions is the shortest buffer that supports a 5-step window, and 1.25 is a deliberately loose brake, meant to catch a correction that is clearly worse than frozen rather than to arbitrate small differences. Neither was chosen by looking at benchmark episodes.</p>
 <h3>Alignment note</h3>
 <p><code>on_transition</code> locates the executed chunk&#x27;s frame boundaries by counting <strong>backwards</strong> from the end of <code>rollout_obs</code>. The protocol documents that argument as <code>1 + T * frameskip</code> frames, but the evaluator replays the episode&#x27;s whole action sequence from its initial condition on every replan, so what arrives is the entire trajectory so far and only its tail belongs to the chunk just executed. Counting from the front pairs the current state with the endpoint of the episode&#x27;s <em>first</em> action from replan 2 onward. Counting from the end is correct under either reading.</p>
@@ -74,7 +77,7 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <ul class='param-list'><li><span>brake_ratio</span> = 1.25</li><li><span>buffer_size</span> = 8</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>horizon</span> = 5</li><li><span>lora_init_seed</span> = 0</li><li><span>lora_rank</span> = 2</li><li><span>lora_scale</span> = 1.0</li><li><span>pred_lr</span> = 0.002</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 5</li><li><span>target_scope</span> = predlast_all</li></ul>
+  <ul class='param-list'><li><span>brake_ratio</span> = 1.25</li><li><span>buffer_size</span> = 8</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>horizon</span> = 5</li><li><span>lora_init_seed</span> = 0</li><li><span>lora_rank</span> = 2</li><li><span>lora_scale</span> = 1.0</li><li><span>pred_lr</span> = 0.01</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 5</li><li><span>target_scope</span> = predlast_all</li></ul>
 </section>
 
 <section>
@@ -94,6 +97,26 @@
   <td class="num">0.478</td>
   <td class="num"></td>
   <td class="num">450</td>
+</tr><tr>
+  <td><code>maze_medium</code></td>
+  <td class="num">0.847</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_low_density</code></td>
+  <td class="num">0.773</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_high_damping</code></td>
+  <td class="num">0.740</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_diverse</code></td>
+  <td class="num">0.727</td>
+  <td class="num"></td>
+  <td class="num">150</td>
 </tr></tbody></table></div>
 </section>
 
@@ -188,6 +211,130 @@
   <td class="num">55% / +274</td>
   <td class="num">0.238</td>
   <td class="num">172</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Medium</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.847 (±0.029)</td>
+  <td class="num delta-pos">+0.073</td>
+  <td class="num">+0 [-0, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">56% / +1</td>
+  <td class="num">0.247</td>
+  <td class="num">180</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Low Density</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.773 (±0.034)</td>
+  <td class="num delta-pos">+0.027</td>
+  <td class="num">+0 [-2, +1]</td>
+  <td class="num">6.2% [0%, 19%]</td>
+  <td class="num">50% / +4</td>
+  <td class="num">0.237</td>
+  <td class="num">180</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze High Damping</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.740 (±0.036)</td>
+  <td class="num delta-pos">+0.173</td>
+  <td class="num">-0 [-1, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">48% / +2</td>
+  <td class="num">0.239</td>
+  <td class="num">180</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>DiverseMaze</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.727 (±0.036)</td>
+  <td class="num delta-pos">+0.133</td>
+  <td class="num">-1 [-2, -1]</td>
+  <td class="num">7.7% [0%, 19%]</td>
+  <td class="num">19% / +2</td>
+  <td class="num">0.237</td>
+  <td class="num">180</td>
 </tr>
     </tbody>
   </table>

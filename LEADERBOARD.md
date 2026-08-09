@@ -9,6 +9,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.727 | 0.036 | +0.133 | -1 [-2, -1] | 7.7% [0%, 19%] | -0.09 [-0.13, -0.06] | 19% / +2 | 0.237 | 180 | 150 | 14 (inherited) |
 | AdaJEPA — online gradient TTA | 0.640 | 0.039 | +0.047 | -1 [-2, -0] | 5.9% [0%, 15%] | -0.06 [-0.10, -0.02] | 29% / +2 | 0.296 | 184 | 150 | 12 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.640 | 0.039 | +0.047 | -0 [-1, +0] | 8.1% [0%, 19%] | -0.01 [-0.04, +0.02] | 41% / +3 | 0.028 | 331 | 150 | 18 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.607 | 0.040 | +0.013 | -0 [-1, +0] | 12.5% [2%, 22%] | +0.01 [-0.01, +0.02] | 48% / +3 | 0.131 | 682 | 150 | 3 (inherited) |
@@ -36,6 +37,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. Select
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA — online gradient TTA | 0.853 | 0.029 | +0.080 | +0 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.00, +0.09] | 82% / +2 | 0.296 | 184 | 150 | 12 |
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.847 | 0.029 | +0.073 | +0 [-0, +0] | 0.0% [0%, 0%] | +0.01 [-0.02, +0.04] | 56% / +1 | 0.247 | 180 | 150 | 14 |
 | PAD — inverse-dynamics encoder adaptation | 0.840 | 0.030 | +0.067 | +1 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.01, +0.06] | 88% / +2 | 0.030 | 331 | 150 | 18 |
 | HyperJEPA — amortized hypernetwork | 0.780 | 0.034 | +0.007 | -0 [-1, +0] | 4.5% [0%, 14%] | -0.00 [-0.03, +0.03] | 36% / +2 | 0.161 | 682 | 150 | 3 |
 | Static LoRA — unconditioned correction | 0.780 | 0.034 | +0.007 | -0 [-0, +0] | 0.0% [0%, 0%] | -0.01 [-0.03, +0.01] | 36% / +0 | 0.000 | 169 | 150 | 3 |
@@ -62,6 +64,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA — online gradient TTA | 0.747 | 0.036 | +0.180 | +0 [-0, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.03] | 52% / +2 | 0.298 | 184 | 150 | 12 (inherited) |
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.740 | 0.036 | +0.173 | -0 [-1, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.02] | 48% / +2 | 0.239 | 180 | 150 | 14 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.733 | 0.036 | +0.167 | +0 [+0, +0] | 0.0% [0%, 0%] | +0.02 [+0.01, +0.04] | 67% / +2 | 0.028 | 331 | 150 | 18 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.607 | 0.040 | +0.040 | +0 [-0, +0] | 2.2% [0%, 7%] | +0.00 [-0.02, +0.01] | 54% / +2 | 0.145 | 682 | 150 | 3 (inherited) |
 | Static LoRA — unconditioned correction | 0.573 | 0.040 | +0.007 | -0 [-0, +0] | 4.3% [0%, 11%] | +0.00 [-0.01, +0.01] | 43% / +2 | 0.000 | 169 | 150 | 3 (inherited) |
@@ -89,6 +92,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA — online gradient TTA | 0.827 | 0.031 | +0.080 | +4 [-0, +5] | 26.7% [7%, 53%] | +0.04 [-0.03, +0.14] | 73% / +7 | 0.298 | 184 | 150 | 12 (inherited) |
 | Static LoRA — unconditioned correction | 0.787 | 0.033 | +0.040 | +1 [-2, +2] | 16.7% [0%, 33%] | +0.02 [-0.03, +0.07] | 56% / +5 | 0.000 | 169 | 150 | 3 (inherited) |
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.773 | 0.034 | +0.027 | +0 [-2, +1] | 6.2% [0%, 19%] | +0.02 [-0.05, +0.09] | 50% / +4 | 0.237 | 180 | 150 | 14 (inherited) |
 | Frozen | 0.747 | 0.036 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 | HyperJEPA — amortized hypernetwork | 0.747 | 0.036 | +0.000 | +0 [-1, +4] | 25.0% [10%, 45%] | +0.02 [-0.03, +0.08] | 60% / +9 | 0.145 | 682 | 150 | 3 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.747 | 0.036 | +0.000 | +2 [+1, +4] | 18.2% [5%, 36%] | +0.08 [+0.02, +0.19] | 82% / +5 | 0.028 | 331 | 150 | 18 (inherited) |

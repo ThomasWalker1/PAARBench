@@ -15,7 +15,7 @@ description: >
 reference: "v1: methods/adajepa. Published implementation: github.com/agentic-learning-ai-lab/adajepa"
 
 adapter: adapter:AdaJEPAv2Adapter
-settings: [pushobj, pushobj_shift, pusht]
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
 
 # Owns mutable shared state -- predictor LoRA parameters and an AdamW trajectory -- so
 # a batched cohort would average unrelated episodes into one correction. Same reason
