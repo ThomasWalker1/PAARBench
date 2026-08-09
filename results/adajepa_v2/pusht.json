@@ -1,8 +1,8 @@
 {
-  "method": "hover",
-  "method_dir": "hover",
-  "display_name": "HOVER \u2014 horizon-matched online TTA",
-  "setting": "pushobj",
+  "method": "adajepa_v2",
+  "method_dir": "adajepa_v2",
+  "display_name": "AdaJEPA v2 \u2014 horizon-matched fit + fresh-evidence brake",
+  "setting": "pusht",
   "params": {
     "steps": 5,
     "pred_lr": 0.002,
@@ -25,12 +25,12 @@
   "selection_cohort_seed": 0,
   "test_cohorts": {
     "test100": {
-      "setting": "pushobj",
+      "setting": "pusht",
       "cohort": "test100",
       "seed": 100,
-      "tag": "hover",
+      "tag": "adajepa_v2",
       "n_evals": 50,
-      "n": 200,
+      "n": 150,
       "params": {
         "steps": 5,
         "pred_lr": 0.002,
@@ -46,25 +46,24 @@
         "require_single_episode": true
       },
       "success_by_shape": {
-        "T": 0.7,
-        "L": 0.74,
-        "Z": 0.74,
-        "+": 0.66
+        "T": 0.76,
+        "L": 0.46,
+        "Z": 0.3
       },
-      "success": 0.71,
+      "success": 0.5066666666666667,
       "complete": true,
       "failures": [],
-      "wall_seconds": 390.4,
-      "out_dir": "eval_outputs/hover/pushobj/test100",
+      "wall_seconds": 0.0,
+      "out_dir": "eval_outputs/adajepa_v2/pusht/test100",
       "paired_metrics": null
     },
     "test200": {
-      "setting": "pushobj",
+      "setting": "pusht",
       "cohort": "test200",
       "seed": 200,
-      "tag": "hover",
+      "tag": "adajepa_v2",
       "n_evals": 50,
-      "n": 200,
+      "n": 150,
       "params": {
         "steps": 5,
         "pred_lr": 0.002,
@@ -80,25 +79,24 @@
         "require_single_episode": true
       },
       "success_by_shape": {
-        "T": 0.64,
-        "L": 0.78,
-        "Z": 0.7,
-        "+": 0.7
+        "T": 0.66,
+        "L": 0.4,
+        "Z": 0.28
       },
-      "success": 0.7050000000000001,
+      "success": 0.4466666666666667,
       "complete": true,
       "failures": [],
-      "wall_seconds": 396.4,
-      "out_dir": "eval_outputs/hover/pushobj/test200",
+      "wall_seconds": 0.0,
+      "out_dir": "eval_outputs/adajepa_v2/pusht/test200",
       "paired_metrics": null
     },
     "test300": {
-      "setting": "pushobj",
+      "setting": "pusht",
       "cohort": "test300",
       "seed": 300,
-      "tag": "hover",
+      "tag": "adajepa_v2",
       "n_evals": 50,
-      "n": 200,
+      "n": 150,
       "params": {
         "steps": 5,
         "pred_lr": 0.002,
@@ -114,21 +112,20 @@
         "require_single_episode": true
       },
       "success_by_shape": {
-        "T": 0.58,
-        "L": 0.7,
-        "Z": 0.74,
-        "+": 0.68
+        "T": 0.72,
+        "L": 0.38,
+        "Z": 0.34
       },
-      "success": 0.6749999999999999,
+      "success": 0.48000000000000004,
       "complete": true,
       "failures": [],
-      "wall_seconds": 413.5,
-      "out_dir": "eval_outputs/hover/pushobj/test300",
+      "wall_seconds": 0.0,
+      "out_dir": "eval_outputs/adajepa_v2/pusht/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.6966666666666667,
-  "n": 600,
+  "success": 0.4777777777777778,
+  "n": 450,
   "complete": true,
   "frozen_reference": null
 }

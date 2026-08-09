@@ -1,28 +1,39 @@
-# HOVER — horizon-matched online TTA with a fresh-evidence brake
+# AdaJEPA v2 — horizon-matched fit + fresh-evidence brake
 
-HOVER adapts the same thing AdaJEPA adapts — a rank-2 LoRA plus a LayerNorm delta on
-the predictor's last block, fitted online with AdamW on the world model's own
-prediction error — and changes three things about *how*. It carries no offline
-training and no extra checkpoint; everything it needs is the base model and the
-episode it is in.
+**This is version 2 of [`methods/adajepa`](../adajepa/), not a new family.** It adapts
+the same thing v1 adapts — a rank-2 LoRA plus a LayerNorm delta on the predictor's last
+block, fitted online with AdamW on the world model's own prediction error — with the
+same optimizer, the same clipping and the same selection cost. Three things about *how*
+it is fitted change. It carries no offline training and no extra checkpoint; everything
+it needs is the base model and the episode it is in.
+
+Read [`methods/adajepa/README.md`](../adajepa/README.md) before reading the numbers
+here. The v1 row is a port of a predecessor project's re-implementation, and it fits a
+one-frame window, where the published AdaJEPA implementation fits `min(num_hist, T)`-frame
+teacher-forced windows over the whole episode. "v2 against v1" is therefore a comparison
+between two arms *on this board*, and the published method's own fitting rule is a third
+arm neither of them measures yet.
 
 ## Why these three changes
 
 **The objective is the rollout the planner solves through, not one step of it.**
 The planner rolls the predictor forward `goal_H / frameskip` model steps open loop
 (5 on the Push settings), feeding each prediction back in as context, and scores the
-end of that rollout against the goal. AdaJEPA fits single-step prediction, so a
-correction that is accurate for one step and drifts over five looks perfect to it and
-plans badly. HOVER rolls the correction forward `horizon` steps under the actions that
+end of that rollout against the goal. v1 fits single-step prediction from a single
+frame, so a correction that is accurate for one step and drifts over five looks perfect
+to it and plans badly. v2 rolls the correction forward `horizon` steps under the actions that
 were really executed, against the states the environment really reached, and
 accumulates loss at every depth — mirroring `VWorldModel.rollout`, including its
 growing `num_hist` context window, so the thing being fitted is the thing being used.
 
-At `horizon: 1` this reduces to a single-step objective. That value is in the
-selection grid deliberately: if the multi-step objective does not earn its place, the
-protocol picks the arm that does not use it.
+At `horizon: 1` this reduces to **v1's** objective. That value is in the selection grid
+deliberately: if the multi-step objective does not earn its place, the protocol picks
+the arm that does not use it. It is *not* the published implementation's objective,
+which is one-step-ahead but teacher-forced over a `num_hist` window — so the gain
+recorded below is a gain over v1, and how much of it is the multi-step rollout rather
+than the restored context is not yet measured. See *Open ablations*.
 
-**The update is braked by evidence it has not seen.** AdaJEPA's correction is an
+**The update is braked by evidence it has not seen.** v1's correction is an
 optimizer trajectory that only accumulates: on `pushobj` it ends more than 2× further
 from the goal than frozen on 17.1% of episodes, and its paired distance gap grows with
 replan index (compounding +0.24). Nothing inside the method can notice, because an
@@ -30,7 +41,7 @@ episode's outcome is not observable and its buffer only ever holds data it has a
 fitted.
 
 The transition that arrives at replan *n* is data the update at replan *n−1* was
-fitted before. HOVER scores the current correction against the frozen predictor on
+fitted before. v2 scores the current correction against the frozen predictor on
 exactly that transition, before folding it into the fit — out-of-sample by
 construction, no held-out split, no outcome. When the correction is worse there by
 more than `brake_ratio` (1.25), the delta is set back to zero and the optimizer
@@ -49,18 +60,22 @@ than inferred.
 
 **Target latents are cached, so a gradient step is predictor-only.** Only predictor
 LoRA parameters are trained, so every encoding in the buffer is a constant for the
-rest of the episode. AdaJEPA re-encodes its whole buffer inside every gradient step
-(`steps × buffer_size` encoder forwards per replan); HOVER encodes each transition
+rest of the episode. v1 re-encodes its whole buffer inside every gradient step
+(`steps × buffer_size` encoder forwards per replan); v2 encodes each transition
 once when it arrives — two forwards per replan, independent of `steps` — which is what
-makes a multi-step objective over an 8-transition buffer cheaper than AdaJEPA's
+makes a multi-step objective over an 8-transition buffer cheaper than v1's
 single-step one over a 5-transition buffer.
 
 ## What is held fixed on purpose
 
 The parameterization (`predlast_all`, rank 2, `lora_scale` 1.0), AdamW, and
-`grad_clip_norm: 1.0` are AdaJEPA's, unchanged. The comparison between the two rows is
-meant to be about the objective and the brake, not about capacity or optimizer
-tuning.
+`grad_clip_norm: 1.0` are v1's, unchanged. The comparison between the two rows is meant
+to be about the fitting rule and the brake, not about capacity or optimizer tuning.
+
+None of these are the *published* AdaJEPA's either: that implementation adapts the
+predictor's last layer densely plus the encoder head, with a fresh optimizer each
+replan. Both rows on this board inherit the predecessor's LoRA parameterization, so
+neither is evidence about the paper's parameter choice.
 
 ## Results
 
@@ -71,24 +86,24 @@ so that axis expanded once; `horizon: 8` then scored below it). `horizon: 5` bea
 0.427 vs 0.407 on `pusht` — so the multi-step objective is what the protocol picked,
 not what it tolerated.
 
-| setting | HOVER success | AdaJEPA | median dist Δ | compounding | catastrophe | regret | adapt s/replan |
+| setting | v2 success | v1 | median dist Δ | compounding | catastrophe | regret | adapt s/replan |
 |---|---|---|---|---|---|---|---|
 | `pushobj` | **0.697** | 0.697 | +8 vs +6 | +0.22 vs +0.24 | 14.4% vs 17.1% | 56%/+156 vs 57%/+256 | 0.239 vs 0.294 |
 | `pushobj_shift` | **0.409** | 0.400 | +1 vs +16 | +0.27 vs +0.97 | 15.9% vs 16.9% | 51%/+204 vs 59%/+205 | 0.239 vs 0.290 |
 | `pusht` | **0.478** | 0.440 | +16 vs +55 | +1.23 vs +3.87 | 22.2% vs 26.8% | 55%/+274 vs 66%/+549 | 0.238 vs 0.293 |
 
 Read the success column carefully: +0.038 on `pusht` is ~1.6 SE and the other two are
-inside one SE, so on success alone HOVER and AdaJEPA are not separable at these n. What
+inside one SE, so on success alone v2 and v1 are not separable at these n. What
 *is* separable is the risk side, and it moves in the same direction on all three
-settings. On `pushobj_shift` and `pusht` AdaJEPA's median paired distance change and
+settings. On `pushobj_shift` and `pusht` v1's median paired distance change and
 compounding slope both have intervals excluding zero — it ends measurably further from
-the goal than frozen on shared failures, and gets worse per replan — while HOVER's
+the goal than frozen on shared failures, and gets worse per replan — while v2's
 compounding interval straddles zero on `pushobj_shift` and its median distance change
 straddles zero on all three. The ordering across settings tracks how much room the
-correction has to go wrong: a tie where AdaJEPA barely drifts (`pushobj`), the largest
+correction has to go wrong: a tie where v1 barely drifts (`pushobj`), the largest
 gain where it drifts hardest (`pusht`).
 
-HOVER does not match HyperJEPA's risk profile on `pusht` (compounding −0.45,
+v2 does not match HyperJEPA's risk profile on `pusht` (compounding −0.45,
 catastrophe 10.7%) despite scoring above it on success. A correction that is recomputed
 from frozen weights every replan compounds less than one that is braked, and the brake
 does not close that gap.
@@ -100,16 +115,32 @@ single-step accuracy on rollout consistency, as intended. The brake fires on 7�
 episodes, 0.1–0.2 times per episode: loose enough to leave adaptation alone, which is
 why the median trajectory is unchanged while the tails are not.
 
+## Open ablations
+
+Neither is required to read the table above, and both are cheap:
+
+1. **The published implementation's objective** — 1-step-ahead, teacher-forced over a
+   `min(num_hist, T)` window, on the merged episode. It sits between `horizon: 1` and
+   this method, so without it the reported gain cannot be split into "restored the
+   context v1 dropped" and "fitted the open-loop rollout".
+2. **The brake alone**, at `horizon: 1`. The selection sweep already scores that cell
+   (0.670 on `pushobj`, 0.407 on `pusht`), but only on the selection cohort.
+
+Also unrun: the four maze settings. Nothing blocks them — the same `frameskip: 5`,
+`num_hist: 3` base geometry means one model action per replan there too — but v1's maze
+rows show 0.0% catastrophe on `maze_medium`, so that is the setting where the brake has
+least to do; `maze_medium_low_density` (v1: 26.7% catastrophe) is the informative one.
+
 ## Selection
 
-Two axes, 9 initial cells — the same selection cost as AdaJEPA:
+Two axes, 9 initial cells — the same selection cost as v1:
 
 | axis | grid | expansion pool |
 |---|---|---|
 | `pred_lr` | 5e-4, 2e-3, 1e-2 | log |
 | `horizon` | 1, 3, 5 | 1, 2, 3, 5, 8 |
 
-`steps` is **authored at 5, not tuned**: AdaJEPA's own selection chose 5 on all three
+`steps` is **authored at 5, not tuned**: v1's own selection chose 5 on all three
 settings it was tuned on, and spending one of two axes to rediscover that would leave
 the mechanism this method is about untested. `buffer_size: 8` and `brake_ratio: 1.25`
 are likewise authored — 8 transitions is the shortest buffer that supports a 5-step

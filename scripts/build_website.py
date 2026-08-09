@@ -15,8 +15,13 @@ METHODS = ROOT / "methods"
 LEADERBOARD = ROOT / "LEADERBOARD.md"
 
 METHOD_ORDER = [
-    "adajepa", "hyperjepa", "static_lora", "pad", "frozen",
+    "adajepa", "adajepa_v2", "hyperjepa", "static_lora", "pad", "frozen",
 ]
+"""Method page order. Versions of one arm stay adjacent, so a reader meets v1 and v2
+together rather than finding them in different parts of the page.
+
+This list is the one place adding a method means editing something outside its own
+directory; the benchmark harness itself discovers methods by directory listing."""
 
 FROZEN_SLUGS = frozenset({"frozen"})
 SETTING_ORDER = (
@@ -582,32 +587,131 @@ def params_for_method(slug: str, meta: dict, results: dict[str, dict]) -> dict:
     return raw if isinstance(raw, dict) else {}
 
 
+def fmt_inline(s: str) -> str:
+    """Inline markdown: code spans, links, bold.
+
+    Code spans are lifted out before the other rules run, so a span containing ``**``
+    or bracket characters survives as written rather than being partly reinterpreted.
+    """
+    spans: list[str] = []
+
+    def stash(match: re.Match) -> str:
+        spans.append(f"<code>{esc(match.group(1))}</code>")
+        return f"\x00{len(spans) - 1}\x00"
+
+    s = re.sub(r"`([^`]+)`", stash, s)
+    s = esc(s)
+    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)",
+               lambda m: f'<a href="{esc(m.group(2))}">{m.group(1)}</a>', s)
+    s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"(?<![\w*])\*([^*]+)\*(?![\w*])", r"<em>\1</em>", s)
+    return re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], s)
+
+
+def _table_row(cells: list[str], tag: str) -> str:
+    return "<tr>" + "".join(f"<{tag}>{fmt_inline(c)}</{tag}>" for c in cells) + "</tr>"
+
+
+def _split_row(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
 def markdown_to_html(text: str) -> str:
-    """Small markdown subset for method READMEs."""
+    """Small markdown subset for method READMEs.
+
+    Headings, fenced code, lists and pipe tables are all load-bearing in those files --
+    a method's parameter table and its selection grid are tables, and rendering them as
+    a paragraph of pipe characters loses the content on the page a reader is most likely
+    to arrive at. The subset stops well short of a real parser; anything it does not
+    recognize still falls through to a paragraph.
+    """
     lines = text.strip().splitlines()
     out: list[str] = []
-    in_para: list[str] = []
-
-    def fmt_inline(s: str) -> str:
-        s = esc(s)
-        s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
-        s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
-        return s
+    para: list[str] = []
+    index = 0
 
     def flush_para() -> None:
-        if in_para:
-            out.append(f"<p>{fmt_inline(' '.join(in_para))}</p>")
-            in_para.clear()
+        if para:
+            out.append(f"<p>{fmt_inline(' '.join(para))}</p>")
+            para.clear()
 
-    for line in lines:
-        stripped = line.strip()
+    def is_separator(line: str) -> bool:
+        return bool(re.fullmatch(r"\|?[\s:|-]*-[\s:|-]*\|?", line.strip())) and "-" in line
+
+    while index < len(lines):
+        raw = lines[index]
+        stripped = raw.strip()
+
         if not stripped:
             flush_para()
+            index += 1
             continue
-        if stripped.startswith("# "):
+
+        if stripped.startswith("```"):
             flush_para()
+            index += 1
+            block: list[str] = []
+            while index < len(lines) and not lines[index].strip().startswith("```"):
+                block.append(lines[index])
+                index += 1
+            index += 1  # closing fence
+            out.append(f"<pre><code>{esc(chr(10).join(block))}</code></pre>")
             continue
-        in_para.append(stripped)
+
+        # A pipe table is a header row followed by a dash separator; without the
+        # separator the line is prose that happens to contain a pipe.
+        if (stripped.startswith("|") and index + 1 < len(lines)
+                and is_separator(lines[index + 1])):
+            flush_para()
+            header = _split_row(stripped)
+            index += 2
+            body = []
+            while index < len(lines) and lines[index].strip().startswith("|"):
+                body.append(_split_row(lines[index]))
+                index += 1
+            rows = "".join(_table_row(cells, "td") for cells in body)
+            out.append(
+                '<div class="table-wrap"><table><thead>'
+                + _table_row(header, "th")
+                + f"</thead><tbody>{rows}</tbody></table></div>"
+            )
+            continue
+
+        if re.match(r"[-*] |\d+\. ", stripped):
+            flush_para()
+            ordered = bool(re.match(r"\d+\. ", stripped))
+            tag = "ol" if ordered else "ul"
+            items: list[str] = []
+            while index < len(lines):
+                item = lines[index].strip()
+                if re.match(r"\d+\. " if ordered else r"[-*] ", item):
+                    items.append(re.sub(r"^([-*]|\d+\.) ", "", item))
+                elif item and lines[index].startswith((" ", "\t")):
+                    items[-1] += " " + item          # continuation of the last item
+                else:
+                    break
+                index += 1
+            body = "".join(f"<li>{fmt_inline(i)}</li>" for i in items)
+            out.append(f"<{tag}>{body}</{tag}>")
+            continue
+
+        heading = re.match(r"(#{2,4}) (.+)", stripped)
+        if heading:
+            flush_para()
+            level = min(len(heading.group(1)) + 1, 5)  # ## -> h3, matching section h3
+            out.append(f"<h{level}>{fmt_inline(heading.group(2))}</h{level}>")
+            index += 1
+            continue
+
+        if stripped.startswith("# "):
+            # The page already shows the method's display name in its hero.
+            flush_para()
+            index += 1
+            continue
+
+        para.append(stripped)
+        index += 1
+
     flush_para()
     return "\n".join(out)
 
@@ -681,6 +785,10 @@ def render_method_page(
 """)
                 break
 
+    # A README's sibling-method links (``../adajepa/``) are written for the repository
+    # tree, where they resolve; the generated site is flat (``adajepa.html``), so they
+    # would 404 there. Rewrite rather than asking READMEs to carry site-shaped paths.
+    readme = re.sub(r"\]\(\.\./([A-Za-z0-9_]+)/(?:README\.md)?\)", r"](\1.html)", readme)
     readme_html = markdown_to_html(readme) if readme else ""
 
     body = f"""

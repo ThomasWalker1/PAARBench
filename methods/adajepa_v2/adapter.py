@@ -1,28 +1,41 @@
-"""HOVER -- horizon-matched online adaptation with a fresh-evidence brake.
+"""AdaJEPA v2 -- horizon-matched online adaptation with a fresh-evidence brake.
 
-Same correction as AdaJEPA -- a rank-2 LoRA (plus the final LayerNorm's affine
-delta) on the predictor's last block, fitted online by AdamW on the world model's own
-prediction loss -- and three deliberate differences from it, each aimed at something
-the leaderboard already measures.
+Version 2 of ``methods/adajepa``, not a separate family: the same correction (a rank-2
+LoRA plus the final LayerNorm's affine delta on the predictor's last block, fitted
+online by AdamW on the world model's own prediction loss), the same optimizer, the same
+gradient clipping, and the same two-axis selection cost.  Three things about *how* it
+is fitted change, each aimed at something the v1 row already measures.
 
-**1. The loss is the rollout the planner actually solves through.**  AdaJEPA fits
-single-step prediction: encode the state the chunk started from, predict once, match
-the state that came out.  The planner does not use the predictor that way.  It rolls
-it forward ``goal_H / frameskip`` model steps open loop, feeding each prediction back
-in as the next step's context, and scores the *end* of that rollout against the goal.
-A predictor that is accurate for one step and drifts over five is exactly a predictor
-whose plans are wrong, and single-step adaptation cannot see that drift.  HOVER rolls
-the correction forward ``horizon`` steps under the actions that were really executed,
-against the states the environment really reached, accumulating loss at every step --
-i.e. it fits open-loop rollout consistency, mirroring ``VWorldModel.rollout``
-including its growing ``num_hist`` context window.  ``horizon: 1`` recovers a
-single-step objective, so the selection grid contains that arm rather than assuming
-the multi-step one is better.
+Read ``methods/adajepa/README.md`` first.  "AdaJEPA" on this board is a port of a
+predecessor project's re-implementation, and its fitting window is one frame wide,
+where the published implementation
+(``github.com/agentic-learning-ai-lab/adajepa``, ``planning/adajepa.py``) uses
+``min(num_hist, T)``-frame teacher-forced windows over the whole episode merged into
+one contiguous sequence.  That distinction matters for reading the axis below.
 
-**2. The update is braked by evidence it has not seen.**  AdaJEPA's correction is an
+**1. The loss is the rollout the planner actually solves through.**  v1 fits
+single-step prediction from a single frame: encode the state the chunk started from,
+predict once, match the state that came out.  The planner does not use the predictor
+that way.  It rolls it forward ``goal_H / frameskip`` model steps open loop, feeding
+each prediction back in as the next step's context, and scores the *end* of that
+rollout against the goal.  A predictor that is accurate for one step and drifts over
+five is exactly a predictor whose plans are wrong, and single-step adaptation cannot
+see that drift.  v2 rolls the correction forward ``horizon`` steps under the actions
+that were really executed, against the states the environment really reached,
+accumulating loss at every depth -- open-loop rollout consistency, mirroring
+``VWorldModel.rollout`` including its growing ``num_hist`` context window.
+
+``horizon: 1`` recovers **v1's** objective, and is in the selection grid so the
+multi-step one has to earn its place.  It does *not* recover the published
+implementation's, which is 1-step-ahead but teacher-forced over a ``num_hist`` window:
+that arm sits between the two and neither row measures it yet.  Until it is run, the
+gain reported here is against v1 and cannot be attributed to the multi-step rollout
+alone.
+
+**2. The update is braked by evidence it has not seen.**  v1's correction is an
 optimizer trajectory that only ever accumulates: on PushObj it ends more than 2x
 further from the goal than frozen on 17% of episodes, and its paired distance gap
-grows with replan index.  Nothing in the method can notice.  HOVER scores its current
+grows with replan index.  Nothing in the method can notice.  AdaJEPA v2 scores its current
 correction against the frozen predictor on the transition that *just arrived* -- a
 sample the previous update was fitted before, so this is out-of-sample by
 construction, needs no held-out split, and needs no episode outcome.  When the
@@ -32,15 +45,14 @@ instead of compounding a correction that fresh evidence says is hurting.
 
 **3. Target latents are cached, so a gradient step is predictor-only.**  The encoder
 is frozen here (only predictor LoRA parameters are trained), so every encoding in the
-buffer is a constant.  AdaJEPA re-encodes its whole buffer inside every gradient step
--- ``steps * buffer_size`` encoder forwards per replan.  HOVER encodes each transition
+buffer is a constant.  v1 re-encodes its whole buffer inside every gradient step
+-- ``steps * buffer_size`` encoder forwards per replan.  v2 encodes each transition
 once, when it arrives (two forwards per replan, independent of ``steps``), and a
 gradient step touches the predictor only.
 
-What HOVER does *not* change: the parameterization (rank-2 LoRA on
-``predlast_all`` plus that block's LayerNorm), the optimizer, the gradient clipping,
-and the two tunable axes' cost.  The comparison against AdaJEPA is meant to be about
-the objective and the brake, not about capacity.
+Held fixed so the comparison is about the fitting rule rather than capacity: the
+parameterization (rank-2 LoRA on ``predlast_all`` plus that block's LayerNorm), AdamW,
+``grad_clip_norm`` 1.0, and two tunable axes.
 
 Determinism: the only stochastic element is the LoRA ``A`` initialization, drawn from
 a CPU generator seeded by the declared ``lora_init_seed``.  ``B`` starts at zero, so
@@ -65,7 +77,7 @@ log = logging.getLogger(__name__)
 _EPS = 1e-12
 
 
-class HoverAdapter:
+class AdaJEPAv2Adapter:
     """Online predictor LoRA fitted to multi-step rollouts, with a reset brake."""
 
     def __init__(
@@ -84,7 +96,7 @@ class HoverAdapter:
         brake_ratio=1.25,
         refresh_interval=1,
         require_single_episode=True,
-        log_prefix="hover",
+        log_prefix="adajepa_v2",
         **kwargs,
     ):
         self.wm = wm
@@ -105,21 +117,21 @@ class HoverAdapter:
         self.log_prefix = str(log_prefix)
 
         if self.steps < 0:
-            raise ValueError("HOVER steps must be non-negative.")
+            raise ValueError("AdaJEPA v2 steps must be non-negative.")
         if self.horizon < 1:
-            raise ValueError("HOVER horizon must be at least 1 model step.")
+            raise ValueError("AdaJEPA v2 horizon must be at least 1 model step.")
         if self.buffer_size < 1:
-            raise ValueError("HOVER buffer_size must be positive.")
+            raise ValueError("AdaJEPA v2 buffer_size must be positive.")
         if self.refresh_interval < 1:
-            raise ValueError("HOVER refresh_interval must be positive.")
+            raise ValueError("AdaJEPA v2 refresh_interval must be positive.")
         if self.brake_ratio <= 1.0:
             raise ValueError(
-                "HOVER brake_ratio must exceed 1: it is the factor by which the "
+                "AdaJEPA v2 brake_ratio must exceed 1: it is the factor by which the "
                 "correction may be worse than frozen on fresh evidence before the "
                 "delta is reset, so brake_ratio <= 1 would reset on noise alone."
             )
         if self.lora_rank <= 0:
-            raise ValueError("HOVER lora_rank must be positive.")
+            raise ValueError("AdaJEPA v2 lora_rank must be positive.")
 
         self.num_hist = max(int(getattr(wm, "num_hist", 1) or 1), 1)
         self.concat_dim = int(getattr(wm, "concat_dim", 1))
@@ -193,10 +205,10 @@ class HoverAdapter:
 
         if not self._trainable:
             raise ValueError(
-                f"No correction parameters for HOVER target_scope='{self.target_scope}'."
+                f"No correction parameters for AdaJEPA v2 target_scope='{self.target_scope}'."
             )
         log.info(
-            "HOVER installed %s LoRA modules and %s LayerNorm modules "
+            "AdaJEPA v2 installed %s LoRA modules and %s LayerNorm modules "
             "(rank=%s, trainable tensors=%s).",
             len(self.lora_targets), len(self.norm_targets), self.lora_rank,
             len(self._trainable),
@@ -261,7 +273,7 @@ class HoverAdapter:
         first = last - chunk_len * int(frameskip)
         if first < 0:
             raise ValueError(
-                f"HOVER needs {1 + chunk_len * frameskip} rollout frames to bound "
+                f"AdaJEPA v2 needs {1 + chunk_len * frameskip} rollout frames to bound "
                 f"{chunk_len} executed action(s) at frameskip {frameskip}, got {frames}."
             )
         return [
@@ -407,7 +419,7 @@ class HoverAdapter:
             raise ValueError(f"Expected actions (B, T, D), got {tuple(actions.shape)}")
         if self.require_single_episode and actions.shape[0] != 1:
             raise ValueError(
-                "HOVER owns a mutable optimizer trajectory, so it requires batch size "
+                "AdaJEPA v2 owns a mutable optimizer trajectory, so it requires batch size "
                 "1: one gradient step over a batched cohort would average unrelated "
                 "episodes into a single correction. Its method.yaml declares "
                 "requires_episode_isolation: true; run it through the harness."

@@ -114,7 +114,7 @@ Test cohorts: seeds [100, 200, 300], 4 shapes, n=50 per shape per cohort. Select
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA — online gradient TTA | 0.697 | 0.019 | +0.197 | +6 [-1, +17] | 17.1% [12%, 23%] | +0.24 [-0.25, +0.96] | 57% / +256 | 0.294 | 177 | 600 | 9 |
-| HOVER — horizon-matched online TTA | 0.697 | 0.019 | +0.197 | +8 [-1, +18] | 14.4% [9%, 20%] | +0.22 [-0.25, +0.98] | 56% / +156 | 0.239 | 172 | 600 | 12 |
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.697 | 0.019 | +0.197 | +8 [-1, +18] | 14.4% [9%, 20%] | +0.22 [-0.25, +0.98] | 56% / +156 | 0.239 | 172 | 600 | 12 |
 | HyperJEPA — amortized hypernetwork | 0.615 | 0.020 | +0.115 | -11 [-17, -3] | 7.9% [4%, 12%] | -0.08 [-0.24, +0.04] | 42% / +74 | 0.157 | 977 | 600 | 3 |
 | PAD — inverse-dynamics encoder adaptation | 0.575 | 0.020 | +0.075 | +2 [-4, +8] | 7.7% [4%, 11%] | +0.14 [-0.17, +0.49] | 52% / +119 | 0.029 | 290 | 600 | 12 |
 | Static LoRA — unconditioned correction | 0.547 | 0.020 | +0.047 | -5 [-9, +0] | 5.2% [3%, 8%] | -0.03 [-0.16, +0.11] | 44% / +57 | 0.000 | 157 | 600 | 3 |
@@ -140,7 +140,7 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. No sel
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| HOVER — horizon-matched online TTA | 0.409 | 0.023 | +0.109 | +1 [-5, +9] | 15.9% [12%, 21%] | +0.27 [-0.12, +0.65] | 51% / +204 | 0.239 | 172 | 450 | 12 (inherited) |
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.409 | 0.023 | +0.109 | +1 [-5, +9] | 15.9% [12%, 21%] | +0.27 [-0.12, +0.65] | 51% / +204 | 0.239 | 172 | 450 | 12 (inherited) |
 | AdaJEPA — online gradient TTA | 0.400 | 0.023 | +0.100 | +16 [+6, +28] | 16.9% [12%, 22%] | +0.97 [+0.39, +1.61] | 59% / +205 | 0.290 | 177 | 450 | 9 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.353 | 0.023 | +0.053 | +5 [-2, +9] | 10.4% [7%, 14%] | +0.25 [-0.10, +0.51] | 55% / +149 | 0.029 | 290 | 450 | 12 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.324 | 0.022 | +0.024 | -4 [-12, +3] | 8.0% [5%, 11%] | +0.25 [-0.01, +0.63] | 47% / +91 | 0.159 | 977 | 450 | 3 (inherited) |
@@ -167,7 +167,7 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. Select
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| HOVER — horizon-matched online TTA | 0.478 | 0.024 | +0.129 | +16 [-5, +39] | 22.2% [17%, 28%] | +1.23 [+0.37, +2.23] | 55% / +274 | 0.238 | 172 | 450 | 12 |
+| AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.478 | 0.024 | +0.129 | +16 [-5, +39] | 22.2% [17%, 28%] | +1.23 [+0.37, +2.23] | 55% / +274 | 0.238 | 172 | 450 | 12 |
 | HyperJEPA — amortized hypernetwork | 0.458 | 0.023 | +0.109 | -7 [-21, +8] | 10.7% [7%, 15%] | -0.45 [-0.77, +0.02] | 47% / +140 | 0.144 | 977 | 450 | 4 |
 | AdaJEPA — online gradient TTA | 0.440 | 0.023 | +0.091 | +55 [+36, +84] | 26.8% [21%, 33%] | +3.87 [+2.61, +5.16] | 66% / +549 | 0.293 | 177 | 450 | 12 |
 | PAD — inverse-dynamics encoder adaptation | 0.360 | 0.023 | +0.011 | +6 [-4, +12] | 13.3% [10%, 17%] | +0.39 [-0.05, +0.88] | 54% / +181 | 0.061 | 290 | 450 | 9 |

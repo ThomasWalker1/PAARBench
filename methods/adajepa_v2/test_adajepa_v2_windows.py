@@ -120,7 +120,7 @@ class TaggedPreprocessor:
 
 def build(**params):
     wm = StubWorldModel()
-    adapter = methods.load("hover").build(
+    adapter = methods.load("adajepa_v2").build(
         wm=wm, preprocessor=TaggedPreprocessor(), **params
     )
     return wm, adapter
@@ -242,8 +242,8 @@ def test_the_brake_only_fires_once_a_correction_exists():
     _wm, adapter = build(brake_ratio=1.001)
     _fill_buffer(adapter, 1)
     logs = adapter.before_plan({})
-    assert logs["hover/fresh_loss_ratio"] == pytest.approx(1.0)
-    assert logs["hover/braked"] == 0.0
+    assert logs["adajepa_v2/fresh_loss_ratio"] == pytest.approx(1.0)
+    assert logs["adajepa_v2/braked"] == 0.0
 
 
 def test_the_brake_resets_the_correction_and_the_optimizer():

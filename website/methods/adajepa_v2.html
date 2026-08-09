@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AdaJEPA v2 — horizon-matched fit + fresh-evidence brake — PAARBench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="../index.html" style="color:inherit;text-decoration:none;">PAARBench</a></h1>
+      <p class="tagline">PlanActAdaptRepeatBench — test-time adaptation for latent world models in closed-loop control</p>
+      <nav class="site-nav">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#settings">Settings</a>
+        <a href="../index.html#leaderboards">Leaderboards</a>
+        <a href="../index.html#contribute">Contribute</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-main">
+    
+<a class="back-link" href="../index.html">← Back to leaderboard</a>
+
+<div class="method-hero">
+  <h1>AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</h1>
+  <p class="lead">Version 2 of the adajepa row, not a separate family: the same correction (rank-2 LoRA plus LayerNorm delta on the predictor&#x27;s last block), the same AdamW, the same clipping, the same selection cost. What changes is how it is fitted. The loss is the open-loop latent rollout the planner actually solves through -- horizon steps under the executed actions, against the states the environment reached -- rather than one step from one frame. And the update is braked by evidence it has not seen: before each update the current correction is scored against the frozen predictor on the transition that just arrived, which the previous update was fitted before, and when it is worse there by more than brake_ratio the delta is reset to zero and the optimizer rebuilt. Target latents are cached (the encoder is never adapted), so a gradient step costs predictor forwards only.</p>
+  <p class='reference'><strong>Reference:</strong> v1: methods/adajepa. Published implementation: github.com/agentic-learning-ai-lab/adajepa</p>
+  <div class="badge-row"><span class="badge badge-accent">Episode isolated</span><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span></div>
+</div>
+
+<section>
+  <h2>Overview</h2>
+  <div class="card prose">
+    <p><strong>This is version 2 of <a href="adajepa.html"><code>methods/adajepa</code></a>, not a new family.</strong> It adapts the same thing v1 adapts — a rank-2 LoRA plus a LayerNorm delta on the predictor&#x27;s last block, fitted online with AdamW on the world model&#x27;s own prediction error — with the same optimizer, the same clipping and the same selection cost. Three things about <em>how</em> it is fitted change. It carries no offline training and no extra checkpoint; everything it needs is the base model and the episode it is in.</p>
+<p>Read <a href="adajepa.html"><code>methods/adajepa/README.md</code></a> before reading the numbers here. The v1 row is a port of a predecessor project&#x27;s re-implementation, and it fits a one-frame window, where the published AdaJEPA implementation fits <code>min(num_hist, T)</code>-frame teacher-forced windows over the whole episode. &quot;v2 against v1&quot; is therefore a comparison between two arms <em>on this board</em>, and the published method&#x27;s own fitting rule is a third arm neither of them measures yet.</p>
+<h3>Why these three changes</h3>
+<p><strong>The objective is the rollout the planner solves through, not one step of it.</strong> The planner rolls the predictor forward <code>goal_H / frameskip</code> model steps open loop (5 on the Push settings), feeding each prediction back in as context, and scores the end of that rollout against the goal. v1 fits single-step prediction from a single frame, so a correction that is accurate for one step and drifts over five looks perfect to it and plans badly. v2 rolls the correction forward <code>horizon</code> steps under the actions that were really executed, against the states the environment really reached, and accumulates loss at every depth — mirroring <code>VWorldModel.rollout</code>, including its growing <code>num_hist</code> context window, so the thing being fitted is the thing being used.</p>
+<p>At <code>horizon: 1</code> this reduces to <strong>v1&#x27;s</strong> objective. That value is in the selection grid deliberately: if the multi-step objective does not earn its place, the protocol picks the arm that does not use it. It is <em>not</em> the published implementation&#x27;s objective, which is one-step-ahead but teacher-forced over a <code>num_hist</code> window — so the gain recorded below is a gain over v1, and how much of it is the multi-step rollout rather than the restored context is not yet measured. See <em>Open ablations</em>.</p>
+<p><strong>The update is braked by evidence it has not seen.</strong> v1&#x27;s correction is an optimizer trajectory that only accumulates: on <code>pushobj</code> it ends more than 2× further from the goal than frozen on 17.1% of episodes, and its paired distance gap grows with replan index (compounding +0.24). Nothing inside the method can notice, because an episode&#x27;s outcome is not observable and its buffer only ever holds data it has already fitted.</p>
+<p>The transition that arrives at replan <em>n</em> is data the update at replan <em>n−1</em> was fitted before. v2 scores the current correction against the frozen predictor on exactly that transition, before folding it into the fit — out-of-sample by construction, no held-out split, no outcome. When the correction is worse there by more than <code>brake_ratio</code> (1.25), the delta is set back to zero and the optimizer rebuilt: adaptation restarts from the frozen model rather than compounding a correction that fresh prediction error says is hurting.</p>
+<p>The check is <em>single-step</em>, even though the fit is multi-step, because that is the only quantity available here whose input and target were both unseen: a deeper rollout ending at the newest state would have to start inside the buffer and pass through states the last update was fitted on, which biases the comparison in the adapted arm&#x27;s favour — exactly the direction that would make the brake fail to fire. <code>hover/braked</code> and <code>hover/fresh_loss_ratio</code> are recorded per replan, so how often this fires — and whether adaptation is helping out-of-sample at all — is visible in the record rather than inferred.</p>
+<p><strong>Target latents are cached, so a gradient step is predictor-only.</strong> Only predictor LoRA parameters are trained, so every encoding in the buffer is a constant for the rest of the episode. v1 re-encodes its whole buffer inside every gradient step (<code>steps × buffer_size</code> encoder forwards per replan); v2 encodes each transition once when it arrives — two forwards per replan, independent of <code>steps</code> — which is what makes a multi-step objective over an 8-transition buffer cheaper than v1&#x27;s single-step one over a 5-transition buffer.</p>
+<h3>What is held fixed on purpose</h3>
+<p>The parameterization (<code>predlast_all</code>, rank 2, <code>lora_scale</code> 1.0), AdamW, and <code>grad_clip_norm: 1.0</code> are v1&#x27;s, unchanged. The comparison between the two rows is meant to be about the fitting rule and the brake, not about capacity or optimizer tuning.</p>
+<p>None of these are the <em>published</em> AdaJEPA&#x27;s either: that implementation adapts the predictor&#x27;s last layer densely plus the encoder head, with a fresh optimizer each replan. Both rows on this board inherit the predecessor&#x27;s LoRA parameterization, so neither is evidence about the paper&#x27;s parameter choice.</p>
+<h3>Results</h3>
+<p>Selection froze <code>pred_lr: 2e-3, horizon: 5</code> on <strong>both</strong> selectable settings, chosen independently, after 12 columns each (<code>horizon: 5</code> sat on the initial grid&#x27;s boundary, so that axis expanded once; <code>horizon: 8</code> then scored below it). <code>horizon: 5</code> beat <code>horizon: 1</code> at the selected learning rate on both — 0.685 vs 0.670 on <code>pushobj</code>, 0.427 vs 0.407 on <code>pusht</code> — so the multi-step objective is what the protocol picked, not what it tolerated.</p>
+<div class="table-wrap"><table><thead><tr><th>setting</th><th>v2 success</th><th>v1</th><th>median dist Δ</th><th>compounding</th><th>catastrophe</th><th>regret</th><th>adapt s/replan</th></tr></thead><tbody><tr><td><code>pushobj</code></td><td><strong>0.697</strong></td><td>0.697</td><td>+8 vs +6</td><td>+0.22 vs +0.24</td><td>14.4% vs 17.1%</td><td>56%/+156 vs 57%/+256</td><td>0.239 vs 0.294</td></tr><tr><td><code>pushobj_shift</code></td><td><strong>0.409</strong></td><td>0.400</td><td>+1 vs +16</td><td>+0.27 vs +0.97</td><td>15.9% vs 16.9%</td><td>51%/+204 vs 59%/+205</td><td>0.239 vs 0.290</td></tr><tr><td><code>pusht</code></td><td><strong>0.478</strong></td><td>0.440</td><td>+16 vs +55</td><td>+1.23 vs +3.87</td><td>22.2% vs 26.8%</td><td>55%/+274 vs 66%/+549</td><td>0.238 vs 0.293</td></tr></tbody></table></div>
+<p>Read the success column carefully: +0.038 on <code>pusht</code> is ~1.6 SE and the other two are inside one SE, so on success alone v2 and v1 are not separable at these n. What <em>is</em> separable is the risk side, and it moves in the same direction on all three settings. On <code>pushobj_shift</code> and <code>pusht</code> v1&#x27;s median paired distance change and compounding slope both have intervals excluding zero — it ends measurably further from the goal than frozen on shared failures, and gets worse per replan — while v2&#x27;s compounding interval straddles zero on <code>pushobj_shift</code> and its median distance change straddles zero on all three. The ordering across settings tracks how much room the correction has to go wrong: a tie where v1 barely drifts (<code>pushobj</code>), the largest gain where it drifts hardest (<code>pusht</code>).</p>
+<p>v2 does not match HyperJEPA&#x27;s risk profile on <code>pusht</code> (compounding −0.45, catastrophe 10.7%) despite scoring above it on success. A correction that is recomputed from frozen weights every replan compounds less than one that is braked, and the brake does not close that gap.</p>
+<p>Diagnostics from the <code>pushobj</code> selection sweep, which the record does not carry: fitting lowers <em>out-of-sample</em> single-step prediction error to a median 0.77× frozen at <code>horizon: 1</code>, rising to 0.92× at <code>horizon: 5</code> — the multi-step objective spends single-step accuracy on rollout consistency, as intended. The brake fires on 7–12% of episodes, 0.1–0.2 times per episode: loose enough to leave adaptation alone, which is why the median trajectory is unchanged while the tails are not.</p>
+<h3>Open ablations</h3>
+<p>Neither is required to read the table above, and both are cheap:</p>
+<ol><li><strong>The published implementation&#x27;s objective</strong> — 1-step-ahead, teacher-forced over a <code>min(num_hist, T)</code> window, on the merged episode. It sits between <code>horizon: 1</code> and this method, so without it the reported gain cannot be split into &quot;restored the context v1 dropped&quot; and &quot;fitted the open-loop rollout&quot;.</li><li><strong>The brake alone</strong>, at <code>horizon: 1</code>. The selection sweep already scores that cell (0.670 on <code>pushobj</code>, 0.407 on <code>pusht</code>), but only on the selection cohort.</li></ol>
+<p>Also unrun: the four maze settings. Nothing blocks them — the same <code>frameskip: 5</code>, <code>num_hist: 3</code> base geometry means one model action per replan there too — but v1&#x27;s maze rows show 0.0% catastrophe on <code>maze_medium</code>, so that is the setting where the brake has least to do; <code>maze_medium_low_density</code> (v1: 26.7% catastrophe) is the informative one.</p>
+<h3>Selection</h3>
+<p>Two axes, 9 initial cells — the same selection cost as v1:</p>
+<div class="table-wrap"><table><thead><tr><th>axis</th><th>grid</th><th>expansion pool</th></tr></thead><tbody><tr><td><code>pred_lr</code></td><td>5e-4, 2e-3, 1e-2</td><td>log</td></tr><tr><td><code>horizon</code></td><td>1, 3, 5</td><td>1, 2, 3, 5, 8</td></tr></tbody></table></div>
+<p><code>steps</code> is <strong>authored at 5, not tuned</strong>: v1&#x27;s own selection chose 5 on all three settings it was tuned on, and spending one of two axes to rediscover that would leave the mechanism this method is about untested. <code>buffer_size: 8</code> and <code>brake_ratio: 1.25</code> are likewise authored — 8 transitions is the shortest buffer that supports a 5-step window, and 1.25 is a deliberately loose brake, meant to catch a correction that is clearly worse than frozen rather than to arbitrate small differences. Neither was chosen by looking at benchmark episodes.</p>
+<h3>Alignment note</h3>
+<p><code>on_transition</code> locates the executed chunk&#x27;s frame boundaries by counting <strong>backwards</strong> from the end of <code>rollout_obs</code>. The protocol documents that argument as <code>1 + T * frameskip</code> frames, but the evaluator replays the episode&#x27;s whole action sequence from its initial condition on every replan, so what arrives is the entire trajectory so far and only its tail belongs to the chunk just executed. Counting from the front pairs the current state with the endpoint of the episode&#x27;s <em>first</em> action from replan 2 onward. Counting from the end is correct under either reading.</p>
+<h3>Cost and determinism</h3>
+<p>Episode-isolated (<code>requires_episode_isolation: true</code>): it owns predictor parameters and an AdamW trajectory, so a batched cohort would average unrelated episodes into one correction.</p>
+<p>The only stochastic element is the LoRA <code>A</code> initialization, drawn from a CPU generator seeded by the declared <code>lora_init_seed: 0</code>; <code>B</code> starts at zero, so the correction starts at exactly zero and the first replan of every episode plans with the frozen model.</p>
+<h3>Reported per replan</h3>
+<div class="table-wrap"><table><thead><tr><th>key</th><th>meaning</th></tr></thead><tbody><tr><td><code>hover/loss</code></td><td>rollout loss at the last gradient step of this replan</td></tr><tr><td><code>hover/rollout_depth</code></td><td>depths actually rolled (<code>min(horizon, buffered transitions)</code>)</td></tr><tr><td><code>hover/fresh_loss</code>, <code>hover/fresh_loss_frozen</code></td><td>single-step loss on the newest transition, adapted vs frozen</td></tr><tr><td><code>hover/fresh_loss_ratio</code></td><td>their ratio; &gt; 1 means adaptation is hurting out-of-sample</td></tr><tr><td><code>hover/braked</code>, <code>hover/brakes</code></td><td>did the brake fire this replan, and how often this episode</td></tr><tr><td><code>hover/buffer_size</code></td><td>buffered transitions</td></tr></tbody></table></div>
+  </div>
+</section>
+
+<section>
+  <h2>Frozen Hyperparameters</h2>
+  <ul class='param-list'><li><span>brake_ratio</span> = 1.25</li><li><span>buffer_size</span> = 8</li><li><span>grad_clip_norm</span> = 1.0</li><li><span>horizon</span> = 5</li><li><span>lora_init_seed</span> = 0</li><li><span>lora_rank</span> = 2</li><li><span>lora_scale</span> = 1.0</li><li><span>pred_lr</span> = 0.002</li><li><span>refresh_interval</span> = 1</li><li><span>require_single_episode</span> = True</li><li><span>steps</span> = 5</li><li><span>target_scope</span> = predlast_all</li></ul>
+</section>
+
+<section>
+  <h2>Results Summary</h2>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.697</td>
+  <td class="num"></td>
+  <td class="num">600</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.409</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.478</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Leaderboard Row</h2>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.697 (±0.019)</td>
+  <td class="num delta-pos">+0.197</td>
+  <td class="num">+8 [-1, +18]</td>
+  <td class="num">14.4% [9%, 20%]</td>
+  <td class="num">56% / +156</td>
+  <td class="num">0.239</td>
+  <td class="num">172</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.409 (±0.023)</td>
+  <td class="num delta-pos">+0.109</td>
+  <td class="num">+1 [-5, +9]</td>
+  <td class="num">15.9% [12%, 21%]</td>
+  <td class="num">51% / +204</td>
+  <td class="num">0.239</td>
+  <td class="num">172</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/adajepa_v2.html">AdaJEPA v2 — horizon-matched fit + fresh-evidence brake</a></td>
+  <td class="num">0.478 (±0.024)</td>
+  <td class="num delta-pos">+0.129</td>
+  <td class="num">+16 [-5, +39]</td>
+  <td class="num">22.2% [17%, 28%]</td>
+  <td class="num">55% / +274</td>
+  <td class="num">0.238</td>
+  <td class="num">172</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
+    </div>
+  </footer>
+  <script src="../js/sort-tables.js" defer></script>
+</body>
+</html>

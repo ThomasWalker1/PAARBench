@@ -37,8 +37,20 @@
   <h2>Overview</h2>
   <div class="card prose">
     <p>Amortized hypernetwork that emits a rank-2 LoRA correction for the predictor&#x27;s last block from the episode&#x27;s recent transitions. Corrections are regenerated from the frozen base before every replan.</p>
-<p>## Offline training</p>
-<p>``<code>bash .venv/bin/python methods/hyperjepa/train.py \ --ckpt-dir checkpoints/mediummaze_dynamics_shift \ --model-epoch latest \ --data-path data/point_maze_medium \ --output-dir checkpoints/maze_medium_adapters/hyper_r2 \ --no-distill-adapter \ --rank 2 \ --target-scope predlast_all \ --context-mode transition_buffer \ --context-aggregator transformer_query \ --context-transitions 5 \ --epochs 5 \ --device cuda:0 </code>``</p>
+<h3>Offline training</h3>
+<pre><code>.venv/bin/python methods/hyperjepa/train.py \
+  --ckpt-dir checkpoints/mediummaze_dynamics_shift \
+  --model-epoch latest \
+  --data-path data/point_maze_medium \
+  --output-dir checkpoints/maze_medium_adapters/hyper_r2 \
+  --no-distill-adapter \
+  --rank 2 \
+  --target-scope predlast_all \
+  --context-mode transition_buffer \
+  --context-aggregator transformer_query \
+  --context-transitions 5 \
+  --epochs 5 \
+  --device cuda:0</code></pre>
 <p>Epoch files must be named <code>hyper_lora_epoch_{1..5}.pth</code> (see <code>method.yaml</code>). PAARBench selects the reported epoch on the selection cohort via <code>tunable.training_epoch</code>; do not use val-loss <code>best</code> for reported numbers.</p>
 <p>Or: <code>scripts/train_maze_adapters.sh</code> (HyperJEPA + Static LoRA in parallel).</p>
   </div>
