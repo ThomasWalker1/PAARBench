@@ -1,10 +1,10 @@
 {
-  "method": "hyperjepa",
-  "method_dir": "hyperjepa",
-  "display_name": "HyperJEPA \u2014 amortized hypernetwork",
-  "setting": "pushobj",
+  "method": "hyperlora",
+  "method_dir": "hyperlora",
+  "display_name": "HyperLoRA \u2014 amortized hypernetwork",
+  "setting": "maze_diverse",
   "params": {
-    "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
     "rank": 2,
     "target_scope": "predlast_all",
     "context_mode": "transition_buffer",
@@ -19,21 +19,21 @@
     "fold_weights": false
   },
   "submission": true,
-  "selection_rule": "standard (3-point grid + boundary expansion)",
-  "selection_cost_columns": 3,
-  "selection_cost_basis": "selected",
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 5 column(s) there)",
+  "selection_cost_columns": 5,
+  "selection_cost_basis": "inherited",
   "episode_isolated": false,
   "selection_cohort_seed": 0,
   "test_cohorts": {
     "test100": {
-      "setting": "pushobj",
+      "setting": "maze_diverse",
       "cohort": "test100",
       "seed": 100,
-      "tag": "hyperjepa",
+      "tag": "hyperlora",
       "n_evals": 50,
-      "n": 200,
+      "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -48,27 +48,24 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "T": 0.7,
-        "L": 0.54,
-        "Z": 0.58,
-        "+": 0.6
+        "heldout_layouts": 0.52
       },
-      "success": 0.605,
+      "success": 0.52,
       "complete": true,
       "failures": [],
-      "wall_seconds": 142.4,
-      "out_dir": "eval_outputs/hyperjepa/pushobj/test100",
+      "wall_seconds": 184.2,
+      "out_dir": "eval_outputs/hyperlora/maze_diverse/test100",
       "paired_metrics": null
     },
     "test200": {
-      "setting": "pushobj",
+      "setting": "maze_diverse",
       "cohort": "test200",
       "seed": 200,
-      "tag": "hyperjepa",
+      "tag": "hyperlora",
       "n_evals": 50,
-      "n": 200,
+      "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -83,27 +80,24 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "T": 0.68,
-        "L": 0.62,
-        "Z": 0.6,
-        "+": 0.52
+        "heldout_layouts": 0.66
       },
-      "success": 0.605,
+      "success": 0.66,
       "complete": true,
       "failures": [],
-      "wall_seconds": 150.4,
-      "out_dir": "eval_outputs/hyperjepa/pushobj/test200",
+      "wall_seconds": 188.9,
+      "out_dir": "eval_outputs/hyperlora/maze_diverse/test200",
       "paired_metrics": null
     },
     "test300": {
-      "setting": "pushobj",
+      "setting": "maze_diverse",
       "cohort": "test300",
       "seed": 300,
-      "tag": "hyperjepa",
+      "tag": "hyperlora",
       "n_evals": 50,
-      "n": 200,
+      "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -118,21 +112,18 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "T": 0.56,
-        "L": 0.54,
-        "Z": 0.74,
-        "+": 0.6
+        "heldout_layouts": 0.58
       },
-      "success": 0.61,
+      "success": 0.58,
       "complete": true,
       "failures": [],
-      "wall_seconds": 141.7,
-      "out_dir": "eval_outputs/hyperjepa/pushobj/test300",
+      "wall_seconds": 189.2,
+      "out_dir": "eval_outputs/hyperlora/maze_diverse/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.6066666666666667,
-  "n": 600,
+  "success": 0.5866666666666667,
+  "n": 150,
   "complete": true,
   "frozen_reference": null
 }

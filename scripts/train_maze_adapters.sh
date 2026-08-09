@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Train MediumMaze HyperJEPA + Static LoRA adapters (single-GPU each, parallel).
+# Train MediumMaze HyperLoRA + Static LoRA adapters (single-GPU each, parallel).
 # Usage: HYPER_GPU=0 STATIC_GPU=1 bash scripts/train_maze_adapters.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,8 +26,8 @@ HYPER_OUT="${HYPER_OUT:-checkpoints/maze_medium_adapters/hyper_r${RANK}}"
 STATIC_OUT="${STATIC_OUT:-checkpoints/maze_medium_adapters/static_r${RANK}}"
 mkdir -p "$HYPER_OUT" "$STATIC_OUT"
 
-echo "=== HyperJEPA gpu=$HYPER_GPU -> $HYPER_OUT ==="
-CUDA_VISIBLE_DEVICES="$HYPER_GPU" PYTHONUNBUFFERED=1 "$PY" methods/hyperjepa/train.py \
+echo "=== HyperLoRA gpu=$HYPER_GPU -> $HYPER_OUT ==="
+CUDA_VISIBLE_DEVICES="$HYPER_GPU" PYTHONUNBUFFERED=1 "$PY" methods/hyperlora/train.py \
   "${COMMON[@]}" \
   --target-scope predlast_all \
   --context-mode transition_buffer \

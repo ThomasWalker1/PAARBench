@@ -1,5 +1,5 @@
-name: hyperjepa
-display_name: "HyperJEPA — amortized hypernetwork"
+name: hyperlora
+display_name: "HyperLoRA — amortized hypernetwork"
 description: >
   A hypernetwork reads the transitions the controller has executed this episode and
   emits a rank-2 LoRA correction for the predictor's last block. The correction is
@@ -8,7 +8,7 @@ description: >
   Contrast with adajepa, which walks an optimizer trajectory.
 reference: "Predecessor project ~/HyperJEPA, planning/hyper_adapter.py @ 628dff7"
 
-adapter: adapter:HyperJEPAAdapter
+adapter: adapter:HyperLoRAAdapter
 settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
 
 # These MUST match the adapter checkpoint's metadata.json. The adapter validates

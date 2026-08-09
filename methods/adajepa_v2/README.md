@@ -118,7 +118,7 @@ episodes should read this row as v2 winning, and one optimizing success alone sh
 not. It is exactly the row the benchmark's multi-objective framing exists to make
 legible.
 
-v2 does not match HyperJEPA's risk profile on `pusht` (compounding −0.07, catastrophe
+v2 does not match HyperLoRA's risk profile on `pusht` (compounding −0.07, catastrophe
 7.7%, median distance change −0) despite scoring above it on success (0.478 vs 0.453).
 A correction recomputed from frozen weights every replan compounds less than one that is
 braked, and the brake does not close that gap.

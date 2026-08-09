@@ -1,4 +1,4 @@
-"""Transition features available to HyperJEPA during closed-loop planning."""
+"""Transition features available to HyperLoRA during closed-loop planning."""
 
 from __future__ import annotations
 

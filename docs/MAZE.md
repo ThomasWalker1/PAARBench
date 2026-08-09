@@ -70,14 +70,14 @@ sha256sum --check --ignore-missing TARGETS.sha256
 The medium dynamics shifts reuse `maze_medium` target files. A complete corpus is
 required before any worker runs; `scripts/evaluate.py` names every missing file.
 
-## Train HyperJEPA / Static LoRA / PAD
+## Train HyperLoRA / Static LoRA / PAD
 
 ```bash
-# Parallel single-GPU trainers (HyperJEPA on GPU 0, Static LoRA on GPU 1):
+# Parallel single-GPU trainers (HyperLoRA on GPU 0, Static LoRA on GPU 1):
 bash scripts/train_maze_adapters.sh
 
 # Or explicitly:
-.venv/bin/python methods/hyperjepa/train.py \
+.venv/bin/python methods/hyperlora/train.py \
   --ckpt-dir checkpoints/mediummaze_dynamics_shift \
   --data-path data/point_maze_medium \
   --output-dir checkpoints/maze_medium_adapters/hyper_r2 \
@@ -97,14 +97,14 @@ bash scripts/train_maze_adapters.sh
   --output checkpoints/pad/maze_medium_inverse_dynamics.pth
 ```
 
-Expected HyperJEPA / Static LoRA outputs: `hyper_lora_epoch_{1..5}.pth` under each
+Expected HyperLoRA / Static LoRA outputs: `hyper_lora_epoch_{1..5}.pth` under each
 adapter directory (verify with `sha256sum --check CHECKPOINTS.sha256`). Epoch
 selection stays on the selection cohort (`tunable.training_epoch`); do not report
 val-loss `best`. The staged `data/point_maze_medium` zip uses per-episode uint8
 tensors; the loader falls back from the hydra config's per-frame layout
 automatically.
 
-Published MediumMaze selection chose **epoch 2** for both HyperJEPA and Static LoRA.
+Published MediumMaze selection chose **epoch 2** for both HyperLoRA and Static LoRA.
 
 ## Evaluate
 
@@ -117,7 +117,7 @@ Frozen (`--frozen`); optional `--frozen --isolated` runs are appendix diagnostic
 
 .venv/bin/python scripts/evaluate.py adajepa --setting maze_medium \
   --gpus 0,1,2,3,4,5,6,7 --per-gpu 1
-.venv/bin/python scripts/evaluate.py hyperjepa --setting maze_medium \
+.venv/bin/python scripts/evaluate.py hyperlora --setting maze_medium \
   --gpus 0,1,2,3,4,5,6,7 --per-gpu 1
 .venv/bin/python scripts/evaluate.py static_lora --setting maze_medium \
   --gpus 0,1,2,3,4,5,6,7 --per-gpu 1
@@ -127,7 +127,7 @@ Frozen (`--frozen`); optional `--frozen --isolated` runs are appendix diagnostic
 # Inherited OOD (after the nominal result record exists):
 for setting in maze_medium_low_density maze_medium_high_damping maze_diverse; do
   .venv/bin/python scripts/evaluate.py --frozen --setting "$setting" --gpus 0,1,2,3,4,5,6,7
-  for method in adajepa hyperjepa static_lora pad; do
+  for method in adajepa hyperlora static_lora pad; do
     .venv/bin/python scripts/evaluate.py "$method" --setting "$setting" \
       --gpus 0,1,2,3,4,5,6,7 --per-gpu 1
   done

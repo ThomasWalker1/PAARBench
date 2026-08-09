@@ -1,10 +1,10 @@
 {
-  "method": "hyperjepa",
-  "method_dir": "hyperjepa",
-  "display_name": "HyperJEPA \u2014 amortized hypernetwork",
-  "setting": "maze_diverse",
+  "method": "hyperlora",
+  "method_dir": "hyperlora",
+  "display_name": "HyperLoRA \u2014 amortized hypernetwork",
+  "setting": "pushobj_shift",
   "params": {
-    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
+    "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
     "rank": 2,
     "target_scope": "predlast_all",
     "context_mode": "transition_buffer",
@@ -19,53 +19,21 @@
     "fold_weights": false
   },
   "submission": true,
-  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 5 column(s) there)",
-  "selection_cost_columns": 5,
+  "selection_rule": "inherited from pushobj (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
   "selection_cost_basis": "inherited",
   "episode_isolated": false,
   "selection_cohort_seed": 0,
   "test_cohorts": {
-    "test100": {
-      "setting": "maze_diverse",
-      "cohort": "test100",
-      "seed": 100,
-      "tag": "hyperjepa",
-      "n_evals": 50,
-      "n": 50,
-      "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
-        "rank": 2,
-        "target_scope": "predlast_all",
-        "context_mode": "transition_buffer",
-        "context_feature_kind": "residual_action",
-        "context_aggregator": "transformer_query",
-        "transition_buffer_size": 5,
-        "adapter_gate": false,
-        "freeze_lora_A": false,
-        "generator": "mlp",
-        "refresh": "every_mpc",
-        "refresh_interval": 1,
-        "fold_weights": false
-      },
-      "success_by_shape": {
-        "heldout_layouts": 0.52
-      },
-      "success": 0.52,
-      "complete": true,
-      "failures": [],
-      "wall_seconds": 184.2,
-      "out_dir": "eval_outputs/hyperjepa/maze_diverse/test100",
-      "paired_metrics": null
-    },
     "test200": {
-      "setting": "maze_diverse",
+      "setting": "pushobj_shift",
       "cohort": "test200",
       "seed": 200,
-      "tag": "hyperjepa",
+      "tag": "hyperlora",
       "n_evals": 50,
-      "n": 50,
+      "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -80,24 +48,60 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "heldout_layouts": 0.66
+        "I": 0.26,
+        "small_tee": 0.48,
+        "square": 0.24
       },
-      "success": 0.66,
+      "success": 0.32666666666666666,
       "complete": true,
       "failures": [],
-      "wall_seconds": 188.9,
-      "out_dir": "eval_outputs/hyperjepa/maze_diverse/test200",
+      "wall_seconds": 137.1,
+      "out_dir": "eval_outputs/hyperlora/pushobj_shift/test200",
+      "paired_metrics": null
+    },
+    "test100": {
+      "setting": "pushobj_shift",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hyperlora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "I": 0.26,
+        "small_tee": 0.46,
+        "square": 0.2
+      },
+      "success": 0.30666666666666664,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 141.9,
+      "out_dir": "eval_outputs/hyperlora/pushobj_shift/test100",
       "paired_metrics": null
     },
     "test300": {
-      "setting": "maze_diverse",
+      "setting": "pushobj_shift",
       "cohort": "test300",
       "seed": 300,
-      "tag": "hyperjepa",
+      "tag": "hyperlora",
       "n_evals": 50,
-      "n": 50,
+      "n": 150,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
+        "checkpoint_path": "checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_2.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -112,18 +116,20 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "heldout_layouts": 0.58
+        "I": 0.3,
+        "small_tee": 0.54,
+        "square": 0.16
       },
-      "success": 0.58,
+      "success": 0.3333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 189.2,
-      "out_dir": "eval_outputs/hyperjepa/maze_diverse/test300",
+      "wall_seconds": 135.8,
+      "out_dir": "eval_outputs/hyperlora/pushobj_shift/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.5866666666666667,
-  "n": 150,
+  "success": 0.32222222222222224,
+  "n": 450,
   "complete": true,
   "frozen_reference": null
 }

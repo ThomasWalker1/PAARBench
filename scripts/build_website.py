@@ -15,7 +15,7 @@ METHODS = ROOT / "methods"
 LEADERBOARD = ROOT / "LEADERBOARD.md"
 
 METHOD_ORDER = [
-    "adajepa", "adajepa_v2", "hyperjepa", "static_lora", "pad", "frozen",
+    "adajepa", "adajepa_v2", "hyperlora", "static_lora", "pad", "frozen",
 ]
 """Method page order. Versions of one arm stay adjacent, so a reader meets v1 and v2
 together rather than finding them in different parts of the page.

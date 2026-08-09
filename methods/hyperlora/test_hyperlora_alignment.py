@@ -123,7 +123,7 @@ def build(**params):
     """
     wm = StubWorldModel()
     params.setdefault("context_feature_kind", "latent_residual_action")
-    return methods.load("hyperjepa").build(
+    return methods.load("hyperlora").build(
         wm=wm, preprocessor=TaggedPreprocessor(), **params
     )
 
@@ -182,7 +182,7 @@ def test_one_feature_is_appended_per_executed_action():
         {k: v[:, -1:] for k, v in trajectory(1 + 3 * FRAMESKIP).items()},
         torch.zeros(1, 3, ACTION_DIM), trajectory(1 + 3 * FRAMESKIP), FRAMESKIP,
     )
-    assert logs["hyperjepa/transition_features_added"] == 3
+    assert logs["hyperlora/transition_features_added"] == 3
     assert len(adapter.transition_buffer) == 3
 
 

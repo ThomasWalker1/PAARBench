@@ -1,8 +1,8 @@
 {
-  "method": "hyperjepa",
-  "method_dir": "hyperjepa",
-  "display_name": "HyperJEPA \u2014 amortized hypernetwork",
-  "setting": "maze_medium",
+  "method": "hyperlora",
+  "method_dir": "hyperlora",
+  "display_name": "HyperLoRA \u2014 amortized hypernetwork",
+  "setting": "maze_medium_high_damping",
   "params": {
     "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
     "rank": 2,
@@ -19,17 +19,17 @@
     "fold_weights": false
   },
   "submission": true,
-  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 5 column(s) there)",
   "selection_cost_columns": 5,
-  "selection_cost_basis": "selected",
+  "selection_cost_basis": "inherited",
   "episode_isolated": false,
   "selection_cohort_seed": 0,
   "test_cohorts": {
-    "test100": {
-      "setting": "maze_medium",
-      "cohort": "test100",
-      "seed": 100,
-      "tag": "hyperjepa",
+    "test300": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "hyperlora",
       "n_evals": 50,
       "n": 50,
       "params": {
@@ -48,20 +48,20 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "medium": 0.8
+        "medium": 0.54
       },
-      "success": 0.8,
+      "success": 0.54,
       "complete": true,
       "failures": [],
-      "wall_seconds": 187.7,
-      "out_dir": "eval_outputs/hyperjepa/maze_medium/test100",
+      "wall_seconds": 181.7,
+      "out_dir": "eval_outputs/hyperlora/maze_medium_high_damping/test300",
       "paired_metrics": null
     },
     "test200": {
-      "setting": "maze_medium",
+      "setting": "maze_medium_high_damping",
       "cohort": "test200",
       "seed": 200,
-      "tag": "hyperjepa",
+      "tag": "hyperlora",
       "n_evals": 50,
       "n": 50,
       "params": {
@@ -80,20 +80,20 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "medium": 0.74
+        "medium": 0.5
       },
-      "success": 0.74,
+      "success": 0.5,
       "complete": true,
       "failures": [],
-      "wall_seconds": 188.0,
-      "out_dir": "eval_outputs/hyperjepa/maze_medium/test200",
+      "wall_seconds": 185.3,
+      "out_dir": "eval_outputs/hyperlora/maze_medium_high_damping/test200",
       "paired_metrics": null
     },
-    "test300": {
-      "setting": "maze_medium",
-      "cohort": "test300",
-      "seed": 300,
-      "tag": "hyperjepa",
+    "test100": {
+      "setting": "maze_medium_high_damping",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "hyperlora",
       "n_evals": 50,
       "n": 50,
       "params": {
@@ -112,17 +112,17 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "medium": 0.84
+        "medium": 0.56
       },
-      "success": 0.84,
+      "success": 0.56,
       "complete": true,
       "failures": [],
-      "wall_seconds": 189.8,
-      "out_dir": "eval_outputs/hyperjepa/maze_medium/test300",
+      "wall_seconds": 186.0,
+      "out_dir": "eval_outputs/hyperlora/maze_medium_high_damping/test100",
       "paired_metrics": null
     }
   },
-  "success": 0.7933333333333333,
+  "success": 0.5333333333333333,
   "n": 150,
   "complete": true,
   "frozen_reference": null

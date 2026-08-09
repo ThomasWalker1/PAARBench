@@ -25,7 +25,7 @@ from utils import move_to_device
 log = logging.getLogger(__name__)
 
 
-class HyperJEPAAdapter:
+class HyperLoRAAdapter:
     """Amortized predictor adaptation via context-conditioned LoRA."""
 
     def __init__(
@@ -59,7 +59,7 @@ class HyperJEPAAdapter:
         refresh_interval=1,
         transition_buffer_size=5,
         freeze_base=True,
-        log_prefix="hyperjepa",
+        log_prefix="hyperlora",
         context_perturb="none",
         query_perturb="none",
         fold_weights=False,
@@ -71,10 +71,10 @@ class HyperJEPAAdapter:
         self.context_mode = str(context_mode)
         self.context_feature_kind = str(context_feature_kind)
         if self.context_feature_kind not in {"residual_action", "latent_residual_action"}:
-            raise ValueError("Unknown HyperJEPA context_feature_kind.")
+            raise ValueError("Unknown HyperLoRA context_feature_kind.")
         self.context_aggregator = str(context_aggregator)
         if self.context_aggregator not in {"mean", "transformer", "transformer_query"}:
-            raise ValueError("Unknown HyperJEPA context_aggregator.")
+            raise ValueError("Unknown HyperLoRA context_aggregator.")
         if self.context_aggregator in {"transformer", "transformer_query"} and self.context_mode != "transition_buffer":
             raise ValueError("Transformer aggregation is currently supported for transition_buffer only.")
         self.refresh = str(refresh)
@@ -90,7 +90,7 @@ class HyperJEPAAdapter:
         # not dynamics evidence, so only the evidence is ablated.
         self.context_perturb = str(context_perturb)
         if self.context_perturb not in {"none", "swap", "mean", "zero"}:
-            raise ValueError("HyperJEPA context_perturb must be none|swap|mean|zero.")
+            raise ValueError("HyperLoRA context_perturb must be none|swap|mean|zero.")
         # The transformer_query aggregator conditions on TWO things: the transition
         # evidence (above) and the episode's current state (the query). Ablating only
         # the evidence still leaves state conditioning, so the emitted correction stays
@@ -98,11 +98,11 @@ class HyperJEPAAdapter:
         # i.e. the hypernetwork reduced to a learned static LoRA.
         self.query_perturb = str(query_perturb)
         if self.query_perturb not in {"none", "swap", "mean", "zero"}:
-            raise ValueError("HyperJEPA query_perturb must be none|swap|mean|zero.")
+            raise ValueError("HyperLoRA query_perturb must be none|swap|mean|zero.")
         if self.refresh not in {"episode_start", "every_mpc"}:
-            raise ValueError("HyperJEPA refresh must be 'episode_start' or 'every_mpc'.")
+            raise ValueError("HyperLoRA refresh must be 'episode_start' or 'every_mpc'.")
         if self.refresh_interval < 1:
-            raise ValueError("HyperJEPA refresh_interval must be positive.")
+            raise ValueError("HyperLoRA refresh_interval must be positive.")
 
         if freeze_base:
             for param in self.wm.parameters():
@@ -218,7 +218,7 @@ class HyperJEPAAdapter:
             pass
         else:
             raise ValueError(
-                f"Unsupported HyperJEPA context_mode='{self.context_mode}'. Implemented "
+                f"Unsupported HyperLoRA context_mode='{self.context_mode}'. Implemented "
                 "modes: first_frame, hist_frames, state_only, transition_buffer."
             )
 
@@ -245,13 +245,13 @@ class HyperJEPAAdapter:
                     saved = metadata.get(field, default)
                     if str(saved) != str(requested):
                         raise ValueError(
-                            f"HyperJEPA checkpoint {field} is '{saved}', but planning "
+                            f"HyperLoRA checkpoint {field} is '{saved}', but planning "
                             f"requested '{requested}'."
                         )
                 saved_rank = metadata.get("rank")
                 if saved_rank is not None and int(saved_rank) != int(self.rank):
                     raise ValueError(
-                        f"HyperJEPA checkpoint rank is {saved_rank}, but planning "
+                        f"HyperLoRA checkpoint rank is {saved_rank}, but planning "
                         f"requested {self.rank}."
                     )
                 saved_transitions = metadata.get("context_transitions")
@@ -260,19 +260,19 @@ class HyperJEPAAdapter:
                     and int(saved_transitions) != self.transition_buffer_size
                 ):
                     raise ValueError(
-                        f"HyperJEPA checkpoint used {saved_transitions} context "
+                        f"HyperLoRA checkpoint used {saved_transitions} context "
                         f"transitions, but planning requested {self.transition_buffer_size}."
                     )
                 saved_gate = bool(metadata.get("adapter_gate", False))
                 if saved_gate != self.adapter_gate_enabled:
                     raise ValueError(
-                        "HyperJEPA checkpoint adapter_gate is "
+                        "HyperLoRA checkpoint adapter_gate is "
                         f"'{saved_gate}', but planning requested '{self.adapter_gate_enabled}'."
                     )
                 saved_freeze_a = bool(metadata.get("freeze_lora_A", False))
                 if saved_freeze_a != self.freeze_lora_A:
                     raise ValueError(
-                        "HyperJEPA checkpoint freeze_lora_A is "
+                        "HyperLoRA checkpoint freeze_lora_A is "
                         f"'{saved_freeze_a}', but planning requested '{self.freeze_lora_A}'."
                     )
         return self._loaded_payload
@@ -297,9 +297,9 @@ class HyperJEPAAdapter:
         payload = self._checkpoint_payload()
         if payload is not None:
             if "context_encoder" not in payload:
-                raise ValueError("Transformer HyperJEPA checkpoint has no context_encoder state")
+                raise ValueError("Transformer HyperLoRA checkpoint has no context_encoder state")
             self.context_encoder.load_state_dict(payload["context_encoder"])
-            log.info("Loaded HyperJEPA ordered context encoder from %s", self.checkpoint_path)
+            log.info("Loaded HyperLoRA ordered context encoder from %s", self.checkpoint_path)
         self.context_encoder.eval()
 
     def _ensure_adapter_gate(self, context_dim: int):
@@ -313,9 +313,9 @@ class HyperJEPAAdapter:
         payload = self._checkpoint_payload()
         if payload is not None:
             if "adapter_gate" not in payload:
-                raise ValueError("Gated HyperJEPA checkpoint has no adapter_gate state")
+                raise ValueError("Gated HyperLoRA checkpoint has no adapter_gate state")
             self.adapter_gate.load_state_dict(payload["adapter_gate"])
-            log.info("Loaded HyperJEPA adapter gate from %s", self.checkpoint_path)
+            log.info("Loaded HyperLoRA adapter gate from %s", self.checkpoint_path)
         self.adapter_gate.eval()
 
     def _ensure_generator(self, context_dim: int):
@@ -338,7 +338,7 @@ class HyperJEPAAdapter:
         if payload is not None:
             state = payload.get("hyper_lora", payload)
             self.generator.load_state_dict(state)
-            log.info("Loaded HyperJEPA generator checkpoint from %s", self.checkpoint_path)
+            log.info("Loaded HyperLoRA generator checkpoint from %s", self.checkpoint_path)
         self.generator.eval()
 
     def apply(self, obs):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train HyperJEPA (or Static LoRA) adapter checkpoints for PAARBench.
+"""Train HyperLoRA (or Static LoRA) adapter checkpoints for PAARBench.
 
 Ported from HyperJEPA's ``train_hyper_lora.py``. World-model + offline dataset
 loading goes through ``paarbench.offline``; AdaJEPA distillation teachers use
@@ -47,7 +47,7 @@ log = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train HyperJEPA LoRA generator.")
+    parser = argparse.ArgumentParser(description="Train HyperLoRA LoRA generator.")
     parser.add_argument("--ckpt-dir", required=True)
     parser.add_argument("--model-epoch", default="latest")
     parser.add_argument("--output-dir", required=True)
@@ -149,7 +149,7 @@ def parse_args():
         "--context-feature-kind",
         choices=["residual_action", "latent_residual_action"],
         default="residual_action",
-        help="Transition-buffer token contents for HyperJEPA context.",
+        help="Transition-buffer token contents for HyperLoRA context.",
     )
     parser.add_argument(
         "--context-transitions",
@@ -291,7 +291,7 @@ def parse_args():
         default="predlast_encfrozen",
         help=(
             "AdaJEPA update scope used for offline distillation. Use "
-            "'lora_predlast_all' for a LoRA-AdaJEPA teacher matched to HyperJEPA."
+            "'lora_predlast_all' for a LoRA-AdaJEPA teacher matched to HyperLoRA."
         ),
     )
     parser.add_argument("--teacher-lora-rank", type=int, default=None)

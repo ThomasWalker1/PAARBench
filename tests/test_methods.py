@@ -272,15 +272,15 @@ def test_isolation_is_opt_in_and_defaults_off():
     assert methods.load("toy", FIXTURES).requires_episode_isolation is False
 
 
-def test_adajepa_declares_isolation_and_hyperjepa_does_not():
+def test_adajepa_declares_isolation_and_hyperlora_does_not():
     """The two shipped methods differ exactly here, which is the point of the flag.
 
-    AdaJEPA owns an optimizer trajectory over shared weights; HyperJEPA emits a
+    AdaJEPA owns an optimizer trajectory over shared weights; HyperLoRA emits a
     per-episode correction from a per-episode context and batches correctly.
     """
     shipped = {m.name: m for m in methods.discover()}
     assert shipped["adajepa"].requires_episode_isolation is True
-    assert shipped["hyperjepa"].requires_episode_isolation is False
+    assert shipped["hyperlora"].requires_episode_isolation is False
 
 
 def test_isolated_commands_score_one_episode_of_the_cohort():

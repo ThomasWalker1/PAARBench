@@ -1,7 +1,7 @@
 """Shared helpers for offline method training.
 
 Methods that need a frozen base world model plus its training trajectories (PAD,
-HyperJEPA, Static LoRA) load them through here rather than reimplementing Hydra
+HyperLoRA, Static LoRA) load them through here rather than reimplementing Hydra
 dataset wiring.  Evaluation continues to go through ``plan.py``; this module is
 for *training* adapters and heads only.
 

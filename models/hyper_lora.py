@@ -58,7 +58,7 @@ def _target_kinds(scope: str) -> set[str]:
 def select_predictor_lora_module_names(predictor: nn.Module, scope: str) -> list[str]:
     layers = getattr(getattr(predictor, "transformer", None), "layers", None)
     if layers is None:
-        raise ValueError("HyperJEPA LoRA selection currently expects predictor.transformer.layers")
+        raise ValueError("HyperLoRA LoRA selection currently expects predictor.transformer.layers")
 
     target_layers = _layer_indices(len(layers), scope)
     kinds = _target_kinds(scope)
@@ -114,7 +114,7 @@ def install_predictor_lora(
         )
         targets.append(LoRATarget(name=name, module=module, spec=spec))
     log.info(
-        "Installed HyperJEPA LoRA scope=%s rank=%s on %s predictor modules",
+        "Installed HyperLoRA LoRA scope=%s rank=%s on %s predictor modules",
         scope,
         rank,
         len(targets),
@@ -417,7 +417,7 @@ def snapshot_base_weights(
     Folding mutates those weights, and the correction is recomputed from scratch at
     every replan, so the pristine values must be restored before each fold or the
     corrections would accumulate across replans -- exactly the cross-replan parameter
-    drift that HyperJEPA is supposed to avoid.
+    drift that HyperLoRA is supposed to avoid.
     """
     snapshot = {}
     for target in lora_targets:
@@ -456,7 +456,7 @@ def fold_hyper_tensors(
     ``apply_hyper_tensors`` routes every planner rollout through the LoRA path
     (``y = Wx + scale * B(Ax)``), which costs two extra matmuls per adapted linear per
     call.  With a 100-step GD-MPC inner loop that overhead dominates the adaptation
-    saving (+0.80 s/replan, making HyperJEPA *slower* end to end than the
+    saving (+0.80 s/replan, making HyperLoRA *slower* end to end than the
     online baseline it beats on the adaptation component).
 
     Since ``y = Wx + scale * x(BA)^T = x(W + scale*BA)^T``, the correction can be folded

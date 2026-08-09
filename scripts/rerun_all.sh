@@ -28,14 +28,14 @@ echo "[frozen] baseline columns (batched + individual) ..."
 "${EVAL[@]}" --frozen --isolated --per-gpu "$PER_GPU" --setting pusht
 
 for setting in pushobj pusht; do
-  echo "[method] hyperjepa $setting"
-  "${EVAL[@]}" hyperjepa --setting "$setting"
+  echo "[method] hyperlora $setting"
+  "${EVAL[@]}" hyperlora --setting "$setting"
   echo "[method] static_lora $setting"
   "${EVAL[@]}" static_lora --setting "$setting"
 done
 
-echo "[method] hyperjepa pushobj_shift (inherits selection)"
-"${EVAL[@]}" hyperjepa --setting pushobj_shift
+echo "[method] hyperlora pushobj_shift (inherits selection)"
+"${EVAL[@]}" hyperlora --setting pushobj_shift
 echo "[method] static_lora pushobj_shift (inherits selection)"
 "${EVAL[@]}" static_lora --setting pushobj_shift
 

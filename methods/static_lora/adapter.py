@@ -67,7 +67,7 @@ class StaticLoRAAdapter:
             raise ValueError(
                 f"{path} carries no 'static_lora' entry. This method needs a checkpoint "
                 f"trained with static_lora=true; a hypernetwork checkpoint stores a "
-                f"generator instead and belongs to the hyperjepa method."
+                f"generator instead and belongs to the hyperlora method."
             )
 
         expected = {t.name for t in self.lora_targets} | {t.name for t in self.norm_targets}

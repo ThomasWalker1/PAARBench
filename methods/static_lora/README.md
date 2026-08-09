@@ -1,7 +1,7 @@
 # Static LoRA
 
 Context-independent LoRA (+ LayerNorm delta) trained directly on the frozen
-MediumMaze / PushObj / PushT base. Same offline trainer as HyperJEPA with
+MediumMaze / PushObj / PushT base. Same offline trainer as HyperLoRA with
 `--static-lora`.
 
 ## Offline training

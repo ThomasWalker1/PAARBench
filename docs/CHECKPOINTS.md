@@ -37,17 +37,17 @@ sha256sum --check --ignore-missing TARGETS.sha256   # maze_eval rows
 
 | path pattern | method | retained epochs | deployed epoch |
 |---|---|---|---|
-| `checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_N.pth` | HyperJEPA, PushObj | 1–5 | 2 |
+| `checkpoints/pushobj_adapters/hyper_r2_distill0/hyper_lora_epoch_N.pth` | HyperLoRA, PushObj | 1–5 | 2 |
 | `checkpoints/pushobj_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, PushObj | 1–5 | 2 |
-| `checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_N.pth` | HyperJEPA, PushT | 1–4 | 3 |
+| `checkpoints/pvs_adapters/hyper_r2_distill0/hyper_lora_epoch_N.pth` | HyperLoRA, PushT | 1–4 | 3 |
 | `checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, PushT | 1–5 | 1 |
-| `checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_N.pth` | HyperJEPA, MediumMaze (+ OOD) | 1–5 | 2 |
+| `checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_N.pth` | HyperLoRA, MediumMaze (+ OOD) | 1–5 | 2 |
 | `checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, MediumMaze (+ OOD) | 1–5 | 2 |
 | `checkpoints/pad/pushobj_inverse_dynamics.pth` | PAD, PushObj / PushObj Shift | — | single checkpoint |
 | `checkpoints/pad/pusht_inverse_dynamics.pth` | PAD, PushT | — | single checkpoint |
 | `checkpoints/pad/maze_medium_inverse_dynamics.pth` | PAD, MediumMaze (+ OOD) | — | single checkpoint |
 
-Train MediumMaze HyperJEPA / Static LoRA adapters with
+Train MediumMaze HyperLoRA / Static LoRA adapters with
 `scripts/train_maze_adapters.sh` or the commands in [`MAZE.md`](MAZE.md). The
 `mediummaze_dynamics_shift` hydra config redacts the dataset root as `<path>`;
 pass `--data-path data/point_maze_medium` when training.

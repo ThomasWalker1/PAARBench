@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HyperJEPA — amortized hypernetwork — PAARBench</title>
+  <title>HyperLoRA — amortized hypernetwork — PAARBench</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
 <a class="back-link" href="../index.html">← Back to leaderboard</a>
 
 <div class="method-hero">
-  <h1>HyperJEPA — amortized hypernetwork</h1>
+  <h1>HyperLoRA — amortized hypernetwork</h1>
   <p class="lead">A hypernetwork reads the transitions the controller has executed this episode and emits a rank-2 LoRA correction for the predictor&#x27;s last block. The correction is regenerated from the frozen weights before every replan rather than accumulated, so adaptation cost is O(1) in the number of replans and the update cannot drift. Contrast with adajepa, which walks an optimizer trajectory.</p>
   <p class='reference'><strong>Reference:</strong> Predecessor project ~/HyperJEPA, planning/hyper_adapter.py @ 628dff7</p>
   <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span><span class="badge">maze_medium</span><span class="badge">maze_medium_low_density</span><span class="badge">maze_medium_high_damping</span><span class="badge">maze_diverse</span></div>
@@ -38,9 +38,9 @@
   <div class="card prose">
     <p>Amortized hypernetwork that emits a rank-2 LoRA correction for the predictor&#x27;s last block from the episode&#x27;s recent transitions. Corrections are regenerated from the frozen base before every replan.</p>
 <h3>Context alignment</h3>
-<p>One context feature is built per executed model action, from the observations at that action&#x27;s own frame boundaries. The boundaries are counted backwards from the end of the rollout the harness hands over: the evaluator replays the episode&#x27;s whole action sequence from its initial condition on every replan, so what arrives is the trajectory so far and only its tail belongs to the chunk just executed. <code>test_hyperjepa_alignment.py</code> asserts the exact frame pairs, because a feature built from the wrong pair is still a well-formed feature — the hypernetwork would simply be conditioned on evidence about a state the episode has left, and nothing in the logs would say so.</p>
+<p>One context feature is built per executed model action, from the observations at that action&#x27;s own frame boundaries. The boundaries are counted backwards from the end of the rollout the harness hands over: the evaluator replays the episode&#x27;s whole action sequence from its initial condition on every replan, so what arrives is the trajectory so far and only its tail belongs to the chunk just executed. <code>test_hyperlora_alignment.py</code> asserts the exact frame pairs, because a feature built from the wrong pair is still a well-formed feature — the hypernetwork would simply be conditioned on evidence about a state the episode has left, and nothing in the logs would say so.</p>
 <h3>Offline training</h3>
-<pre><code>.venv/bin/python methods/hyperjepa/train.py \
+<pre><code>.venv/bin/python methods/hyperlora/train.py \
   --ckpt-dir checkpoints/mediummaze_dynamics_shift \
   --model-epoch latest \
   --data-path data/point_maze_medium \
@@ -54,7 +54,7 @@
   --epochs 5 \
   --device cuda:0</code></pre>
 <p>Epoch files must be named <code>hyper_lora_epoch_{1..5}.pth</code> (see <code>method.yaml</code>). PAARBench selects the reported epoch on the selection cohort via <code>tunable.training_epoch</code>; do not use val-loss <code>best</code> for reported numbers.</p>
-<p>Or: <code>scripts/train_maze_adapters.sh</code> (HyperJEPA + Static LoRA in parallel).</p>
+<p>Or: <code>scripts/train_maze_adapters.sh</code> (HyperLoRA + Static LoRA in parallel).</p>
   </div>
 </section>
 
@@ -124,7 +124,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.607 (±0.020)</td>
   <td class="num delta-pos">+0.107</td>
   <td class="num">-5 [-12, -0]</td>
@@ -155,7 +155,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.322 (±0.022)</td>
   <td class="num delta-pos">+0.022</td>
   <td class="num">-3 [-11, +3]</td>
@@ -186,7 +186,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.453 (±0.023)</td>
   <td class="num delta-pos">+0.104</td>
   <td class="num">-0 [-5, +11]</td>
@@ -217,7 +217,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.793 (±0.033)</td>
   <td class="num delta-pos">+0.020</td>
   <td class="num">-0 [-0, +0]</td>
@@ -248,7 +248,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.807 (±0.032)</td>
   <td class="num delta-pos">+0.060</td>
   <td class="num">+1 [-1, +6]</td>
@@ -279,7 +279,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.533 (±0.041)</td>
   <td class="num delta-neg">-0.033</td>
   <td class="num">-0 [-1, +0]</td>
@@ -310,7 +310,7 @@
     </thead>
     <tbody>
       <tr>
-  <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
+  <td><a class="method-link" href="methods/hyperlora.html">HyperLoRA — amortized hypernetwork</a></td>
   <td class="num">0.587 (±0.040)</td>
   <td class="num delta-neg">-0.007</td>
   <td class="num">-0 [-1, +1]</td>

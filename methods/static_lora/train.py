@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Train Static LoRA adapter checkpoints for PAARBench.
 
-Thin wrapper around ``methods/hyperjepa/train.py`` with ``--static-lora``.
-HyperJEPA and Static LoRA share the same offline trainer; only the adaptation
+Thin wrapper around ``methods/hyperlora/train.py`` with ``--static-lora``.
+HyperLoRA and Static LoRA share the same offline trainer; only the adaptation
 parameterization differs.
 """
 from __future__ import annotations
@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-TRAINER = REPO_ROOT / "methods" / "hyperjepa" / "train.py"
+TRAINER = REPO_ROOT / "methods" / "hyperlora" / "train.py"
 
 
 def main(argv: list[str] | None = None) -> None:
