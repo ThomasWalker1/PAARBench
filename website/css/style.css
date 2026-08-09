@@ -447,17 +447,19 @@ pre code {
   max-width: 42rem;
 }
 
-.prose p {
+.prose p,
+.about-copy p {
   margin: 0 0 1rem;
 }
 
-.prose p:last-child {
+.prose p:last-child,
+.about-copy p:last-child {
   margin-bottom: 0;
 }
 
-/* About copy spans the full content column. */
-#about .prose,
-#about .prose > p {
+/* About copy always spans the full content column. */
+.about-copy,
+.about-copy > p {
   max-width: none;
   width: 100%;
 }

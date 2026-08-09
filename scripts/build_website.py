@@ -386,7 +386,7 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
     body = f"""
 <section id="about">
   <h2>About the Benchmark</h2>
-  <div class="prose">
+  <div class="about-copy">
     <p class="lead">
       PAARBench (PlanActAdaptRepeatBench) evaluates <strong>test-time adaptation (TTA) strategies</strong>
       for latent world models in closed-loop control. Each submission declares at most two tunable
