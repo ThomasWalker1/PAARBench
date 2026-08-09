@@ -62,6 +62,44 @@ The parameterization (`predlast_all`, rank 2, `lora_scale` 1.0), AdamW, and
 meant to be about the objective and the brake, not about capacity or optimizer
 tuning.
 
+## Results
+
+Selection froze `pred_lr: 2e-3, horizon: 5` on **both** selectable settings, chosen
+independently, after 12 columns each (`horizon: 5` sat on the initial grid's boundary,
+so that axis expanded once; `horizon: 8` then scored below it). `horizon: 5` beat
+`horizon: 1` at the selected learning rate on both — 0.685 vs 0.670 on `pushobj`,
+0.427 vs 0.407 on `pusht` — so the multi-step objective is what the protocol picked,
+not what it tolerated.
+
+| setting | HOVER success | AdaJEPA | median dist Δ | compounding | catastrophe | regret | adapt s/replan |
+|---|---|---|---|---|---|---|---|
+| `pushobj` | **0.697** | 0.697 | +8 vs +6 | +0.22 vs +0.24 | 14.4% vs 17.1% | 56%/+156 vs 57%/+256 | 0.239 vs 0.294 |
+| `pushobj_shift` | **0.409** | 0.400 | +1 vs +16 | +0.27 vs +0.97 | 15.9% vs 16.9% | 51%/+204 vs 59%/+205 | 0.239 vs 0.290 |
+| `pusht` | **0.478** | 0.440 | +16 vs +55 | +1.23 vs +3.87 | 22.2% vs 26.8% | 55%/+274 vs 66%/+549 | 0.238 vs 0.293 |
+
+Read the success column carefully: +0.038 on `pusht` is ~1.6 SE and the other two are
+inside one SE, so on success alone HOVER and AdaJEPA are not separable at these n. What
+*is* separable is the risk side, and it moves in the same direction on all three
+settings. On `pushobj_shift` and `pusht` AdaJEPA's median paired distance change and
+compounding slope both have intervals excluding zero — it ends measurably further from
+the goal than frozen on shared failures, and gets worse per replan — while HOVER's
+compounding interval straddles zero on `pushobj_shift` and its median distance change
+straddles zero on all three. The ordering across settings tracks how much room the
+correction has to go wrong: a tie where AdaJEPA barely drifts (`pushobj`), the largest
+gain where it drifts hardest (`pusht`).
+
+HOVER does not match HyperJEPA's risk profile on `pusht` (compounding −0.45,
+catastrophe 10.7%) despite scoring above it on success. A correction that is recomputed
+from frozen weights every replan compounds less than one that is braked, and the brake
+does not close that gap.
+
+Diagnostics from the `pushobj` selection sweep, which the record does not carry:
+fitting lowers *out-of-sample* single-step prediction error to a median 0.77× frozen at
+`horizon: 1`, rising to 0.92× at `horizon: 5` — the multi-step objective spends
+single-step accuracy on rollout consistency, as intended. The brake fires on 7–12% of
+episodes, 0.1–0.2 times per episode: loose enough to leave adaptation alone, which is
+why the median trajectory is unchanged while the tails are not.
+
 ## Selection
 
 Two axes, 9 initial cells — the same selection cost as AdaJEPA:
