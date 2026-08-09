@@ -123,6 +123,7 @@ section h3 {
 .lead {
   font-size: 1.08rem;
   color: var(--text-muted);
+  max-width: none;
 }
 
 .grid-2 {
@@ -457,6 +458,11 @@ pre code {
 /* Lead paragraphs of the about blurb span the full content column. */
 #about .prose {
   max-width: none;
+}
+
+#about .prose > p:nth-child(-n+2) {
+  max-width: none;
+  width: 100%;
 }
 
 #about .prose > p:nth-child(n+3) {
