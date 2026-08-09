@@ -133,26 +133,32 @@ HEADER = ("| method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | "
 RULE = "|---|---|---|---|---|---|---|---|---|---|---|---|"
 
 
+def _display_name(record: dict) -> str:
+    """Published tables use a single Frozen row (batched reference), matching the paper."""
+    if record.get("method") == "frozen":
+        return "Frozen"
+    return record.get("display_name") or record.get("method")
+
+
 def _table(rows, baseline, detail, *, isolated_baseline=None) -> list:
+    del isolated_baseline  # kept for call-site compatibility; main tables use batched only
     out = [HEADER, RULE]
     for r in rows:
+        # Episode-isolated frozen is retained on disk for diagnostics but omitted from
+        # the published board; see papers/paarbench Appendix (frozen modes).
+        if r.get("method") == "frozen_isolated":
+            continue
         s = r.get("success")
         n = r.get("n", 0)
+        name = _display_name(r)
         if not r.get("complete", False):
-            out.append(f"| {r['display_name']} | *incomplete* | | | | | | | | | {n} | |")
+            out.append(f"| {name} | *incomplete* | | | | | | | | | {n} | |")
             continue
         se = binomial_se(s, n)
         d = detail.get(r["method"], {})
-        # An episode-isolated arm's gain is measured against frozen run in the same
-        # mode, for the same reason its continuous columns are: the two modes give
-        # different frozen success rates (pushobj 0.4883 isolated vs 0.4850 batched), and
-        # charging that difference to the method is exactly the artifact being removed.
+        # Main tables pair every method against the batched frozen reference, matching
+        # the paper. Batched vs isolated frozen agree closely on released cohorts.
         ref = baseline
-        if r.get("episode_isolated"):
-            if isolated_baseline is not None:
-                ref = isolated_baseline
-            elif detail.get("frozen_isolated", {}).get("_success") is not None:
-                ref = detail["frozen_isolated"]["_success"]
         delta = "—" if ref is None or is_frozen(r["method"]) else f"{s - ref:+.3f}"
         # The continuous metrics come from the per-episode record on disk, the
         # success rate from the stored result record. If a re-run is in flight they
@@ -164,7 +170,7 @@ def _table(rows, baseline, detail, *, isolated_baseline=None) -> list:
                   f"(re-run in progress?)", file=sys.stderr)
             d = {}
         out.append(
-            f"| {r['display_name']} | {s:.3f} | {se:.3f} | {delta} | "
+            f"| {name} | {s:.3f} | {se:.3f} | {delta} | "
             f"{d.get('distance', '—')} | {d.get('catastrophe', '—')} | "
             f"{d.get('compounding', '—')} | {d.get('regret', '—')} | "
             f"{d.get('adapt_s', '—')} | {d.get('peak_mb', '—')} | {n} | "
@@ -216,7 +222,8 @@ def render(records, setting_id: str) -> str:
         out.append("")
 
     detail = _metric_detail(setting_id)
-    _warn_unmatched_reference(setting_id, detail, records)
+    # Main tables intentionally pair against batched Frozen (paper appendix); do not
+    # warn about mode-matched frozen_isolated here.
     out.extend(_table(submissions, baseline, detail,
                       isolated_baseline=isolated_baseline))
     out.append("")
@@ -247,9 +254,8 @@ def render(records, setting_id: str) -> str:
         "has them and they were written down rather than selected, which is a weaker "
         "claim and must not read as the same number; `unknown` means the declared rule "
         "was skipped, so the tuning happened somewhere this record cannot price.\n"
-        "- **vs frozen** — absolute success change vs the mode-matched frozen arm: "
-        "Frozen (Batched) for batched methods, Frozen (Individual) for "
-        "episode-isolated methods."
+        "- **vs frozen** — absolute success change vs the batched Frozen reference "
+        "(the same reference used for paired continuous metrics in the main tables)."
     )
     out.append("")
     out.append(
@@ -316,8 +322,11 @@ def _metric_detail(setting_id: str) -> dict:
 
     detail = {}
     for method in sorted(frame["method"].unique()):
+        if method == "frozen_isolated":
+            continue
         try:
-            s = metrics.summarize(frame, method, setting_id)
+            # Match the paper: pair every arm against the batched frozen column.
+            s = metrics.summarize(frame, method, setting_id, frozen_method="frozen")
         except Exception:  # noqa: BLE001
             continue
         row = {"_n": s.get("n", 0), "_reference": s.get("reference"),

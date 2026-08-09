@@ -207,25 +207,24 @@ def main() -> int:
 
     # ---- 1. selection -----------------------------------------------------------
     if args.frozen:
-        # Two leaderboard arms: batched and episode-isolated. The modes do not agree
-        # even for NullAdapter (measured 4% outcome flips on pushobj), so isolated
-        # methods must pair against Frozen (Individual) and batched methods against
-        # Frozen (Batched). Tags match paarbench.metrics.ISOLATED_REFERENCE.
+        # Main published tables use a single batched Frozen reference (see the paper
+        # appendix on frozen modes). --isolated still writes frozen_isolated/ for
+        # diagnostics, but its display name is not shown on the leaderboard.
         isolation = bool(args.isolated)
         if isolation:
             name = "frozen_isolated"
             display = "Frozen (Individual)"
         else:
             name = "frozen"
-            display = "Frozen (Batched)"
+            display = "Frozen"
         params, selection_cost, selection_rule = {}, 0, "none (no hyperparameters)"
         # Frozen's zero is the only unqualified one on the board: it has nothing to
         # tune. Every other zero means something weaker -- see COST_BASIS below.
         cost_basis = "none"
         if isolation:
             print(f"[isolate] {name}: one process per episode "
-                  f"({setting.n_evals} per shape). Mode-matched reference for "
-                  f"requires_episode_isolation methods.", flush=True)
+                  f"({setting.n_evals} per shape). Diagnostic arm; main tables pair "
+                  f"against batched Frozen.", flush=True)
     else:
         method = methods.load(args.method)
         problems = methods.validate(method)

@@ -1,7 +1,7 @@
 {
   "method": "frozen",
   "method_dir": "frozen",
-  "display_name": "Frozen (Batched)",
+  "display_name": "Frozen",
   "setting": "pusht",
   "params": {},
   "submission": true,

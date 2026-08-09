@@ -442,12 +442,25 @@ pre code {
   font-size: 0.92rem;
 }
 
+.prose {
+  max-width: 42rem;
+}
+
 .prose p {
   margin: 0 0 1rem;
 }
 
 .prose p:last-child {
   margin-bottom: 0;
+}
+
+/* Lead paragraphs of the about blurb span the full content column. */
+#about .prose {
+  max-width: none;
+}
+
+#about .prose > p:nth-child(n+3) {
+  max-width: 42rem;
 }
 
 .site-footer {

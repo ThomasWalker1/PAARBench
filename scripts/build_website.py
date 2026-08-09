@@ -15,10 +15,10 @@ METHODS = ROOT / "methods"
 LEADERBOARD = ROOT / "LEADERBOARD.md"
 
 METHOD_ORDER = [
-    "adajepa", "hyperjepa", "static_lora", "pad", "frozen", "frozen_isolated",
+    "adajepa", "hyperjepa", "static_lora", "pad", "frozen",
 ]
 
-FROZEN_SLUGS = frozenset({"frozen", "frozen_isolated"})
+FROZEN_SLUGS = frozenset({"frozen"})
 SETTING_ORDER = (
     "pushobj", "pushobj_shift", "pusht", "maze_medium",
     "maze_medium_low_density", "maze_medium_high_damping",
@@ -28,32 +28,15 @@ SETTING_ORDER = (
 FROZEN_META = {
     "frozen": {
         "name": "frozen",
-        "display_name": "Frozen (Batched)",
+        "display_name": "Frozen",
         "description": (
-            "The built-in do-nothing baseline evaluated as a batched cohort: the world "
-            "model and planner run with frozen pretrained weights, all episodes of a "
-            "shape planned in one process. Batched methods are measured against this "
-            "reference on paired episodes."
+            "The built-in do-nothing baseline: the world model and planner run with "
+            "frozen pretrained weights. Paired metrics compare every adapted method "
+            "against this reference on the same episodes (batched evaluation mode)."
         ),
         "reference": "",
         "settings": list(SETTING_ORDER),
         "requires_episode_isolation": False,
-        "selection": "",
-        "params": {},
-        "readme": "",
-    },
-    "frozen_isolated": {
-        "name": "frozen_isolated",
-        "display_name": "Frozen (Individual)",
-        "description": (
-            "The same NullAdapter baseline evaluated one process per episode. Required "
-            "as the mode-matched reference for methods that declare "
-            "requires_episode_isolation: the batched and isolated execution modes are "
-            "not bit-identical even for frozen weights."
-        ),
-        "reference": "",
-        "settings": list(SETTING_ORDER),
-        "requires_episode_isolation": True,
         "selection": "",
         "params": {},
         "readme": "",
@@ -239,6 +222,12 @@ def parse_leaderboard_tables() -> dict[str, list[dict[str, str]]]:
         if not headers:
             continue
         row = {headers[i]: cells[i] if i < len(cells) else "" for i in range(len(headers))}
+        method = row.get("method", "")
+        # Match the paper: one Frozen row; hide the episode-isolated frozen arm.
+        if method == "Frozen (Individual)":
+            continue
+        if method == "Frozen (Batched)":
+            row["method"] = "Frozen"
         sections[current_setting].append(row)
     return sections
 
@@ -525,10 +514,8 @@ def render_index(methods: dict[str, dict], tables: dict[str, list[dict]]) -> str
     <li>
       <strong>Run the full protocol</strong>
 <pre><code>.venv/bin/python scripts/evaluate.py my_method --setting pushobj --gpus 0,1,2,3</code></pre>
-      Also run the frozen baseline for paired metrics. Batched methods need
-      Frozen (Batched); episode-isolated methods also need Frozen (Individual):
-<pre><code>.venv/bin/python scripts/evaluate.py --frozen --setting pushobj
-.venv/bin/python scripts/evaluate.py --frozen --isolated --setting pushobj --per-gpu 4</code></pre>
+      Also run the frozen baseline for paired metrics:
+<pre><code>.venv/bin/python scripts/evaluate.py --frozen --setting pushobj</code></pre>
     </li>
     <li>
       <strong>Open a pull request</strong>

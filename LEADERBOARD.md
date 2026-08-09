@@ -9,12 +9,11 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Frozen (Individual) | 0.653 | 0.039 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
-| AdaJEPA — online gradient TTA | 0.640 | 0.039 | -0.013 | -1 [-2, -0] | 3.6% [0%, 11%] | -0.05 [-0.11, -0.02] | 25% / +2 | 0.296 | 184 | 150 | 12 (inherited) |
-| PAD — inverse-dynamics encoder adaptation | 0.640 | 0.039 | -0.013 | -0 [-0, +1] | 9.4% [0%, 22%] | -0.02 [-0.04, +0.01] | 47% / +3 | 0.028 | 331 | 150 | 18 (inherited) |
+| AdaJEPA — online gradient TTA | 0.640 | 0.039 | +0.047 | -1 [-2, -0] | 5.9% [0%, 15%] | -0.06 [-0.10, -0.02] | 29% / +2 | 0.296 | 184 | 150 | 12 (inherited) |
+| PAD — inverse-dynamics encoder adaptation | 0.640 | 0.039 | +0.047 | -0 [-1, +0] | 8.1% [0%, 19%] | -0.01 [-0.04, +0.02] | 41% / +3 | 0.028 | 331 | 150 | 18 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.607 | 0.040 | +0.013 | -0 [-1, +0] | 12.5% [2%, 22%] | +0.01 [-0.01, +0.02] | 48% / +3 | 0.131 | 682 | 150 | 3 (inherited) |
 | Static LoRA — unconditioned correction | 0.607 | 0.040 | +0.013 | +0 [-0, +1] | 17.9% [8%, 31%] | -0.00 [-0.02, +0.01] | 54% / +4 | 0.000 | 169 | 150 | 3 (inherited) |
-| Frozen (Batched) | 0.593 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
+| Frozen | 0.593 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -24,7 +23,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
@@ -36,12 +35,11 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. Select
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.853 | 0.029 | +0.080 | +0 [-0, +1] | 0.0% [0%, 0%] | +0.01 [-0.00, +0.05] | 73% / +1 | 0.296 | 184 | 150 | 12 |
-| PAD — inverse-dynamics encoder adaptation | 0.840 | 0.030 | +0.067 | +1 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.01, +0.06] | 80% / +1 | 0.030 | 331 | 150 | 18 |
+| AdaJEPA — online gradient TTA | 0.853 | 0.029 | +0.080 | +0 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.00, +0.09] | 82% / +2 | 0.296 | 184 | 150 | 12 |
+| PAD — inverse-dynamics encoder adaptation | 0.840 | 0.030 | +0.067 | +1 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.01, +0.06] | 88% / +2 | 0.030 | 331 | 150 | 18 |
 | HyperJEPA — amortized hypernetwork | 0.780 | 0.034 | +0.007 | -0 [-1, +0] | 4.5% [0%, 14%] | -0.00 [-0.03, +0.03] | 36% / +2 | 0.161 | 682 | 150 | 3 |
 | Static LoRA — unconditioned correction | 0.780 | 0.034 | +0.007 | -0 [-0, +0] | 0.0% [0%, 0%] | -0.01 [-0.03, +0.01] | 36% / +0 | 0.000 | 169 | 150 | 3 |
-| Frozen (Batched) | 0.773 | 0.034 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
-| Frozen (Individual) | 0.773 | 0.034 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
+| Frozen | 0.773 | 0.034 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -51,7 +49,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. Select
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
@@ -63,12 +61,11 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.747 | 0.036 | +0.173 | +0 [-0, +1] | 0.0% [0%, 0%] | +0.01 [+0.00, +0.03] | 61% / +2 | 0.298 | 184 | 150 | 12 (inherited) |
-| PAD — inverse-dynamics encoder adaptation | 0.733 | 0.036 | +0.160 | +0 [-0, +1] | 0.0% [0%, 0%] | +0.01 [-0.00, +0.03] | 62% / +1 | 0.028 | 331 | 150 | 18 (inherited) |
+| AdaJEPA — online gradient TTA | 0.747 | 0.036 | +0.180 | +0 [-0, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.03] | 52% / +2 | 0.298 | 184 | 150 | 12 (inherited) |
+| PAD — inverse-dynamics encoder adaptation | 0.733 | 0.036 | +0.167 | +0 [+0, +0] | 0.0% [0%, 0%] | +0.02 [+0.01, +0.04] | 67% / +2 | 0.028 | 331 | 150 | 18 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.607 | 0.040 | +0.040 | +0 [-0, +0] | 2.2% [0%, 7%] | +0.00 [-0.02, +0.01] | 54% / +2 | 0.145 | 682 | 150 | 3 (inherited) |
-| Frozen (Individual) | 0.573 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 | Static LoRA — unconditioned correction | 0.573 | 0.040 | +0.007 | -0 [-0, +0] | 4.3% [0%, 11%] | +0.00 [-0.01, +0.01] | 43% / +2 | 0.000 | 169 | 150 | 3 (inherited) |
-| Frozen (Batched) | 0.567 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
+| Frozen | 0.567 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -78,7 +75,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
@@ -90,12 +87,11 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.827 | 0.031 | +0.027 | +2 [-1, +3] | 12.5% [0%, 31%] | +0.05 [-0.05, +0.17] | 62% / +5 | 0.298 | 184 | 150 | 12 (inherited) |
-| Frozen (Individual) | 0.800 | 0.033 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
+| AdaJEPA — online gradient TTA | 0.827 | 0.031 | +0.080 | +4 [-0, +5] | 26.7% [7%, 53%] | +0.04 [-0.03, +0.14] | 73% / +7 | 0.298 | 184 | 150 | 12 (inherited) |
 | Static LoRA — unconditioned correction | 0.787 | 0.033 | +0.040 | +1 [-2, +2] | 16.7% [0%, 33%] | +0.02 [-0.03, +0.07] | 56% / +5 | 0.000 | 169 | 150 | 3 (inherited) |
-| Frozen (Batched) | 0.747 | 0.036 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
+| Frozen | 0.747 | 0.036 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 | HyperJEPA — amortized hypernetwork | 0.747 | 0.036 | +0.000 | +0 [-1, +4] | 25.0% [10%, 45%] | +0.02 [-0.03, +0.08] | 60% / +9 | 0.145 | 682 | 150 | 3 (inherited) |
-| PAD — inverse-dynamics encoder adaptation | 0.747 | 0.036 | -0.053 | +1 [-1, +2] | 16.7% [0%, 33%] | +0.03 [-0.03, +0.17] | 61% / +5 | 0.028 | 331 | 150 | 18 (inherited) |
+| PAD — inverse-dynamics encoder adaptation | 0.747 | 0.036 | +0.000 | +2 [+1, +4] | 18.2% [5%, 36%] | +0.08 [+0.02, +0.19] | 82% / +5 | 0.028 | 331 | 150 | 18 (inherited) |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -105,7 +101,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
@@ -117,12 +113,11 @@ Test cohorts: seeds [100, 200, 300], 4 shapes, n=50 per shape per cohort. Select
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.697 | 0.019 | +0.197 | +7 [+0, +19] | 16.6% [11%, 23%] | +0.25 [-0.22, +1.00] | 58% / +251 | 0.294 | 177 | 600 | 9 |
+| AdaJEPA — online gradient TTA | 0.697 | 0.019 | +0.197 | +6 [-1, +17] | 17.1% [12%, 23%] | +0.24 [-0.25, +0.96] | 57% / +256 | 0.294 | 177 | 600 | 9 |
 | HyperJEPA — amortized hypernetwork | 0.615 | 0.020 | +0.115 | -11 [-17, -3] | 7.9% [4%, 12%] | -0.08 [-0.24, +0.04] | 42% / +74 | 0.157 | 977 | 600 | 3 |
-| PAD — inverse-dynamics encoder adaptation | 0.575 | 0.020 | +0.075 | +1 [-5, +6] | 7.7% [4%, 12%] | +0.14 [-0.15, +0.45] | 51% / +111 | 0.029 | 290 | 600 | 12 |
+| PAD — inverse-dynamics encoder adaptation | 0.575 | 0.020 | +0.075 | +2 [-4, +8] | 7.7% [4%, 11%] | +0.14 [-0.17, +0.49] | 52% / +119 | 0.029 | 290 | 600 | 12 |
 | Static LoRA — unconditioned correction | 0.547 | 0.020 | +0.047 | -5 [-9, +0] | 5.2% [3%, 8%] | -0.03 [-0.16, +0.11] | 44% / +57 | 0.000 | 157 | 600 | 3 |
-| Frozen (Batched) | 0.500 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
-| Frozen (Individual) | 0.500 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
+| Frozen | 0.500 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -132,7 +127,7 @@ Test cohorts: seeds [100, 200, 300], 4 shapes, n=50 per shape per cohort. Select
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
@@ -144,11 +139,10 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. No sel
 
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| AdaJEPA — online gradient TTA | 0.400 | 0.023 | +0.100 | +16 [+2, +27] | 17.6% [13%, 22%] | +0.90 [+0.28, +1.53] | 57% / +203 | 0.290 | 177 | 450 | 9 (inherited) |
-| PAD — inverse-dynamics encoder adaptation | 0.353 | 0.023 | +0.053 | +6 [-2, +9] | 10.8% [7%, 15%] | +0.24 [-0.13, +0.50] | 54% / +136 | 0.029 | 290 | 450 | 12 (inherited) |
+| AdaJEPA — online gradient TTA | 0.400 | 0.023 | +0.100 | +16 [+6, +28] | 16.9% [12%, 22%] | +0.97 [+0.39, +1.61] | 59% / +205 | 0.290 | 177 | 450 | 9 (inherited) |
+| PAD — inverse-dynamics encoder adaptation | 0.353 | 0.023 | +0.053 | +5 [-2, +9] | 10.4% [7%, 14%] | +0.25 [-0.10, +0.51] | 55% / +149 | 0.029 | 290 | 450 | 12 (inherited) |
 | HyperJEPA — amortized hypernetwork | 0.324 | 0.022 | +0.024 | -4 [-12, +3] | 8.0% [5%, 11%] | +0.25 [-0.01, +0.63] | 47% / +91 | 0.159 | 977 | 450 | 3 (inherited) |
-| Frozen (Batched) | 0.300 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
-| Frozen (Individual) | 0.300 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
+| Frozen | 0.300 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
 | Static LoRA — unconditioned correction | 0.296 | 0.022 | -0.004 | -2 [-9, +2] | 8.6% [6%, 12%] | -0.03 [-0.27, +0.18] | 48% / +102 | 0.000 | 157 | 450 | 3 (inherited) |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
@@ -159,7 +153,7 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. No sel
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 
@@ -172,11 +166,10 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. Select
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | HyperJEPA — amortized hypernetwork | 0.458 | 0.023 | +0.109 | -7 [-21, +8] | 10.7% [7%, 15%] | -0.45 [-0.77, +0.02] | 47% / +140 | 0.144 | 977 | 450 | 4 |
-| AdaJEPA — online gradient TTA | 0.440 | 0.023 | +0.096 | +49 [+33, +65] | 26.8% [21%, 33%] | +3.65 [+2.28, +4.86] | 65% / +595 | 0.293 | 177 | 450 | 12 |
-| PAD — inverse-dynamics encoder adaptation | 0.360 | 0.023 | +0.016 | +5 [-4, +13] | 13.3% [9%, 17%] | +0.40 [-0.20, +0.87] | 54% / +186 | 0.061 | 290 | 450 | 9 |
+| AdaJEPA — online gradient TTA | 0.440 | 0.023 | +0.091 | +55 [+36, +84] | 26.8% [21%, 33%] | +3.87 [+2.61, +5.16] | 66% / +549 | 0.293 | 177 | 450 | 12 |
+| PAD — inverse-dynamics encoder adaptation | 0.360 | 0.023 | +0.011 | +6 [-4, +12] | 13.3% [10%, 17%] | +0.39 [-0.05, +0.88] | 54% / +181 | 0.061 | 290 | 450 | 9 |
 | Static LoRA — unconditioned correction | 0.360 | 0.023 | +0.011 | +7 [-0, +20] | 11.6% [8%, 16%] | +0.21 [-0.00, +0.53] | 55% / +181 | 0.000 | 157 | 450 | 4 |
-| Frozen (Batched) | 0.349 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
-| Frozen (Individual) | 0.344 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
+| Frozen | 0.349 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -186,7 +179,7 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. Select
 - **regret** — fraction of episodes where adapting ended further from the goal than not adapting, and the 90th-percentile size of that loss. A method that can be worse than doing nothing has to show it.
 - **adapt s/replan** and **peak MB** — adaptation cost, separated from planner cost and measured around the adapter hooks only.
 - **selection cost** — evaluation columns the method's selection rule consumed. `0` means the method has no hyperparameters to tune; `0 (authored)` means it has them and they were written down rather than selected, which is a weaker claim and must not read as the same number; `unknown` means the declared rule was skipped, so the tuning happened somewhere this record cannot price.
-- **vs frozen** — absolute success change vs the mode-matched frozen arm: Frozen (Batched) for batched methods, Frozen (Individual) for episode-isolated methods.
+- **vs frozen** — absolute success change vs the batched Frozen reference (the same reference used for paired continuous metrics in the main tables).
 
 Intervals are 95% percentile bootstrap over **episodes** (2000 resamples, fixed seed so a row does not move between renders). Episodes are the unit of independence: replans within an episode are a trajectory, not independent draws.
 

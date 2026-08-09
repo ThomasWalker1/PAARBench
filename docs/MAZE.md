@@ -109,13 +109,11 @@ Published MediumMaze selection chose **epoch 2** for both HyperJEPA and Static L
 ## Evaluate
 
 Run nominal selections first. The shifts then read their frozen result record and
-cannot start until it exists. Episode-isolated methods (AdaJEPA, PAD) should also
-have a mode-matched Frozen (Individual) baseline:
+cannot start until it exists. Published tables pair every method against batched
+Frozen (`--frozen`); optional `--frozen --isolated` runs are appendix diagnostics only.
 
 ```bash
 .venv/bin/python scripts/evaluate.py --frozen --setting maze_medium --gpus 0,1,2,3,4,5,6,7
-.venv/bin/python scripts/evaluate.py --frozen --isolated --setting maze_medium \
-  --gpus 0,1,2,3,4,5,6,7 --per-gpu 4
 
 .venv/bin/python scripts/evaluate.py adajepa --setting maze_medium \
   --gpus 0,1,2,3,4,5,6,7 --per-gpu 1
@@ -129,8 +127,6 @@ have a mode-matched Frozen (Individual) baseline:
 # Inherited OOD (after the nominal result record exists):
 for setting in maze_medium_low_density maze_medium_high_damping maze_diverse; do
   .venv/bin/python scripts/evaluate.py --frozen --setting "$setting" --gpus 0,1,2,3,4,5,6,7
-  .venv/bin/python scripts/evaluate.py --frozen --isolated --setting "$setting" \
-    --gpus 0,1,2,3,4,5,6,7 --per-gpu 4
   for method in adajepa hyperjepa static_lora pad; do
     .venv/bin/python scripts/evaluate.py "$method" --setting "$setting" \
       --gpus 0,1,2,3,4,5,6,7 --per-gpu 1

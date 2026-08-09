@@ -1,7 +1,7 @@
 {
   "method": "frozen",
   "method_dir": "frozen",
-  "display_name": "Frozen (Batched)",
+  "display_name": "Frozen",
   "setting": "maze_medium_low_density",
   "params": {},
   "submission": true,

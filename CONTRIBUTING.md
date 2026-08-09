@@ -46,23 +46,17 @@ min on 4 GPUs; an episode-isolated method's is `n_evals` times that.
 ## Frozen baselines are already in the tree
 
 Every continuous metric is defined against a frozen column on the *same* episodes.
-Held-out `episodes.jsonl` for published methods — including **Frozen (Batched)** and
-**Frozen (Individual)** — are tracked under `eval_outputs/` (see
-[`docs/EVAL_RECORDS.md`](docs/EVAL_RECORDS.md)). You do **not** need to re-run frozen just
-to populate continuous columns on a fresh clone.
+Held-out `episodes.jsonl` for published methods — including **Frozen** — are tracked
+under `eval_outputs/` (see [`docs/EVAL_RECORDS.md`](docs/EVAL_RECORDS.md)). You do
+**not** need to re-run frozen just to populate continuous columns on a fresh clone.
 
-You may still re-run frozen as a self-test of your stack. If your method declares
-`requires_episode_isolation: true`, pair against **Frozen (Individual)** — the two
-evaluation modes do not agree, and pairing across them folds that difference into your
-method's effect:
+You may still re-run frozen as a self-test of your stack. Published tables pair every
+method against the batched Frozen reference (see the paper appendix on evaluation modes):
 
 ```bash
 .venv/bin/python scripts/evaluate.py --frozen --setting pushobj
-.venv/bin/python scripts/evaluate.py --frozen --isolated --setting pushobj --per-gpu 4
 # Maze (see docs/MAZE.md):
 .venv/bin/python scripts/evaluate.py --frozen --setting maze_medium --gpus 0,1,2,3,4,5,6,7
-.venv/bin/python scripts/evaluate.py --frozen --isolated --setting maze_medium \
-  --gpus 0,1,2,3,4,5,6,7 --per-gpu 4
 ```
 
 ## Regenerating `LEADERBOARD.md`
