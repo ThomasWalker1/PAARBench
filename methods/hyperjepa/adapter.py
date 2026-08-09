@@ -4,7 +4,6 @@ import logging
 from collections import deque
 from pathlib import Path
 
-import numpy as np
 import torch
 
 from models.hyper_lora import (
@@ -427,11 +426,20 @@ class HyperJEPAAdapter:
 
     @torch.no_grad()
     def append_executed_transitions(self, obs_0, actions, observed_obs, frameskip: int):
-        """Append one properly aligned feature for every executed MPC action.
+        """Append one aligned feature for every executed MPC action.
 
-        ``observed_obs`` contains raw environment observations at every simulator
-        step, including the initial state.  Each planner action corresponds to
-        ``frameskip`` simulator steps, so its target is sampled at that boundary.
+        ``observed_obs`` carries raw environment observations at simulator
+        resolution.  Each planner action spans ``frameskip`` simulator steps, so the
+        transitions this chunk produced are bounded by the frames at those strides.
+
+        The boundaries are counted **backwards from the end**.  The evaluator replays
+        the episode's whole action sequence from its initial condition on every
+        replan, so what arrives here is the trajectory so far and only its tail
+        belongs to the chunk that was just executed.  Counting from the front would
+        pair the current observation with the endpoint of the episode's *first*
+        action from the second replan onward, which is a mis-specified transition
+        rather than an error: the feature is still well-formed, and the hypernetwork
+        would be conditioned on evidence describing a state the episode has left.
         """
         if self.context_mode != "transition_buffer":
             return {}
@@ -440,29 +448,26 @@ class HyperJEPAAdapter:
         if frameskip < 1:
             raise ValueError("frameskip must be positive")
         steps = actions.shape[1]
-        required_frames = 1 + steps * int(frameskip)
-        if any(value.shape[1] < required_frames for value in observed_obs.values()):
-            raise ValueError(
-                f"Observed rollout is too short for {steps} actions at frameskip {frameskip}"
-            )
+        stride = int(frameskip)
+        # obs_0 is the frame the chunk started from; it must coincide with the first
+        # boundary below, and the boundaries are read from observed_obs so that the
+        # source and target of every transition come from one consistent rollout.
         if any(value.shape[1] != 1 for value in obs_0.values()):
             raise ValueError("Online transition adaptation expects a one-frame current observation")
+        frames = min(int(value.shape[1]) for value in observed_obs.values())
+        last = frames - 1
+        first = last - steps * stride
+        if first < 0:
+            raise ValueError(
+                f"Observed rollout has {frames} frames, too few to bound {steps} "
+                f"executed action(s) at frameskip {stride}"
+            )
 
-        def concat_time(initial, later):
-            if isinstance(initial, torch.Tensor):
-                return torch.cat([initial, later], dim=1)
-            if isinstance(initial, np.ndarray):
-                return np.concatenate([initial, later], axis=1)
-            raise TypeError(f"Unsupported observation type: {type(initial)}")
-
-        source = {
-            key: concat_time(obs_0[key], value[:, frameskip : steps * frameskip : frameskip])
-            for key, value in observed_obs.items()
+        boundary = {
+            key: value[:, first : last + 1 : stride] for key, value in observed_obs.items()
         }
-        target = {
-            key: value[:, frameskip : (steps + 1) * frameskip : frameskip]
-            for key, value in observed_obs.items()
-        }
+        source = {key: value[:, :-1] for key, value in boundary.items()}
+        target = {key: value[:, 1:] for key, value in boundary.items()}
         batch = actions.shape[0]
         source_flat = {
             key: value.reshape(batch * steps, 1, *value.shape[2:]) for key, value in source.items()

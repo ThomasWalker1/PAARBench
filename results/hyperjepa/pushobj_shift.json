@@ -48,14 +48,14 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "I": 0.2,
-        "small_tee": 0.5,
-        "square": 0.28
+        "I": 0.26,
+        "small_tee": 0.48,
+        "square": 0.24
       },
       "success": 0.32666666666666666,
       "complete": true,
       "failures": [],
-      "wall_seconds": 140.3,
+      "wall_seconds": 137.1,
       "out_dir": "eval_outputs/hyperjepa/pushobj_shift/test200",
       "paired_metrics": null
     },
@@ -82,14 +82,14 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "I": 0.28,
+        "I": 0.26,
         "small_tee": 0.46,
-        "square": 0.22
+        "square": 0.2
       },
-      "success": 0.32,
+      "success": 0.30666666666666664,
       "complete": true,
       "failures": [],
-      "wall_seconds": 161.3,
+      "wall_seconds": 141.9,
       "out_dir": "eval_outputs/hyperjepa/pushobj_shift/test100",
       "paired_metrics": null
     },
@@ -116,19 +116,19 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "I": 0.32,
-        "small_tee": 0.48,
-        "square": 0.18
+        "I": 0.3,
+        "small_tee": 0.54,
+        "square": 0.16
       },
-      "success": 0.32666666666666666,
+      "success": 0.3333333333333333,
       "complete": true,
       "failures": [],
-      "wall_seconds": 138.0,
+      "wall_seconds": 135.8,
       "out_dir": "eval_outputs/hyperjepa/pushobj_shift/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.3244444444444444,
+  "success": 0.32222222222222224,
   "n": 450,
   "complete": true,
   "frozen_reference": null

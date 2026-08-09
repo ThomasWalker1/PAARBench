@@ -4,7 +4,7 @@
   "display_name": "HyperJEPA \u2014 amortized hypernetwork",
   "setting": "maze_medium",
   "params": {
-    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
     "rank": 2,
     "target_scope": "predlast_all",
     "context_mode": "transition_buffer",
@@ -20,7 +20,7 @@
   },
   "submission": true,
   "selection_rule": "standard (3-point grid + boundary expansion)",
-  "selection_cost_columns": 3,
+  "selection_cost_columns": 5,
   "selection_cost_basis": "selected",
   "episode_isolated": false,
   "selection_cohort_seed": 0,
@@ -33,7 +33,7 @@
       "n_evals": 50,
       "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -53,40 +53,8 @@
       "success": 0.8,
       "complete": true,
       "failures": [],
-      "wall_seconds": 176.3,
+      "wall_seconds": 187.7,
       "out_dir": "eval_outputs/hyperjepa/maze_medium/test100",
-      "paired_metrics": null
-    },
-    "test300": {
-      "setting": "maze_medium",
-      "cohort": "test300",
-      "seed": 300,
-      "tag": "hyperjepa",
-      "n_evals": 50,
-      "n": 50,
-      "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
-        "rank": 2,
-        "target_scope": "predlast_all",
-        "context_mode": "transition_buffer",
-        "context_feature_kind": "residual_action",
-        "context_aggregator": "transformer_query",
-        "transition_buffer_size": 5,
-        "adapter_gate": false,
-        "freeze_lora_A": false,
-        "generator": "mlp",
-        "refresh": "every_mpc",
-        "refresh_interval": 1,
-        "fold_weights": false
-      },
-      "success_by_shape": {
-        "medium": 0.76
-      },
-      "success": 0.76,
-      "complete": true,
-      "failures": [],
-      "wall_seconds": 185.1,
-      "out_dir": "eval_outputs/hyperjepa/maze_medium/test300",
       "paired_metrics": null
     },
     "test200": {
@@ -97,7 +65,7 @@
       "n_evals": 50,
       "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -112,17 +80,49 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "medium": 0.78
+        "medium": 0.74
       },
-      "success": 0.78,
+      "success": 0.74,
       "complete": true,
       "failures": [],
-      "wall_seconds": 185.4,
+      "wall_seconds": 188.0,
       "out_dir": "eval_outputs/hyperjepa/maze_medium/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "hyperjepa",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
+        "rank": 2,
+        "target_scope": "predlast_all",
+        "context_mode": "transition_buffer",
+        "context_feature_kind": "residual_action",
+        "context_aggregator": "transformer_query",
+        "transition_buffer_size": 5,
+        "adapter_gate": false,
+        "freeze_lora_A": false,
+        "generator": "mlp",
+        "refresh": "every_mpc",
+        "refresh_interval": 1,
+        "fold_weights": false
+      },
+      "success_by_shape": {
+        "medium": 0.84
+      },
+      "success": 0.84,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 189.8,
+      "out_dir": "eval_outputs/hyperjepa/maze_medium/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.78,
+  "success": 0.7933333333333333,
   "n": 150,
   "complete": true,
   "frozen_reference": null

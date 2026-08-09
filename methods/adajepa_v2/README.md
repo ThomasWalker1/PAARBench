@@ -118,10 +118,10 @@ episodes should read this row as v2 winning, and one optimizing success alone sh
 not. It is exactly the row the benchmark's multi-objective framing exists to make
 legible.
 
-v2 does not match HyperJEPA's risk profile on `pusht` (compounding −0.45, catastrophe
-10.7%) despite scoring above it on success. A correction recomputed from frozen weights
-every replan compounds less than one that is braked, and the brake does not close that
-gap.
+v2 does not match HyperJEPA's risk profile on `pusht` (compounding −0.07, catastrophe
+7.7%, median distance change −0) despite scoring above it on success (0.478 vs 0.453).
+A correction recomputed from frozen weights every replan compounds less than one that is
+braked, and the brake does not close that gap.
 
 **Diagnostics the records do not carry.** On `pushobj`, fitting lowers *out-of-sample*
 single-step prediction error to a median 0.77× frozen at `horizon: 1`, rising to 0.92×

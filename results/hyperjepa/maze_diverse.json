@@ -4,7 +4,7 @@
   "display_name": "HyperJEPA \u2014 amortized hypernetwork",
   "setting": "maze_diverse",
   "params": {
-    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+    "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
     "rank": 2,
     "target_scope": "predlast_all",
     "context_mode": "transition_buffer",
@@ -19,8 +19,8 @@
     "fold_weights": false
   },
   "submission": true,
-  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 3 column(s) there)",
-  "selection_cost_columns": 3,
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 5 column(s) there)",
+  "selection_cost_columns": 5,
   "selection_cost_basis": "inherited",
   "episode_isolated": false,
   "selection_cohort_seed": 0,
@@ -33,7 +33,7 @@
       "n_evals": 50,
       "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -48,12 +48,12 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "heldout_layouts": 0.64
+        "heldout_layouts": 0.52
       },
-      "success": 0.64,
+      "success": 0.52,
       "complete": true,
       "failures": [],
-      "wall_seconds": 247.0,
+      "wall_seconds": 184.2,
       "out_dir": "eval_outputs/hyperjepa/maze_diverse/test100",
       "paired_metrics": null
     },
@@ -65,7 +65,7 @@
       "n_evals": 50,
       "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -80,12 +80,12 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "heldout_layouts": 0.54
+        "heldout_layouts": 0.66
       },
-      "success": 0.54,
+      "success": 0.66,
       "complete": true,
       "failures": [],
-      "wall_seconds": 259.7,
+      "wall_seconds": 188.9,
       "out_dir": "eval_outputs/hyperjepa/maze_diverse/test200",
       "paired_metrics": null
     },
@@ -97,7 +97,7 @@
       "n_evals": 50,
       "n": 50,
       "params": {
-        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth",
+        "checkpoint_path": "checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth",
         "rank": 2,
         "target_scope": "predlast_all",
         "context_mode": "transition_buffer",
@@ -112,17 +112,17 @@
         "fold_weights": false
       },
       "success_by_shape": {
-        "heldout_layouts": 0.64
+        "heldout_layouts": 0.58
       },
-      "success": 0.64,
+      "success": 0.58,
       "complete": true,
       "failures": [],
-      "wall_seconds": 150.7,
+      "wall_seconds": 189.2,
       "out_dir": "eval_outputs/hyperjepa/maze_diverse/test300",
       "paired_metrics": null
     }
   },
-  "success": 0.6066666666666667,
+  "success": 0.5866666666666667,
   "n": 150,
   "complete": true,
   "frozen_reference": null

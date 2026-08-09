@@ -37,6 +37,8 @@
   <h2>Overview</h2>
   <div class="card prose">
     <p>Amortized hypernetwork that emits a rank-2 LoRA correction for the predictor&#x27;s last block from the episode&#x27;s recent transitions. Corrections are regenerated from the frozen base before every replan.</p>
+<h3>Context alignment</h3>
+<p>One context feature is built per executed model action, from the observations at that action&#x27;s own frame boundaries. The boundaries are counted backwards from the end of the rollout the harness hands over: the evaluator replays the episode&#x27;s whole action sequence from its initial condition on every replan, so what arrives is the trajectory so far and only its tail belongs to the chunk just executed. <code>test_hyperjepa_alignment.py</code> asserts the exact frame pairs, because a feature built from the wrong pair is still a well-formed feature — the hypernetwork would simply be conditioned on evidence about a state the episode has left, and nothing in the logs would say so.</p>
 <h3>Offline training</h3>
 <pre><code>.venv/bin/python methods/hyperjepa/train.py \
   --ckpt-dir checkpoints/mediummaze_dynamics_shift \
@@ -58,44 +60,44 @@
 
 <section>
   <h2>Frozen Hyperparameters</h2>
-  <ul class='param-list'><li><span>adapter_gate</span> = False</li><li><span>checkpoint_path</span> = checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_2.pth</li><li><span>context_aggregator</span> = transformer_query</li><li><span>context_feature_kind</span> = residual_action</li><li><span>context_mode</span> = transition_buffer</li><li><span>fold_weights</span> = False</li><li><span>freeze_lora_A</span> = False</li><li><span>generator</span> = mlp</li><li><span>rank</span> = 2</li><li><span>refresh</span> = every_mpc</li><li><span>refresh_interval</span> = 1</li><li><span>target_scope</span> = predlast_all</li><li><span>transition_buffer_size</span> = 5</li></ul>
+  <ul class='param-list'><li><span>adapter_gate</span> = False</li><li><span>checkpoint_path</span> = checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_4.pth</li><li><span>context_aggregator</span> = transformer_query</li><li><span>context_feature_kind</span> = residual_action</li><li><span>context_mode</span> = transition_buffer</li><li><span>fold_weights</span> = False</li><li><span>freeze_lora_A</span> = False</li><li><span>generator</span> = mlp</li><li><span>rank</span> = 2</li><li><span>refresh</span> = every_mpc</li><li><span>refresh_interval</span> = 1</li><li><span>target_scope</span> = predlast_all</li><li><span>transition_buffer_size</span> = 5</li></ul>
 </section>
 
 <section>
   <h2>Results Summary</h2>
   <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody><tr>
   <td><code>pushobj</code></td>
-  <td class="num">0.615</td>
+  <td class="num">0.607</td>
   <td class="num"></td>
   <td class="num">600</td>
 </tr><tr>
   <td><code>pushobj_shift</code></td>
-  <td class="num">0.324</td>
+  <td class="num">0.322</td>
   <td class="num"></td>
   <td class="num">450</td>
 </tr><tr>
   <td><code>pusht</code></td>
-  <td class="num">0.458</td>
+  <td class="num">0.453</td>
   <td class="num"></td>
   <td class="num">450</td>
 </tr><tr>
   <td><code>maze_medium</code></td>
-  <td class="num">0.780</td>
+  <td class="num">0.793</td>
   <td class="num"></td>
   <td class="num">150</td>
 </tr><tr>
   <td><code>maze_medium_low_density</code></td>
-  <td class="num">0.747</td>
+  <td class="num">0.807</td>
   <td class="num"></td>
   <td class="num">150</td>
 </tr><tr>
   <td><code>maze_medium_high_damping</code></td>
-  <td class="num">0.607</td>
+  <td class="num">0.533</td>
   <td class="num"></td>
   <td class="num">150</td>
 </tr><tr>
   <td><code>maze_diverse</code></td>
-  <td class="num">0.607</td>
+  <td class="num">0.587</td>
   <td class="num"></td>
   <td class="num">150</td>
 </tr></tbody></table></div>
@@ -123,12 +125,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.615 (±0.020)</td>
-  <td class="num delta-pos">+0.115</td>
-  <td class="num">-11 [-17, -3]</td>
-  <td class="num">7.9% [4%, 12%]</td>
-  <td class="num">42% / +74</td>
-  <td class="num">0.157</td>
+  <td class="num">0.607 (±0.020)</td>
+  <td class="num delta-pos">+0.107</td>
+  <td class="num">-5 [-12, -0]</td>
+  <td class="num">7.5% [4%, 11%]</td>
+  <td class="num">42% / +116</td>
+  <td class="num">0.141</td>
   <td class="num">977</td>
 </tr>
     </tbody>
@@ -154,12 +156,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.324 (±0.022)</td>
-  <td class="num delta-pos">+0.024</td>
-  <td class="num">-4 [-12, +3]</td>
+  <td class="num">0.322 (±0.022)</td>
+  <td class="num delta-pos">+0.022</td>
+  <td class="num">-3 [-11, +3]</td>
   <td class="num">8.0% [5%, 11%]</td>
-  <td class="num">47% / +91</td>
-  <td class="num">0.159</td>
+  <td class="num">48% / +83</td>
+  <td class="num">0.137</td>
   <td class="num">977</td>
 </tr>
     </tbody>
@@ -185,12 +187,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.458 (±0.023)</td>
-  <td class="num delta-pos">+0.109</td>
-  <td class="num">-7 [-21, +8]</td>
-  <td class="num">10.7% [7%, 15%]</td>
-  <td class="num">47% / +140</td>
-  <td class="num">0.144</td>
+  <td class="num">0.453 (±0.023)</td>
+  <td class="num delta-pos">+0.104</td>
+  <td class="num">-0 [-5, +11]</td>
+  <td class="num">7.7% [4%, 11%]</td>
+  <td class="num">50% / +129</td>
+  <td class="num">0.150</td>
   <td class="num">977</td>
 </tr>
     </tbody>
@@ -216,12 +218,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.780 (±0.034)</td>
-  <td class="num delta-pos">+0.007</td>
-  <td class="num">-0 [-1, +0]</td>
-  <td class="num">4.5% [0%, 14%]</td>
-  <td class="num">36% / +2</td>
-  <td class="num">0.161</td>
+  <td class="num">0.793 (±0.033)</td>
+  <td class="num delta-pos">+0.020</td>
+  <td class="num">-0 [-0, +0]</td>
+  <td class="num">4.3% [0%, 13%]</td>
+  <td class="num">43% / +1</td>
+  <td class="num">0.143</td>
   <td class="num">682</td>
 </tr>
     </tbody>
@@ -247,12 +249,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.747 (±0.036)</td>
-  <td class="num delta-pos">+0.000</td>
-  <td class="num">+0 [-1, +4]</td>
-  <td class="num">25.0% [10%, 45%]</td>
-  <td class="num">60% / +9</td>
-  <td class="num">0.145</td>
+  <td class="num">0.807 (±0.032)</td>
+  <td class="num delta-pos">+0.060</td>
+  <td class="num">+1 [-1, +6]</td>
+  <td class="num">36.8% [16%, 58%]</td>
+  <td class="num">63% / +9</td>
+  <td class="num">0.135</td>
   <td class="num">682</td>
 </tr>
     </tbody>
@@ -278,12 +280,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.607 (±0.040)</td>
-  <td class="num delta-pos">+0.040</td>
-  <td class="num">+0 [-0, +0]</td>
-  <td class="num">2.2% [0%, 7%]</td>
-  <td class="num">54% / +2</td>
-  <td class="num">0.145</td>
+  <td class="num">0.533 (±0.041)</td>
+  <td class="num delta-neg">-0.033</td>
+  <td class="num">-0 [-1, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">42% / +1</td>
+  <td class="num">0.130</td>
   <td class="num">682</td>
 </tr>
     </tbody>
@@ -309,12 +311,12 @@
     <tbody>
       <tr>
   <td><a class="method-link" href="methods/hyperjepa.html">HyperJEPA — amortized hypernetwork</a></td>
-  <td class="num">0.607 (±0.040)</td>
-  <td class="num delta-pos">+0.013</td>
-  <td class="num">-0 [-1, +0]</td>
-  <td class="num">12.5% [2%, 22%]</td>
-  <td class="num">48% / +3</td>
-  <td class="num">0.131</td>
+  <td class="num">0.587 (±0.040)</td>
+  <td class="num delta-neg">-0.007</td>
+  <td class="num">-0 [-1, +1]</td>
+  <td class="num">12.8% [3%, 23%]</td>
+  <td class="num">44% / +3</td>
+  <td class="num">0.140</td>
   <td class="num">682</td>
 </tr>
     </tbody>
