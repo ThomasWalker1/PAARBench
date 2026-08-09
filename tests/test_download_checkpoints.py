@@ -14,8 +14,14 @@ def test_checkpoint_groups_partition_the_manifest():
     assert methods
     assert settings.keys().isdisjoint(methods)
     assert set(settings) | set(methods) == set(all_files)
-    assert all(path.startswith(("pushobj_shape_shift/", "pusht_visual_shift/"))
-               for path in settings)
+    assert all(
+        path.startswith(download_checkpoints.GROUP_PREFIXES["settings"])
+        for path in settings
+    )
+    assert all(
+        path.startswith(download_checkpoints.GROUP_PREFIXES["methods"])
+        for path in methods
+    )
 
 
 def test_verify_rejects_missing_or_modified_files(tmp_path):
