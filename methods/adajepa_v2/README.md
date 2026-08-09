@@ -53,8 +53,8 @@ quantity available here whose input and target were both unseen: a deeper rollou
 ending at the newest state would have to start inside the buffer and pass through
 states the last update was fitted on, which biases the comparison in the adapted arm's
 favour — exactly the direction that would make the brake fail to fire.
-`hover/braked` and
-`hover/fresh_loss_ratio` are recorded per replan, so how often this fires — and
+`adajepa_v2/braked` and
+`adajepa_v2/fresh_loss_ratio` are recorded per replan, so how often this fires — and
 whether adaptation is helping out-of-sample at all — is visible in the record rather
 than inferred.
 
@@ -173,9 +173,9 @@ model.
 
 | key | meaning |
 |---|---|
-| `hover/loss` | rollout loss at the last gradient step of this replan |
-| `hover/rollout_depth` | depths actually rolled (`min(horizon, buffered transitions)`) |
-| `hover/fresh_loss`, `hover/fresh_loss_frozen` | single-step loss on the newest transition, adapted vs frozen |
-| `hover/fresh_loss_ratio` | their ratio; > 1 means adaptation is hurting out-of-sample |
-| `hover/braked`, `hover/brakes` | did the brake fire this replan, and how often this episode |
-| `hover/buffer_size` | buffered transitions |
+| `adajepa_v2/loss` | rollout loss at the last gradient step of this replan |
+| `adajepa_v2/rollout_depth` | depths actually rolled (`min(horizon, buffered transitions)`) |
+| `adajepa_v2/fresh_loss`, `adajepa_v2/fresh_loss_frozen` | single-step loss on the newest transition, adapted vs frozen |
+| `adajepa_v2/fresh_loss_ratio` | their ratio; > 1 means adaptation is hurting out-of-sample |
+| `adajepa_v2/braked`, `adajepa_v2/brakes` | did the brake fire this replan, and how often this episode |
+| `adajepa_v2/buffer_size` | buffered transitions |
