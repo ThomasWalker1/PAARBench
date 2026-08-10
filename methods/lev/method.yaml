@@ -1,0 +1,59 @@
+name: lev
+display_name: "LEV — closed-form latent offset with a held-out veto"
+description: >
+  Adds a correction to what the predictor outputs rather than to the predictor. Per
+  latent channel, pooled over patches, the one-step residual of the frozen model on the
+  transitions executed this episode is fitted in closed form (ridge, standardized, so
+  the normal equations are diagonal) and added back during planning. Sufficient
+  statistics are kept per executed step, so refitting with one step held out is a
+  subtraction: the correction is scored on steps it was not fitted on and multiplied by
+  the fraction of held-out squared error it removes, which is zero when it cannot beat
+  the frozen model. It is applied at rollout depth t with weight decay**t, because the
+  fit and the veto are both one-step quantities and the planner extrapolates 25 or 50
+  steps. No gradient, no optimizer, no trained checkpoint, nothing carried across
+  replans.
+reference: "Offset-free MPC / disturbance-observer correction; leave-one-out (PRESS) model selection"
+
+adapter: adapter:LEVAdapter
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
+
+# Deliberately absent: requires_episode_isolation. Nothing in the model is mutated and
+# the correction is solved per batch element from that element's own statistics, so a
+# batched cohort computes exactly what a per-episode process would. That is the point
+# of not owning an optimizer, and it is why this row costs one process per shape rather
+# than one per episode.
+
+params:
+  # Slope shrinkage. Large values drive the fit to a pure per-channel offset -- the
+  # classical disturbance observer -- and small values to ordinary least squares.
+  ridge: 1.0
+  # Per-model-step trust decay along the planner's open-loop rollout.
+  decay: 0.9
+  # Executed model steps retained, in leave-one-out folds. Authored at 15 (three
+  # replans at the fixed n_taken_actions of 5) rather than tuned: an axis spent here
+  # would leave the two mechanisms this method is about untested. adajepa and hyperlora
+  # buffer 5, adajepa_v2 buffers 8; this buffer holds six numbers per channel per step
+  # instead of latents, so a longer one costs nothing.
+  buffer_size: 15
+
+# Two axes, nine initial cells -- the same selection cost as adajepa and adajepa_v2, so
+# the rows are priced identically.
+#
+# The trust scale is NOT an axis. It is read off the leave-one-out fit at every replan,
+# which is the claim being made: the method decides how much to trust itself from
+# evidence rather than from a tuned constant.
+#
+# decay: 1.0 is in the grid on purpose. That cell applies the correction undamped over
+# the whole horizon, i.e. it is the method without its horizon mechanism, so the
+# mechanism has to win the cell rather than be assumed. Same reason adajepa_v2 keeps
+# horizon: 1 in its grid.
+tunable:
+  objective: success
+  axes:
+    ridge:
+      initial: [0.1, 1.0, 10.0]
+      scale: log
+    decay:
+      initial: [0.8, 0.9, 1.0]
+      scale: discrete
+      pool: [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0]

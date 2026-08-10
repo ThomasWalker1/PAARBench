@@ -10,6 +10,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 | method | success | ±1 SE | vs frozen | median dist Δ [95% CI] | catastrophe [95% CI] | compounding [95% CI] | regret | adapt s/replan | peak MB | n | selection cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.727 | 0.036 | +0.133 | -1 [-2, -1] | 7.7% [0%, 19%] | -0.09 [-0.13, -0.06] | 19% / +2 | 0.237 | 180 | 150 | 14 (inherited) |
+| LEV — closed-form latent offset with a held-out veto | 0.720 | 0.037 | +0.127 | -0 [-2, +0] | 10.5% [3%, 21%] | +0.00 [-0.00, +0.00] | 42% / +3 | 0.109 | 603 | 150 | 9 (inherited) |
 | AdaJEPA — online gradient TTA | 0.640 | 0.039 | +0.047 | -1 [-2, -0] | 5.9% [0%, 15%] | -0.06 [-0.10, -0.02] | 29% / +2 | 0.296 | 184 | 150 | 12 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.640 | 0.039 | +0.047 | -0 [-1, +0] | 8.1% [0%, 19%] | -0.01 [-0.04, +0.02] | 41% / +3 | 0.028 | 331 | 150 | 18 (inherited) |
 | Static LoRA — unconditioned correction | 0.607 | 0.040 | +0.013 | +0 [-0, +1] | 17.9% [8%, 31%] | -0.00 [-0.02, +0.01] | 54% / +4 | 0.000 | 169 | 150 | 3 (inherited) |
@@ -39,6 +40,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. Select
 | AdaJEPA — online gradient TTA | 0.853 | 0.029 | +0.080 | +0 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.00, +0.09] | 82% / +2 | 0.296 | 184 | 150 | 12 |
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.847 | 0.029 | +0.073 | +0 [-0, +0] | 0.0% [0%, 0%] | +0.01 [-0.02, +0.04] | 56% / +1 | 0.247 | 180 | 150 | 14 |
 | PAD — inverse-dynamics encoder adaptation | 0.840 | 0.030 | +0.067 | +1 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.01, +0.06] | 88% / +2 | 0.030 | 331 | 150 | 18 |
+| LEV — closed-form latent offset with a held-out veto | 0.820 | 0.031 | +0.047 | +0 [-0, +0] | 0.0% [0%, 0%] | -0.00 [-0.03, +0.00] | 53% / +1 | 0.125 | 603 | 150 | 9 |
 | HyperLoRA — amortized hypernetwork | 0.793 | 0.033 | +0.020 | -0 [-0, +0] | 4.3% [0%, 13%] | -0.01 [-0.05, +0.00] | 43% / +1 | 0.143 | 682 | 150 | 5 |
 | Static LoRA — unconditioned correction | 0.780 | 0.034 | +0.007 | -0 [-0, +0] | 0.0% [0%, 0%] | -0.01 [-0.03, +0.01] | 36% / +0 | 0.000 | 169 | 150 | 3 |
 | Frozen | 0.773 | 0.034 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
@@ -66,6 +68,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 | AdaJEPA — online gradient TTA | 0.747 | 0.036 | +0.180 | +0 [-0, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.03] | 52% / +2 | 0.298 | 184 | 150 | 12 (inherited) |
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.740 | 0.036 | +0.173 | -0 [-1, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.02] | 48% / +2 | 0.239 | 180 | 150 | 14 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.733 | 0.036 | +0.167 | +0 [+0, +0] | 0.0% [0%, 0%] | +0.02 [+0.01, +0.04] | 67% / +2 | 0.028 | 331 | 150 | 18 (inherited) |
+| LEV — closed-form latent offset with a held-out veto | 0.727 | 0.036 | +0.160 | +0 [-0, +0] | 0.0% [0%, 0%] | -0.00 [-0.02, +0.01] | 52% / +1 | 0.096 | 603 | 150 | 9 (inherited) |
 | Static LoRA — unconditioned correction | 0.573 | 0.040 | +0.007 | -0 [-0, +0] | 4.3% [0%, 11%] | +0.00 [-0.01, +0.01] | 43% / +2 | 0.000 | 169 | 150 | 3 (inherited) |
 | Frozen | 0.567 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 | HyperLoRA — amortized hypernetwork | 0.533 | 0.041 | -0.033 | -0 [-1, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.02] | 42% / +1 | 0.130 | 682 | 150 | 5 (inherited) |
@@ -92,6 +95,7 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA — online gradient TTA | 0.827 | 0.031 | +0.080 | +4 [-0, +5] | 26.7% [7%, 53%] | +0.04 [-0.03, +0.14] | 73% / +7 | 0.298 | 184 | 150 | 12 (inherited) |
 | HyperLoRA — amortized hypernetwork | 0.807 | 0.032 | +0.060 | +1 [-1, +6] | 36.8% [16%, 58%] | +0.02 [-0.01, +0.05] | 63% / +9 | 0.135 | 682 | 150 | 5 (inherited) |
+| LEV — closed-form latent offset with a held-out veto | 0.793 | 0.033 | +0.047 | +1 [-1, +2] | 22.7% [5%, 41%] | +0.00 [+0.00, +0.00] | 59% / +7 | 0.099 | 603 | 150 | 9 (inherited) |
 | Static LoRA — unconditioned correction | 0.787 | 0.033 | +0.040 | +1 [-2, +2] | 16.7% [0%, 33%] | +0.02 [-0.03, +0.07] | 56% / +5 | 0.000 | 169 | 150 | 3 (inherited) |
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.773 | 0.034 | +0.027 | +0 [-2, +1] | 6.2% [0%, 19%] | +0.02 [-0.05, +0.09] | 50% / +4 | 0.237 | 180 | 150 | 14 (inherited) |
 | Frozen | 0.747 | 0.036 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
@@ -119,6 +123,7 @@ Test cohorts: seeds [100, 200, 300], 4 shapes, n=50 per shape per cohort. Select
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA — online gradient TTA | 0.697 | 0.019 | +0.197 | +6 [-1, +17] | 17.1% [12%, 23%] | +0.24 [-0.25, +0.96] | 57% / +256 | 0.294 | 177 | 600 | 9 |
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.697 | 0.019 | +0.197 | +8 [-1, +18] | 14.4% [9%, 20%] | +0.22 [-0.25, +0.98] | 56% / +156 | 0.239 | 172 | 600 | 12 |
+| LEV — closed-form latent offset with a held-out veto | 0.675 | 0.019 | +0.175 | +6 [-0, +14] | 4.2% [2%, 7%] | +0.00 [+0.00, +0.00] | 57% / +121 | 0.102 | 897 | 600 | 9 |
 | HyperLoRA — amortized hypernetwork | 0.607 | 0.020 | +0.107 | -5 [-12, -0] | 7.5% [4%, 11%] | +0.01 [-0.15, +0.11] | 42% / +116 | 0.141 | 977 | 600 | 3 |
 | PAD — inverse-dynamics encoder adaptation | 0.575 | 0.020 | +0.075 | +2 [-4, +8] | 7.7% [4%, 11%] | +0.14 [-0.17, +0.49] | 52% / +119 | 0.029 | 290 | 600 | 12 |
 | Static LoRA — unconditioned correction | 0.547 | 0.020 | +0.047 | -5 [-9, +0] | 5.2% [3%, 8%] | -0.03 [-0.16, +0.11] | 44% / +57 | 0.000 | 157 | 600 | 3 |
@@ -146,6 +151,7 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. No sel
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.409 | 0.023 | +0.109 | +1 [-5, +9] | 15.9% [12%, 21%] | +0.27 [-0.12, +0.65] | 51% / +204 | 0.239 | 172 | 450 | 12 (inherited) |
 | AdaJEPA — online gradient TTA | 0.400 | 0.023 | +0.100 | +16 [+6, +28] | 16.9% [12%, 22%] | +0.97 [+0.39, +1.61] | 59% / +205 | 0.290 | 177 | 450 | 9 (inherited) |
+| LEV — closed-form latent offset with a held-out veto | 0.389 | 0.023 | +0.089 | +7 [+1, +14] | 5.6% [3%, 9%] | +0.00 [+0.00, +0.01] | 56% / +103 | 0.103 | 897 | 450 | 9 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.353 | 0.023 | +0.053 | +5 [-2, +9] | 10.4% [7%, 14%] | +0.25 [-0.10, +0.51] | 55% / +149 | 0.029 | 290 | 450 | 12 (inherited) |
 | HyperLoRA — amortized hypernetwork | 0.322 | 0.022 | +0.022 | -3 [-11, +3] | 8.0% [5%, 11%] | +0.02 [-0.30, +0.34] | 48% / +83 | 0.137 | 977 | 450 | 3 (inherited) |
 | Frozen | 0.300 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
@@ -174,6 +180,7 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. Select
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.478 | 0.024 | +0.129 | +16 [-5, +39] | 22.2% [17%, 28%] | +1.23 [+0.37, +2.23] | 55% / +274 | 0.238 | 172 | 450 | 12 |
 | HyperLoRA — amortized hypernetwork | 0.453 | 0.023 | +0.104 | -0 [-5, +11] | 7.7% [4%, 11%] | -0.07 [-0.30, +0.10] | 50% / +129 | 0.150 | 977 | 450 | 3 |
 | AdaJEPA — online gradient TTA | 0.440 | 0.023 | +0.091 | +55 [+36, +84] | 26.8% [21%, 33%] | +3.87 [+2.61, +5.16] | 66% / +549 | 0.293 | 177 | 450 | 12 |
+| LEV — closed-form latent offset with a held-out veto | 0.413 | 0.023 | +0.064 | +11 [+5, +22] | 13.9% [10%, 18%] | +0.00 [+0.00, +0.00] | 59% / +243 | 0.098 | 897 | 450 | 9 |
 | PAD — inverse-dynamics encoder adaptation | 0.360 | 0.023 | +0.011 | +6 [-4, +12] | 13.3% [10%, 17%] | +0.39 [-0.05, +0.88] | 54% / +181 | 0.061 | 290 | 450 | 9 |
 | Static LoRA — unconditioned correction | 0.360 | 0.023 | +0.011 | +7 [-0, +20] | 11.6% [8%, 16%] | +0.21 [-0.00, +0.53] | 55% / +181 | 0.000 | 157 | 450 | 4 |
 | Frozen | 0.349 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
