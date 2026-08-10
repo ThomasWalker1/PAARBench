@@ -56,8 +56,9 @@ model, so a whole cohort adapts in one batch and the method does **not** need
 ``requires_episode_isolation``.
 
 Scope.  ``concat_dim == 1`` only, which is what all four benchmark base models use.
-The correction is per channel and pooled across patches: it can fix a systematic bias
-or gain drift in the predictor's output, not a spatially structured error.
+The correction is affine per latent channel, pooled over the patch axis -- which on
+every base model here is one pooled visual token rather than a grid, so the pooling is
+nominal and the real restriction is the affine form.
 """
 
 from __future__ import annotations
@@ -269,10 +270,8 @@ class LEVAdapter:
         from the front pairs the current state with the endpoint of the episode's first
         action. (Same reasoning, and the same bug avoided, as in ``adajepa_v2``.)
 
-        Returned as one ``(B, chunk_len + 1, ...)`` batch so the whole chunk costs a
-        single encoder pass. The frames are sliced and transformed individually first
-        because ``rollout_obs`` arrives as NumPy from the evaluator, and stacking has
-        to happen after the preprocessor has made tensors of them.
+        Returned as a list, one transformed frame at a time, because that is the unit
+        the encoder is run on -- see ``_encode_frames``.
         """
         frames = min(int(value.shape[1]) for value in rollout_obs.values())
         last = frames - 1
@@ -282,13 +281,32 @@ class LEVAdapter:
                 f"LEV needs {1 + chunk_len * frameskip} rollout frames to bound "
                 f"{chunk_len} executed action(s) at frameskip {frameskip}, got {frames}."
             )
-        sliced = [
+        return [
             self._transform({k: v[:, idx: idx + 1] for k, v in rollout_obs.items()})
             for idx in range(first, last + 1, int(frameskip))
         ]
+
+    def _encode_frames(self, frames):
+        """Encode the chunk's bounding frames, one frame per encoder call.
+
+        Stacking the whole chunk into a single ``encode_obs`` is the obvious
+        optimization and it is the wrong one here. The visual encoder is a ViT over
+        ``B`` images per frame, so its activations scale with frames-per-call, and the
+        benchmark reports peak memory as a frontier column: measured on ``pushobj`` at
+        ``B = 50``, six frames in one call peaks at 3849 MB against 642 MB one frame at
+        a time, while every predictor call in this hook together accounts for 14 MB.
+        What the batched version buys is kernel launches, on a hook that already runs
+        at a third of the gradient methods' latency. Six calls of the same total work
+        is the right trade.
+
+        Note the returned latent is ``(B, T, P, ...)`` with ``P = 1`` on every base
+        model the benchmark ships: these encoders emit one pooled visual token rather
+        than a patch grid.
+        """
+        encoded = [self.wm.encode_obs(frame) for frame in frames]
         return {
-            key: torch.cat([frame[key] for frame in sliced], dim=1)
-            for key in sliced[0]
+            key: torch.cat([frame[key] for frame in encoded], dim=1)
+            for key in encoded[0]
         }
 
     def _frozen_predictions(self, z_full, chunk_len):
@@ -468,7 +486,7 @@ class LEVAdapter:
         """Encode the chunk, score the frozen predictor on it, keep only the statistics.
 
         All of the method's compute is here, and it is proportional to the chunk rather
-        than to anything tunable: one encoder pass over the chunk's frames, at most
+        than to anything tunable: one encoder pass per bounding frame, at most
         ``num_hist`` predictor passes, and then the latents are discarded.
         """
         if actions.dim() != 3:
@@ -481,7 +499,7 @@ class LEVAdapter:
         actions = actions.detach().to(self.device)
 
         with torch.no_grad(), self._frozen():
-            encoded = self.wm.encode_obs(frames)                  # chunk_len + 1 frames
+            encoded = self._encode_frames(frames)                 # chunk_len + 1 frames
             obs_part = self._obs_part(encoded)                    # (B, L, P, C)
             patches = obs_part.shape[2]
             act_part = self._act_part(actions[:, :chunk_len], patches)

@@ -1,0 +1,95 @@
+{
+  "method": "lev",
+  "method_dir": "lev",
+  "display_name": "LEV \u2014 closed-form latent offset with a held-out veto",
+  "setting": "pusht",
+  "params": {
+    "ridge": 1.0,
+    "decay": 0.9,
+    "buffer_size": 15
+  },
+  "submission": true,
+  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_cost_columns": 9,
+  "selection_cost_basis": "selected",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pusht",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "lev",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "ridge": 1.0,
+        "decay": 0.9,
+        "buffer_size": 15
+      },
+      "success_by_shape": {
+        "T": 0.74,
+        "L": 0.36,
+        "Z": 0.24
+      },
+      "success": 0.4466666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 129.1,
+      "out_dir": "eval_outputs/lev/pusht/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pusht",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "lev",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "ridge": 1.0,
+        "decay": 0.9,
+        "buffer_size": 15
+      },
+      "success_by_shape": {
+        "T": 0.62,
+        "L": 0.34,
+        "Z": 0.22
+      },
+      "success": 0.3933333333333333,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 125.4,
+      "out_dir": "eval_outputs/lev/pusht/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "pusht",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "lev",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "ridge": 1.0,
+        "decay": 0.9,
+        "buffer_size": 15
+      },
+      "success_by_shape": {
+        "T": 0.64,
+        "L": 0.36,
+        "Z": 0.2
+      },
+      "success": 0.39999999999999997,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 127.3,
+      "out_dir": "eval_outputs/lev/pusht/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.41333333333333333,
+  "n": 450,
+  "complete": true,
+  "frozen_reference": null
+}

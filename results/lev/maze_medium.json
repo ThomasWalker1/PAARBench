@@ -1,0 +1,89 @@
+{
+  "method": "lev",
+  "method_dir": "lev",
+  "display_name": "LEV \u2014 closed-form latent offset with a held-out veto",
+  "setting": "maze_medium",
+  "params": {
+    "ridge": 1.0,
+    "decay": 1.0,
+    "buffer_size": 15
+  },
+  "submission": true,
+  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_cost_columns": 9,
+  "selection_cost_basis": "selected",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_medium",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "lev",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "ridge": 1.0,
+        "decay": 1.0,
+        "buffer_size": 15
+      },
+      "success_by_shape": {
+        "medium": 0.82
+      },
+      "success": 0.82,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 181.6,
+      "out_dir": "eval_outputs/lev/maze_medium/test100",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "lev",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "ridge": 1.0,
+        "decay": 1.0,
+        "buffer_size": 15
+      },
+      "success_by_shape": {
+        "medium": 0.78
+      },
+      "success": 0.78,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 182.1,
+      "out_dir": "eval_outputs/lev/maze_medium/test300",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "lev",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "ridge": 1.0,
+        "decay": 1.0,
+        "buffer_size": 15
+      },
+      "success_by_shape": {
+        "medium": 0.86
+      },
+      "success": 0.86,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 185.4,
+      "out_dir": "eval_outputs/lev/maze_medium/test200",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.82,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}

@@ -328,8 +328,12 @@ class _LinearWorldModel(_StubWorldModel):
     def __init__(self, frameskip):
         super().__init__(action_dim=_ACTION)
         self.frameskip = frameskip
+        self.encode_calls = 0
+        self.encode_widths = []
 
     def encode_obs(self, obs):
+        self.encode_calls += 1
+        self.encode_widths.append(int(obs["visual"].shape[1]))
         return {"visual": obs["visual"], "proprio": obs["proprio"]}
 
     def encode_act(self, act):
@@ -363,6 +367,11 @@ def test_one_executed_chunk_recovers_the_predictor_error_it_was_given():
     assert len(adapter._buffer) == chunk_len
     # Exactly one preprocessor pass per bounding frame, and no more.
     assert adapter.preprocessor.calls == chunk_len + 1
+    # One encoder call per bounding frame, each one frame wide. Stacking the chunk
+    # into a single call is what made peak memory the worst on the board (3849 MB
+    # against 642 MB at B=50 on pushobj), so the width is asserted, not just the count.
+    assert wm.encode_calls == chunk_len + 1
+    assert wm.encode_widths == [1] * (chunk_len + 1)
     logs = adapter.before_plan({})
     assert logs["lev/kappa"] == pytest.approx(1.0, abs=1e-4)
 
