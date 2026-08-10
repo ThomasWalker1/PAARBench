@@ -17,11 +17,15 @@ LEADERBOARD = ROOT / "LEADERBOARD.md"
 METHOD_ORDER = [
     "adajepa", "adajepa_v2", "hyperlora", "static_lora", "pad", "frozen",
 ]
-"""Method page order. Versions of one arm stay adjacent, so a reader meets v1 and v2
+"""Preferred page order. Versions of one arm stay adjacent, so a reader meets v1 and v2
 together rather than finding them in different parts of the page.
 
-This list is the one place adding a method means editing something outside its own
-directory; the benchmark harness itself discovers methods by directory listing."""
+A *preference*, not a gate: see ``method_slugs``. Anything under ``methods/`` that this
+list does not mention still gets a page and still gets linked. It used to be a gate, and
+the failure was silent -- a method merged without being added here rendered as unlinked
+plain text with no page behind it, which reads as a styling choice rather than as a
+missing file. ``methods/README.md`` promises that contributing a method means touching
+nothing outside its own directory, and that has to include the website."""
 
 FROZEN_SLUGS = frozenset({"frozen"})
 SETTING_ORDER = (
@@ -237,9 +241,31 @@ def parse_leaderboard_tables() -> dict[str, list[dict[str, str]]]:
     return sections
 
 
+def method_slugs() -> list[str]:
+    """Every method that should get a page, in display order.
+
+    Discovered from ``methods/`` by the same rule the harness uses
+    (``paarbench.methods.discover``: a directory holding a ``method.yaml``, skipping
+    ``.``- and ``_``-prefixed names, so the template is excluded). ``METHOD_ORDER``
+    supplies the order for the arms it names; anything else is appended alphabetically,
+    ahead of the built-in frozen baseline, which stays last as the reference row.
+    """
+    discovered = [
+        child.name for child in sorted(METHODS.iterdir())
+        if child.is_dir()
+        and not child.name.startswith((".", "_"))
+        and (child / "method.yaml").is_file()
+    ]
+    known = [s for s in METHOD_ORDER if s in discovered or s in FROZEN_META]
+    extra = [s for s in discovered if s not in METHOD_ORDER]
+    return ([s for s in known if s not in FROZEN_SLUGS]
+            + extra
+            + [s for s in known if s in FROZEN_SLUGS])
+
+
 def load_method_info() -> dict[str, dict]:
     info: dict[str, dict] = {}
-    for name in METHOD_ORDER:
+    for name in method_slugs():
         if name in FROZEN_META:
             info[name] = dict(FROZEN_META[name])
             continue
@@ -835,11 +861,27 @@ def main() -> None:
     index_html = render_index(methods, tables)
     (WEBSITE / "index.html").write_text(index_html)
 
-    for slug in METHOD_ORDER:
+    for slug in methods:
         page = render_method_page(slug, methods[slug], tables, methods)
         (WEBSITE / "methods" / f"{slug}.html").write_text(page)
 
-    print(f"Generated website in {WEBSITE}")
+    # Every method named in a leaderboard table has to resolve to a page, or its row
+    # renders as unlinked text. That is the failure this build used to have and it is
+    # invisible in the output, so it is checked rather than trusted.
+    linked = {meta.get("display_name") for meta in methods.values()}
+    unlinked = sorted({
+        row["method"] for rows in tables.values() for row in rows
+        if row.get("method") and row["method"] not in linked
+    })
+    if unlinked:
+        raise SystemExit(
+            "these methods appear in LEADERBOARD.md but have no page to link to: "
+            + ", ".join(unlinked)
+            + ". Their display_name in methods/<dir>/method.yaml must match the "
+              "leaderboard column exactly."
+        )
+
+    print(f"Generated website in {WEBSITE} ({len(methods)} method pages)")
 
 
 if __name__ == "__main__":

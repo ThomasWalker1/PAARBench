@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LEV — closed-form latent offset with a held-out veto — PAARBench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="../index.html" style="color:inherit;text-decoration:none;">PAARBench</a></h1>
+      <p class="tagline">PlanActAdaptRepeatBench — test-time adaptation for latent world models in closed-loop control</p>
+      <nav class="site-nav">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#settings">Settings</a>
+        <a href="../index.html#leaderboards">Leaderboards</a>
+        <a href="../index.html#contribute">Contribute</a>
+      </nav>
+    </div>
+  </header>
+  <main class="page-main">
+    
+<a class="back-link" href="../index.html">← Back to leaderboard</a>
+
+<div class="method-hero">
+  <h1>LEV — closed-form latent offset with a held-out veto</h1>
+  <p class="lead">Adds a correction to what the predictor outputs rather than to the predictor. Per latent channel, pooled over patches, the one-step residual of the frozen model on the transitions executed this episode is fitted in closed form (ridge, standardized, so the normal equations are diagonal) and added back during planning. Sufficient statistics are kept per executed step, so refitting with one step held out is a subtraction: the correction is scored on steps it was not fitted on and multiplied by the fraction of held-out squared error it removes, which is zero when it cannot beat the frozen model. It is applied at rollout depth t with weight decay**t, because the fit and the veto are both one-step quantities and the planner extrapolates 25 or 50 steps. No gradient, no optimizer, no trained checkpoint, nothing carried across replans.</p>
+  <p class='reference'><strong>Reference:</strong> Offset-free MPC / disturbance-observer correction; leave-one-out (PRESS) model selection</p>
+  <div class="badge-row"><span class="badge">No selection rule</span><span class="badge">pushobj</span><span class="badge">pushobj_shift</span><span class="badge">pusht</span><span class="badge">maze_medium</span><span class="badge">maze_medium_low_density</span><span class="badge">maze_medium_high_damping</span><span class="badge">maze_diverse</span></div>
+</div>
+
+<section>
+  <h2>Overview</h2>
+  <div class="card prose">
+    <p>Every other row on this board corrects the <strong>weights</strong>. <code>adajepa</code>, <code>adajepa_v2</code> and <code>pad</code> walk an optimizer over them online; <code>hyperlora</code> and <code>static_lora</code> have a network trained offline emit them. LEV corrects neither. The predictor is used exactly as it was loaded, and the correction is an <strong>offset added to what it outputs</strong>, solved in closed form from the transitions the controller has already executed this episode.</p>
+<p>No gradient. No optimizer. No trained checkpoint. Nothing carried from one replan to the next.</p>
+<h3>What it does</h3>
+<p>For every executed model step the method has two things: what the frozen predictor said the next latent would be (<code>x</code>), and what the encoder says it actually was (<code>y</code>). Per latent channel, pooled over patches, it fits</p>
+<p>y - x  ≈  a·x + b</p>
+<p>by ridge regression and adds that back to the predictor&#x27;s output while the planner solves. This is the disturbance observer of offset-free MPC, moved into a learned latent space — with two things bolted on that classical control does not need and a world model does.</p>
+<p><strong>The fit is arithmetic.</strong> Standardizing <code>x</code> per channel makes the slope and intercept columns of the design orthogonal, so the normal equations are diagonal: the &quot;fit&quot; is six sums and a division, with no matrix solve and no iteration. <code>ridge</code> shrinks the slope only — the intercept is the pure offset and is the part with the most evidence behind it. So the axis interpolates between ordinary least squares (<code>ridge → 0</code>) and the classical per-channel offset (<code>ridge → ∞</code>), and the grid spans both.</p>
+<p><strong>It is scaled by evidence it was not fitted on.</strong> Because the buffer holds sufficient statistics rather than latents, refitting with one step held out is a re-sum of a handful of <code>(B, C)</code> tensors — no re-encoding, no forward pass, no iteration. LEV does that for every step in the buffer, scores each resulting correction on the step it was held out of, and compares it there against the frozen predictor. The fraction of held-out squared error it removes,</p>
+<p>κ = clamp(1 − SSE_corrected / SSE_frozen, 0, 1),</p>
+<p>multiplies the correction. A correction that cannot beat doing nothing out of sample is multiplied by zero, and the planner solves through the frozen model. Nothing about this is tuned; it is read off numbers already in memory, at a cost of no forward passes.</p>
+<p><code>adajepa_v2</code>&#x27;s <code>brake_ratio</code> is the same idea at its coarsest: one held-out sample, one threshold, a binary reset. κ is the continuous, all-folds version, and it is cheaper than the brake rather than more expensive.</p>
+<p><strong>It decays over the planning horizon.</strong> The fit and the veto are both one-step quantities. The planner rolls the predictor forward 25 (Push) or 50 (maze) model steps open loop, feeding each corrected prediction back in as the next step&#x27;s context. Trusting a one-step-validated offset equally at depth 25 is exactly what the <code>compounding</code> column measures. LEV applies the correction at depth <code>t</code> with weight <code>κ · decay^t</code>, so the planner falls back to the model it was trained with as it extrapolates past its evidence.</p>
+<h3>What it reports</h3>
+<p><code>before_plan</code> runs no forward pass at all. Everything — one encoder pass per bounding frame, at most <code>num_hist</code> predictor passes — happens in <code>on_transition</code>, once per executed step, and is reduced immediately to six numbers per channel. The buffer holds statistics, not tensors.</p>
+<p>Nothing in the model is mutable, and the correction for episode <em>i</em> is solved from episode <em>i</em>&#x27;s own statistics, so a batched cohort computes exactly what a per-episode process would. <strong>LEV does not declare <code>requires_episode_isolation</code></strong> — unlike all three gradient methods, which need one process per episode.</p>
+<p>Per-replan scalars: <code>lev/kappa</code> (mean trust scale), <code>lev/kappa_zero_frac</code> (episodes planning frozen this replan), <code>lev/offset_norm</code>, <code>lev/slope_norm</code>, <code>lev/folds</code>, <code>lev/buffer_size</code>.</p>
+<h3>Hyperparameters</h3>
+<p>Two axes, nine initial cells — the same selection cost as <code>adajepa</code> and <code>adajepa_v2</code>, so the rows are priced identically.</p>
+<div class="table-wrap"><table><thead><tr><th>axis</th><th>grid</th><th>what it does</th></tr></thead><tbody><tr><td><code>ridge</code></td><td>0.1, 1.0, 10.0 (log)</td><td>slope shrinkage; large ⇒ pure offset</td></tr><tr><td><code>decay</code></td><td>0.8, 0.9, 1.0 (discrete)</td><td>per-model-step horizon trust decay</td></tr></tbody></table></div>
+<p><code>decay: 1.0</code> is in the grid deliberately: that cell is the method <em>without</em> its horizon mechanism, so the mechanism has to win the cell rather than be assumed. Same reason <code>adajepa_v2</code> keeps <code>horizon: 1</code> in its grid.</p>
+<p>The trust scale κ is <strong>not</strong> an axis. It is recomputed at every replan from the leave-one-out fit, which is the claim the method is making: it decides how far to trust itself from evidence rather than from a constant chosen on a selection cohort.</p>
+<p><code>buffer_size</code> is authored at 15 executed model steps (three replans at the harness&#x27;s fixed <code>n_taken_actions</code> of 5), not tuned. An axis spent there would leave one of the two mechanisms untested. For reference, <code>adajepa</code> and <code>hyperlora</code> buffer 5 and <code>adajepa_v2</code> buffers 8; a longer buffer is free here because it stores six numbers per channel per step rather than latents.</p>
+<h3>Results</h3>
+<p>Held-out cohorts, <code>scripts/evaluate.py</code>, selection cost 9 columns on every setting.</p>
+<div class="table-wrap"><table><thead><tr><th>setting</th><th>success</th><th>vs frozen</th><th>rank</th><th>catastrophe</th><th>compounding</th><th>s/replan</th><th>peak MB</th></tr></thead><tbody><tr><td><code>pushobj</code></td><td>0.675</td><td>+0.175</td><td>3</td><td><strong>4.2%</strong></td><td><strong>+0.00</strong></td><td>0.102</td><td>897</td></tr><tr><td><code>pushobj_shift</code></td><td>0.389</td><td>+0.089</td><td>3</td><td><strong>5.6%</strong></td><td><strong>+0.00</strong></td><td>0.103</td><td>897</td></tr><tr><td><code>pusht</code></td><td>0.413</td><td>+0.064</td><td>4</td><td>13.9%</td><td><strong>+0.00</strong></td><td>0.098</td><td>897</td></tr><tr><td><code>maze_medium</code></td><td>0.820</td><td>+0.047</td><td>4</td><td>0.0%</td><td>−0.00</td><td>0.125</td><td>603</td></tr><tr><td><code>maze_medium_low_density</code></td><td>0.793</td><td>+0.047</td><td>3</td><td>22.7%</td><td><strong>+0.00</strong></td><td>0.099</td><td>603</td></tr><tr><td><code>maze_medium_high_damping</code></td><td>0.727</td><td>+0.160</td><td>4</td><td>0.0%</td><td>−0.00</td><td>0.096</td><td>603</td></tr><tr><td><code>maze_diverse</code></td><td>0.720</td><td>+0.127</td><td>2</td><td>10.5%</td><td><strong>+0.00</strong></td><td>0.109</td><td>603</td></tr></tbody></table></div>
+<p>LEV beats frozen on all seven and is generally third or fourth on success, behind the two AdaJEPA arms. What it wins is the rest of the frontier. Compounding is <code>+0.00</code> with a <code>[+0.00, +0.00]</code> interval on every setting — the correction is re-solved rather than accumulated, so there is nothing to drift — against <code>+0.24</code>, <code>+0.97</code>, <code>+1.23</code> and <code>+3.87</code> for the gradient arms. On the Push settings catastrophe is roughly a third of theirs (4.2% against 17.1% and 14.4% on <code>pushobj</code>), and adaptation costs 0.10 s/replan against 0.24–0.30 while running batched, so one process per shape rather than one per episode.</p>
+<h4>The selection grid is not separable</h4>
+<p>Worth knowing before reading a hyperparameter conclusion off this method. Two full runs of the protocol were made, differing only in how many frames are handed to the visual encoder per call — a change worth 5e-4 in the encoder output and nothing at all in the method. <strong>It flipped the selected cell on all seven settings.</strong> Selection cost fell from 12–17 columns to 9, because in the first run the winner sat on a grid boundary everywhere and in the second it sat in the interior everywhere. <code>maze_medium_high_damping</code> moved 0.773 → 0.727, which is the difference between the top row of that table and fourth.</p>
+<p>The 3×3 surface is flat relative to run-to-run noise. The frozen-relative gains, the compounding column and the Push catastrophe rates reproduced across both runs; the choice of cell, and any single setting&#x27;s rank, did not.</p>
+<h3>What it cannot do, and what to distrust</h3>
+<ul><li><strong>The correction is affine, per latent channel.</strong> It can remove a systematic bias or a gain drift in the predictor&#x27;s output and nothing else. It is <em>not</em> limited by patch pooling, which an earlier draft of this file claimed: every base model the benchmark ships emits a single pooled visual token, so the latent is <code>(B, T, 1, 394)</code> and there is no spatial structure to lose.</li><li><strong>The leave-one-out folds are single executed model steps, and adjacent steps within one chunk are consecutive states.</strong> Holding one out is genuinely out-of-sample for the fit, but it is not independent, so κ is optimistic — biased towards applying the correction. It is a shrinkage estimate, not a hypothesis test, and it should be read that way.</li><li><strong>The correction is inactive for the first two replans</strong> (<code>before_plan</code> runs before the first <code>on_transition</code>, and the veto needs two steps to hold one out). LEV plans frozen until then rather than applying an unvalidated correction; on a 20-replan episode that is one replan of adaptation given up.</li><li><strong>The one-step fit is evaluated at rollout depth 0 only.</strong> Deeper in the rollout the predictor&#x27;s input is itself corrected, which is a distribution the fit never saw. <code>decay</code> is a blunt instrument against that, not a solution.</li><li><strong><code>concat_dim == 1</code> only.</strong> All four benchmark base models use it. A token-concatenated model raises rather than silently splitting the latent wrongly.</li><li><strong>Peak memory is high for a method that adapts this cheaply</strong>, at 897 MB on Push and 603 MB on maze against frozen&#x27;s 157. It is the visual encoder running over a whole batched cohort in <code>on_transition</code>, not anything the correction does: every predictor call in that hook together accounts for 14 MB. Encoding the chunk&#x27;s frames in one call instead of one at a time made it 1510 MB, which is what an earlier version shipped. The floor is one ViT forward at <code>B = 50</code> and is not reducible for a batched method.</li><li><strong>κ stays low for most of an episode and rises sharply near its end.</strong> On <code>pushobj</code> it runs ≈0 for the first six replans, 0.14–0.43 through the middle, and 0.90+ at replans 19–20. The likely reading is that the residual is non-stationary while the object is being pushed and becomes consistent once motion settles, so the veto refuses to generalize across the non-stationary phase. An earlier draft predicted that this would confine LEV&#x27;s effect to the safety columns; that prediction was wrong. LEV gains +0.175 success on <code>pushobj</code> while spending most of each episode near frozen.</li></ul>
+<h3>Files</h3>
+<div class="table-wrap"><table><thead><tr><th>file</th><th>what</th></tr></thead><tbody><tr><td><code>adapter.py</code></td><td><code>LEVAdapter</code>; the statistics, the fit, the veto, the predictor hook</td></tr><tr><td><code>method.yaml</code></td><td>manifest and the two tunable axes</td></tr><tr><td><code>../../tests/test_lev_fit.py</code></td><td>GPU-free checks of the fit and the veto against direct refits</td></tr></tbody></table></div>
+<p>The fit and the held-out score are algebra on sufficient statistics — they never build a design matrix and never re-evaluate a correction on data. That is what makes them cheap, and it is also exactly the kind of derivation that returns a plausible number when it is wrong, so every identity is checked in <code>tests/test_lev_fit.py</code> against a direct computation that <em>does</em> hold the data and <em>does</em> refit.</p>
+<h3>Numerical guards</h3>
+<p>Two, both in the fit, both because the correction is installed in <em>raw</em> coordinates rather than the standardized ones it is solved in.</p>
+<ul><li><strong>The statistics are accumulated in double.</strong> The fit recovers the variance as <code>m2/n − mean²</code> and the slope numerator as <code>q1 − mean·q0</code>, each a difference of like-sized quantities. In float32 a channel whose across-patch spread is small next to its magnitude loses most of its significant digits there. The tensors involved are <code>(B, C)</code>, so this costs nothing.</li><li><strong>An unidentifiable slope is dropped, not divided by.</strong> Installed, the correction is <code>slope/σ · x + (intercept − slope·mean/σ)</code>: as <code>σ → 0</code> both terms blow up and cancel on application, so a slope fitted on a channel with no spread does not merely add noise — it destroys the offset that <em>is</em> identifiable. Channels with <code>σ ≤ 1e-3 · (|mean| + σ)</code> keep their offset and lose their slope. The floor is applied inside the fit, so the held-out score grades the correction that is actually installed.</li></ul>
+  </div>
+</section>
+
+<section>
+  <h2>Frozen Hyperparameters</h2>
+  <ul class='param-list'><li><span>buffer_size</span> = 15</li><li><span>decay</span> = 1.0</li><li><span>ridge</span> = 1.0</li></ul>
+</section>
+
+<section>
+  <h2>Results Summary</h2>
+  <div class='table-wrap'><table><thead><tr><th>Setting</th><th class='num'>Success</th><th class='num'>vs Frozen</th><th class='num'>n</th></tr></thead><tbody><tr>
+  <td><code>pushobj</code></td>
+  <td class="num">0.675</td>
+  <td class="num"></td>
+  <td class="num">600</td>
+</tr><tr>
+  <td><code>pushobj_shift</code></td>
+  <td class="num">0.389</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr><tr>
+  <td><code>pusht</code></td>
+  <td class="num">0.413</td>
+  <td class="num"></td>
+  <td class="num">450</td>
+</tr><tr>
+  <td><code>maze_medium</code></td>
+  <td class="num">0.820</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_low_density</code></td>
+  <td class="num">0.793</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_medium_high_damping</code></td>
+  <td class="num">0.727</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr><tr>
+  <td><code>maze_diverse</code></td>
+  <td class="num">0.720</td>
+  <td class="num"></td>
+  <td class="num">150</td>
+</tr></tbody></table></div>
+</section>
+
+<section>
+  <h2>Leaderboard Row</h2>
+  
+<h3>PushObj</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.675 (±0.019)</td>
+  <td class="num delta-pos">+0.175</td>
+  <td class="num">+6 [-0, +14]</td>
+  <td class="num">4.2% [2%, 7%]</td>
+  <td class="num">57% / +121</td>
+  <td class="num">0.102</td>
+  <td class="num">897</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushObj Shift</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.389 (±0.023)</td>
+  <td class="num delta-pos">+0.089</td>
+  <td class="num">+7 [+1, +14]</td>
+  <td class="num">5.6% [3%, 9%]</td>
+  <td class="num">56% / +103</td>
+  <td class="num">0.103</td>
+  <td class="num">897</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PushT</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.413 (±0.023)</td>
+  <td class="num delta-pos">+0.064</td>
+  <td class="num">+11 [+5, +22]</td>
+  <td class="num">13.9% [10%, 18%]</td>
+  <td class="num">59% / +243</td>
+  <td class="num">0.098</td>
+  <td class="num">897</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Medium</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.820 (±0.031)</td>
+  <td class="num delta-pos">+0.047</td>
+  <td class="num">+0 [-0, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">53% / +1</td>
+  <td class="num">0.125</td>
+  <td class="num">603</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze Low Density</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.793 (±0.033)</td>
+  <td class="num delta-pos">+0.047</td>
+  <td class="num">+1 [-1, +2]</td>
+  <td class="num">22.7% [5%, 41%]</td>
+  <td class="num">59% / +7</td>
+  <td class="num">0.099</td>
+  <td class="num">603</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>PointMaze High Damping</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.727 (±0.036)</td>
+  <td class="num delta-pos">+0.160</td>
+  <td class="num">+0 [-0, +0]</td>
+  <td class="num">0.0% [0%, 0%]</td>
+  <td class="num">52% / +1</td>
+  <td class="num">0.096</td>
+  <td class="num">603</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>DiverseMaze</h3>
+<div class="table-wrap">
+  <table class="sortable">
+    <thead>
+
+        <tr>
+          <th data-type="text">Method</th>
+          <th class="num" data-type="number">Success</th>
+          <th class="num" data-type="number">vs Frozen</th>
+          <th class="num" data-type="number">Median dist Δ</th>
+          <th class="num" data-type="number">Catastrophe</th>
+          <th class="num" data-type="number">Regret</th>
+          <th class="num" data-type="number">Adapt s/replan</th>
+          <th class="num" data-type="number">Peak MB</th>
+        </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td><a class="method-link" href="methods/lev.html">LEV — closed-form latent offset with a held-out veto</a></td>
+  <td class="num">0.720 (±0.037)</td>
+  <td class="num delta-pos">+0.127</td>
+  <td class="num">-0 [-2, +0]</td>
+  <td class="num">10.5% [3%, 21%]</td>
+  <td class="num">42% / +3</td>
+  <td class="num">0.109</td>
+  <td class="num">603</td>
+</tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>PAARBench — evaluate adaptation methods under a fixed MPC planner with transparent hyperparameter-selection cost.</p>
+    </div>
+  </footer>
+  <script src="../js/sort-tables.js" defer></script>
+</body>
+</html>
