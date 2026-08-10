@@ -109,28 +109,14 @@ Held-out cohorts, `scripts/evaluate.py`, selection cost 9 columns on every setti
 | `maze_diverse` | 0.720 | +0.127 | 2 | 10.5% | **+0.00** | 0.109 | 603 |
 
 LEV beats frozen on all seven and is generally third or fourth on success, behind the
-two AdaJEPA arms. What it wins is the rest of the frontier. Compounding is `+0.00` with
-a `[+0.00, +0.00]` interval on every setting — the correction is re-solved rather than
-accumulated, so there is nothing to drift — against `+0.24`, `+0.97`, `+1.23` and
-`+3.87` for the gradient arms. On the Push settings catastrophe is roughly a third of
+two AdaJEPA arms. What it wins is the rest of the frontier. Its compounding point
+estimate rounds to zero on all seven settings and the largest magnitude anywhere in its
+bootstrap intervals is `0.03` — the correction is re-solved rather than accumulated, so
+there is nothing to drift — against `+0.24`, `+0.97`, `+1.23` and `+3.87` for the
+gradient arms. On the Push settings catastrophe is roughly a third of
 theirs (4.2% against 17.1% and 14.4% on `pushobj`), and adaptation costs 0.10 s/replan
 against 0.24–0.30 while running batched, so one process per shape rather than one per
 episode.
-
-### The selection grid is not separable
-
-Worth knowing before reading a hyperparameter conclusion off this method. Two full runs
-of the protocol were made, differing only in how many frames are handed to the visual
-encoder per call — a change worth 5e-4 in the encoder output and nothing at all in the
-method. **It flipped the selected cell on all seven settings.** Selection cost fell from
-12–17 columns to 9, because in the first run the winner sat on a grid boundary
-everywhere and in the second it sat in the interior everywhere. `maze_medium_high_damping`
-moved 0.773 → 0.727, which is the difference between the top row of that table and
-fourth.
-
-The 3×3 surface is flat relative to run-to-run noise. The frozen-relative gains, the
-compounding column and the Push catastrophe rates reproduced across both runs; the
-choice of cell, and any single setting's rank, did not.
 
 ## What it cannot do, and what to distrust
 
