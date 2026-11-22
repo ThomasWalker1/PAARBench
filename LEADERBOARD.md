@@ -13,7 +13,9 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 | LEV — closed-form latent offset with a held-out veto | 0.720 | 0.037 | +0.127 | -0 [-2, +0] | 10.5% [3%, 21%] | +0.00 [-0.00, +0.00] | 42% / +3 | 0.109 | 603 | 150 | 9 (inherited) |
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.653 | 0.039 | +0.060 | -0 [-1, +0] | 6.1% [0%, 15%] | -0.06 [-0.09, -0.02] | 36% / +2 | 0.266 | 178 | 150 | 12 (inherited) |
 | AdaJEPA — online gradient TTA | 0.640 | 0.039 | +0.047 | -1 [-2, -0] | 5.9% [0%, 15%] | -0.06 [-0.10, -0.02] | 29% / +2 | 0.296 | 184 | 150 | 12 (inherited) |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.640 | 0.039 | +0.047 | -0 [-2, +0] | 8.3% [0%, 19%] | +0.00 [-0.01, +0.03] | 39% / +2 | 0.151 | 619 | 150 | 3 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.640 | 0.039 | +0.047 | -0 [-1, +0] | 8.1% [0%, 19%] | -0.01 [-0.04, +0.02] | 41% / +3 | 0.028 | 331 | 150 | 18 (inherited) |
+| Static (IA)³ — unconditioned correction | 0.620 | 0.040 | +0.027 | -0 [-1, +0] | 12.8% [3%, 23%] | -0.01 [-0.04, -0.00] | 46% / +3 | 0.000 | 169 | 150 | 3 (inherited) |
 | AdaJEPA v2 · DoRA — v2 fitting rule, magnitude + direction | 0.613 | 0.040 | +0.020 | -1 [-2, +0] | 10.5% [3%, 21%] | -0.06 [-0.09, -0.02] | 34% / +3 | 0.595 | 187 | 150 | 12 (inherited) |
 | Static LoRA — unconditioned correction | 0.607 | 0.040 | +0.013 | +0 [-0, +1] | 17.9% [8%, 31%] | -0.00 [-0.02, +0.01] | 54% / +4 | 0.000 | 169 | 150 | 3 (inherited) |
 | Frozen | 0.593 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
@@ -44,7 +46,9 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. Select
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.840 | 0.030 | +0.067 | +0 [-0, +1] | 0.0% [0%, 0%] | -0.00 [-0.04, +0.01] | 65% / +1 | 0.289 | 178 | 150 | 12 |
 | PAD — inverse-dynamics encoder adaptation | 0.840 | 0.030 | +0.067 | +1 [+0, +1] | 0.0% [0%, 0%] | +0.03 [+0.01, +0.06] | 88% / +2 | 0.030 | 331 | 150 | 18 |
 | LEV — closed-form latent offset with a held-out veto | 0.820 | 0.031 | +0.047 | +0 [-0, +0] | 0.0% [0%, 0%] | -0.00 [-0.03, +0.00] | 53% / +1 | 0.125 | 603 | 150 | 9 |
+| Static (IA)³ — unconditioned correction | 0.800 | 0.033 | +0.027 | -0 [-0, +0] | 0.0% [0%, 0%] | -0.01 [-0.02, +0.01] | 39% / +1 | 0.000 | 169 | 150 | 3 |
 | HyperLoRA — amortized hypernetwork | 0.793 | 0.033 | +0.020 | -0 [-0, +0] | 4.3% [0%, 13%] | -0.01 [-0.05, +0.00] | 43% / +1 | 0.143 | 682 | 150 | 5 |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.787 | 0.033 | +0.013 | +0 [-0, +0] | 5.0% [0%, 15%] | -0.00 [-0.02, +0.01] | 60% / +2 | 0.171 | 619 | 150 | 3 |
 | AdaJEPA v2 · DoRA — v2 fitting rule, magnitude + direction | 0.780 | 0.034 | +0.007 | +0 [+0, +0] | 5.0% [0%, 15%] | -0.00 [-0.02, +0.01] | 75% / +1 | 0.642 | 187 | 150 | 12 |
 | Static LoRA — unconditioned correction | 0.780 | 0.034 | +0.007 | -0 [-0, +0] | 0.0% [0%, 0%] | -0.01 [-0.03, +0.01] | 36% / +0 | 0.000 | 169 | 150 | 3 |
 | Frozen | 0.773 | 0.034 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
@@ -75,9 +79,11 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 | LEV — closed-form latent offset with a held-out veto | 0.727 | 0.036 | +0.160 | +0 [-0, +0] | 0.0% [0%, 0%] | -0.00 [-0.02, +0.01] | 52% / +1 | 0.096 | 603 | 150 | 9 (inherited) |
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.720 | 0.037 | +0.153 | +0 [-0, +1] | 0.0% [0%, 0%] | -0.00 [-0.01, +0.01] | 65% / +2 | 0.303 | 178 | 150 | 12 (inherited) |
 | AdaJEPA v2 · DoRA — v2 fitting rule, magnitude + direction | 0.693 | 0.038 | +0.127 | +0 [-0, +0] | 2.8% [0%, 8%] | +0.00 [-0.01, +0.01] | 58% / +2 | 0.621 | 187 | 150 | 12 (inherited) |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.607 | 0.040 | +0.040 | -0 [-0, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.02] | 49% / +2 | 0.138 | 619 | 150 | 3 (inherited) |
 | Static LoRA — unconditioned correction | 0.573 | 0.040 | +0.007 | -0 [-0, +0] | 4.3% [0%, 11%] | +0.00 [-0.01, +0.01] | 43% / +2 | 0.000 | 169 | 150 | 3 (inherited) |
 | Frozen | 0.567 | 0.040 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 | HyperLoRA — amortized hypernetwork | 0.533 | 0.041 | -0.033 | -0 [-1, +0] | 0.0% [0%, 0%] | +0.00 [-0.01, +0.02] | 42% / +1 | 0.130 | 682 | 150 | 5 (inherited) |
+| Static (IA)³ — unconditioned correction | 0.527 | 0.041 | -0.040 | +0 [-0, +0] | 1.9% [0%, 6%] | -0.00 [-0.01, +0.01] | 52% / +2 | 0.000 | 169 | 150 | 3 (inherited) |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -104,9 +110,11 @@ Test cohorts: seeds [100, 200, 300], 1 shapes, n=50 per shape per cohort. No sel
 | LEV — closed-form latent offset with a held-out veto | 0.793 | 0.033 | +0.047 | +1 [-1, +2] | 22.7% [5%, 41%] | +0.00 [+0.00, +0.00] | 59% / +7 | 0.099 | 603 | 150 | 9 (inherited) |
 | Static LoRA — unconditioned correction | 0.787 | 0.033 | +0.040 | +1 [-2, +2] | 16.7% [0%, 33%] | +0.02 [-0.03, +0.07] | 56% / +5 | 0.000 | 169 | 150 | 3 (inherited) |
 | AdaJEPA v2 — horizon-matched fit + fresh-evidence brake | 0.773 | 0.034 | +0.027 | +0 [-2, +1] | 6.2% [0%, 19%] | +0.02 [-0.05, +0.09] | 50% / +4 | 0.237 | 180 | 150 | 14 (inherited) |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.760 | 0.035 | +0.013 | +1 [-2, +4] | 31.6% [11%, 53%] | -0.02 [-0.06, +0.02] | 53% / +8 | 0.135 | 619 | 150 | 3 (inherited) |
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.747 | 0.036 | +0.000 | +1 [-0, +7] | 30.0% [10%, 50%] | -0.03 [-0.11, +0.03] | 70% / +14 | 0.283 | 178 | 150 | 12 (inherited) |
 | Frozen | 0.747 | 0.036 | — | — | — | — | — | 0.000 | 169 | 150 | 0 |
 | PAD — inverse-dynamics encoder adaptation | 0.747 | 0.036 | +0.000 | +2 [+1, +4] | 18.2% [5%, 36%] | +0.08 [+0.02, +0.19] | 82% / +5 | 0.028 | 331 | 150 | 18 (inherited) |
+| Static (IA)³ — unconditioned correction | 0.747 | 0.036 | +0.000 | +1 [-0, +4] | 22.7% [9%, 41%] | +0.00 [-0.02, +0.04] | 68% / +8 | 0.000 | 169 | 150 | 3 (inherited) |
 | AdaJEPA v2 · DoRA — v2 fitting rule, magnitude + direction | 0.727 | 0.036 | -0.020 | -1 [-2, +0] | 8.3% [0%, 21%] | +0.02 [-0.04, +0.07] | 33% / +3 | 0.609 | 187 | 150 | 12 (inherited) |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
@@ -135,9 +143,11 @@ Test cohorts: seeds [100, 200, 300], 4 shapes, n=50 per shape per cohort. Select
 | LEV — closed-form latent offset with a held-out veto | 0.675 | 0.019 | +0.175 | +6 [-0, +14] | 4.2% [2%, 7%] | +0.00 [+0.00, +0.00] | 57% / +121 | 0.102 | 897 | 600 | 9 |
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.660 | 0.019 | +0.160 | +10 [+4, +19] | 12.6% [8%, 17%] | +0.62 [+0.31, +1.17] | 61% / +250 | 0.220 | 171 | 600 | 12 |
 | HyperLoRA — amortized hypernetwork | 0.607 | 0.020 | +0.107 | -5 [-12, -0] | 7.5% [4%, 11%] | +0.01 [-0.15, +0.11] | 42% / +116 | 0.141 | 977 | 600 | 3 |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.605 | 0.020 | +0.105 | -1 [-7, +3] | 6.4% [3%, 10%] | -0.01 [-0.10, +0.09] | 48% / +76 | 0.147 | 912 | 600 | 4 |
 | PAD — inverse-dynamics encoder adaptation | 0.575 | 0.020 | +0.075 | +2 [-4, +8] | 7.7% [4%, 11%] | +0.14 [-0.17, +0.49] | 52% / +119 | 0.029 | 290 | 600 | 12 |
 | Static LoRA — unconditioned correction | 0.547 | 0.020 | +0.047 | -5 [-9, +0] | 5.2% [3%, 8%] | -0.03 [-0.16, +0.11] | 44% / +57 | 0.000 | 157 | 600 | 3 |
 | Frozen | 0.500 | 0.020 | — | — | — | — | — | 0.000 | 157 | 600 | 0 |
+| Static (IA)³ — unconditioned correction | 0.488 | 0.020 | -0.012 | -1 [-2, +2] | 2.2% [1%, 4%] | -0.00 [-0.07, +0.06] | 49% / +45 | 0.000 | 157 | 600 | 3 |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
 
@@ -165,8 +175,10 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. No sel
 | LEV — closed-form latent offset with a held-out veto | 0.389 | 0.023 | +0.089 | +7 [+1, +14] | 5.6% [3%, 9%] | +0.00 [+0.00, +0.01] | 56% / +103 | 0.103 | 897 | 450 | 9 (inherited) |
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.353 | 0.023 | +0.053 | +7 [+2, +14] | 7.1% [4%, 10%] | +0.50 [+0.20, +0.83] | 59% / +118 | 0.189 | 171 | 450 | 12 (inherited) |
 | PAD — inverse-dynamics encoder adaptation | 0.353 | 0.023 | +0.053 | +5 [-2, +9] | 10.4% [7%, 14%] | +0.25 [-0.10, +0.51] | 55% / +149 | 0.029 | 290 | 450 | 12 (inherited) |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.329 | 0.022 | +0.029 | -5 [-8, +1] | 6.5% [4%, 9%] | -0.06 [-0.25, +0.13] | 46% / +80 | 0.136 | 912 | 450 | 4 (inherited) |
 | HyperLoRA — amortized hypernetwork | 0.322 | 0.022 | +0.022 | -3 [-11, +3] | 8.0% [5%, 11%] | +0.02 [-0.30, +0.34] | 48% / +83 | 0.137 | 977 | 450 | 3 (inherited) |
 | Frozen | 0.300 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |
+| Static (IA)³ — unconditioned correction | 0.298 | 0.022 | -0.002 | -1 [-5, +1] | 4.7% [3%, 7%] | +0.01 [-0.13, +0.16] | 48% / +67 | 0.000 | 157 | 450 | 3 (inherited) |
 | Static LoRA — unconditioned correction | 0.296 | 0.022 | -0.004 | -2 [-9, +2] | 8.6% [6%, 12%] | -0.03 [-0.27, +0.18] | 48% / +102 | 0.000 | 157 | 450 | 3 (inherited) |
 
 **Success rate is the weakest column here.** At these n its binomial SE is around 0.02, so adjacent rows are usually not separable on it, and it is the metric the benchmark exists to argue past. The continuous columns carry far more information:
@@ -194,7 +206,9 @@ Test cohorts: seeds [100, 200, 300], 3 shapes, n=50 per shape per cohort. Select
 | HyperLoRA — amortized hypernetwork | 0.453 | 0.023 | +0.104 | -0 [-5, +11] | 7.7% [4%, 11%] | -0.07 [-0.30, +0.10] | 50% / +129 | 0.150 | 977 | 450 | 3 |
 | AdaJEPA — online gradient TTA | 0.440 | 0.023 | +0.091 | +55 [+36, +84] | 26.8% [21%, 33%] | +3.87 [+2.61, +5.16] | 66% / +549 | 0.293 | 177 | 450 | 12 |
 | AdaJEPA v2 · (IA)³ — v2 fitting rule, multiplicative rescaling | 0.433 | 0.023 | +0.084 | +37 [+19, +50] | 24.5% [19%, 30%] | +2.29 [+1.27, +3.34] | 62% / +308 | 0.094 | 171 | 450 | 12 |
+| Hyper-(IA)³ — amortized hypernetwork, (IA)³ correction | 0.431 | 0.023 | +0.082 | +2 [-4, +9] | 12.1% [8%, 16%] | +0.05 [-0.14, +0.22] | 52% / +208 | 0.128 | 912 | 450 | 3 |
 | LEV — closed-form latent offset with a held-out veto | 0.413 | 0.023 | +0.064 | +11 [+5, +22] | 13.9% [10%, 18%] | +0.00 [+0.00, +0.00] | 59% / +243 | 0.098 | 897 | 450 | 9 |
+| Static (IA)³ — unconditioned correction | 0.380 | 0.023 | +0.031 | +9 [-1, +18] | 11.0% [7%, 15%] | +0.28 [+0.00, +0.54] | 56% / +167 | 0.000 | 157 | 450 | 3 |
 | PAD — inverse-dynamics encoder adaptation | 0.360 | 0.023 | +0.011 | +6 [-4, +12] | 13.3% [10%, 17%] | +0.39 [-0.05, +0.88] | 54% / +181 | 0.061 | 290 | 450 | 9 |
 | Static LoRA — unconditioned correction | 0.360 | 0.023 | +0.011 | +7 [-0, +20] | 11.6% [8%, 16%] | +0.21 [-0.00, +0.53] | 55% / +181 | 0.000 | 157 | 450 | 4 |
 | Frozen | 0.349 | 0.022 | — | — | — | — | — | 0.000 | 157 | 450 | 0 |

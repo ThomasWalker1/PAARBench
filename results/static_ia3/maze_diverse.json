@@ -1,0 +1,97 @@
+{
+  "method": "static_ia3",
+  "method_dir": "static_ia3",
+  "display_name": "Static (IA)\u00b3 \u2014 unconditioned correction",
+  "setting": "maze_diverse",
+  "params": {
+    "checkpoint_path": "checkpoints/maze_medium_adapters/static_ia3_r2/hyper_lora_epoch_2.pth",
+    "correction_shape": "ia3",
+    "target_scope": "predlast_all",
+    "rank": 2,
+    "lora_scale": 1.0
+  },
+  "submission": true,
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_diverse",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "static_ia3",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_ia3_r2/hyper_lora_epoch_2.pth",
+        "correction_shape": "ia3",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "heldout_layouts": 0.68
+      },
+      "success": 0.68,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 231.2,
+      "out_dir": "eval_outputs/static_ia3/maze_diverse/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_diverse",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "static_ia3",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_ia3_r2/hyper_lora_epoch_2.pth",
+        "correction_shape": "ia3",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "heldout_layouts": 0.56
+      },
+      "success": 0.56,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 277.1,
+      "out_dir": "eval_outputs/static_ia3/maze_diverse/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_diverse",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "static_ia3",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_ia3_r2/hyper_lora_epoch_2.pth",
+        "correction_shape": "ia3",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "heldout_layouts": 0.62
+      },
+      "success": 0.62,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 279.7,
+      "out_dir": "eval_outputs/static_ia3/maze_diverse/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.62,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}
