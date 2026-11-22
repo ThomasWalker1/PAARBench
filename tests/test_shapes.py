@@ -8,7 +8,9 @@ from models.shapes import (
     DoRASpec,
     HyperDoRALinear,
     HyperIA3Linear,
+    HyperSSFLinear,
     IA3Spec,
+    SSFSpec,
     init_correction_tensors,
     install_predictor_shape_targets,
 )
@@ -77,6 +79,29 @@ def test_ia3_zero_is_bit_identical_and_scales(side, offset, length):
     torch.testing.assert_close(wrapped(x), expected, rtol=1e-5, atol=1e-5)
 
 
+@pytest.mark.parametrize("bias", [True, False])
+def test_ssf_zero_is_bit_identical_and_matches_formula(bias):
+    base = _linear(bias=bias)
+    wrapped = HyperSSFLinear(base)
+    x = torch.randn(2, 5, 12)
+    wrapped.set_lora(torch.zeros(9), torch.zeros(9))
+    assert torch.equal(wrapped(x), base(x))
+
+    g, b = torch.randn(9), torch.randn(9)
+    wrapped.set_lora(g, b)
+    torch.testing.assert_close(wrapped(x), base(x) * (1 + g) + b, rtol=1e-5, atol=1e-5)
+
+    G, Bt = torch.randn(2, 9), torch.randn(2, 9)
+    wrapped.set_lora(G, Bt)
+    batched = wrapped(x)
+    for i in range(2):
+        torch.testing.assert_close(batched[i], base(x[i]) * (1 + G[i]) + Bt[i], rtol=1e-5, atol=1e-5)
+
+
+def test_ssf_param_count():
+    assert SSFSpec(name="x", in_features=404, out_features=3072).num_params == 2 * 3072
+
+
 def _predictor():
     torch.manual_seed(0)
     return ViTPredictor(
@@ -84,14 +109,18 @@ def _predictor():
     )
 
 
-@pytest.mark.parametrize("shape", ["ia3", "dora"])
+_EXPECTED_NORMS = {"ia3": 1, "dora": 1, "ssf": 1, "adaln": 2 * 2 + 1}  # depth 2: 2 per block + final
+
+
+@pytest.mark.parametrize("shape", ["ia3", "dora", "ssf", "adaln"])
 def test_installed_predictor_is_frozen_at_init(shape):
     predictor = _predictor()
     x = torch.randn(2, 8, 16)
     with torch.no_grad():
         reference = predictor(x)
     targets, norms = install_predictor_shape_targets(predictor, shape=shape, rank=2)
-    assert len(norms) == 1
+    assert len(norms) == _EXPECTED_NORMS[shape]
+    assert (len(targets) == 0) == (shape == "adaln")
     generator = torch.Generator().manual_seed(0)
     for target in targets:
         tensors, _ = init_correction_tensors(target.spec, generator=generator)
@@ -118,7 +147,26 @@ def test_dora_param_count():
     assert spec.num_params == 2 * 404 + 3072 * 2 + 3072
 
 
-@pytest.mark.parametrize("shape", ["ia3", "dora"])
+def test_adaln_reaches_every_depth_and_changes_output():
+    predictor = _predictor()
+    x = torch.randn(2, 8, 16)
+    with torch.no_grad():
+        reference = predictor(x)
+    targets, norms = install_predictor_shape_targets(predictor, shape="adaln")
+    assert targets == []
+    names = {n.name for n in norms}
+    assert names == {
+        "transformer.layers.0.0.norm", "transformer.layers.0.1.net.0",
+        "transformer.layers.1.0.norm", "transformer.layers.1.1.net.0",
+        "transformer.norm",
+    }
+    first = next(n for n in norms if n.name == "transformer.layers.0.0.norm")
+    first.module.set_affine(torch.full((16,), 0.1), torch.zeros(16))
+    with torch.no_grad():
+        assert not torch.allclose(predictor(x), reference)
+
+
+@pytest.mark.parametrize("shape", ["ia3", "dora", "ssf", "adaln"])
 def test_generator_packs_shape_tensors_and_starts_frozen(shape):
     from models.hyper_lora import apply_hyper_tensors, build_generator
 
