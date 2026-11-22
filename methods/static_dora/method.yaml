@@ -1,0 +1,56 @@
+name: static_dora
+display_name: "Static DoRA — unconditioned correction"
+description: >
+  The control for hyper_dora: one learned DoRA correction (rank-2 DoRA -- LoRA factors for each weight row's direction plus a per-output-channel magnitude delta -- on the same four linear layers, plus the final LayerNorm delta) applied
+  identically to every episode and never updated. Trained offline with the same data,
+  loss and recipe as hyper_dora, with no context and no generator. If hyper_dora
+  barely beats this row, its conditioning is decorative.
+reference: "Liu et al., 2024, arXiv:2402.09353 (DoRA); control design: methods/static_lora"
+
+adapter: adapter:StaticLoRAAdapter
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
+
+params:
+  checkpoint_path: checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+  correction_shape: dora
+  target_scope: predlast_all
+  rank: 2
+  lora_scale: 1.0
+
+params_by_setting:
+  pushobj_shift:
+    checkpoint_path: checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+  pusht:
+    checkpoint_path: checkpoints/pvs_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+  maze_medium:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+  maze_medium_low_density:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+  maze_medium_high_damping:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+  maze_diverse:
+    checkpoint_path: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth
+
+tunable:
+  axes:
+    training_epoch:
+      scale: discrete
+      initial: [1, 2, 3]
+      pool_by_setting:
+        pushobj: [1, 2, 3, 4, 5]
+        pushobj_shift: [1, 2, 3, 4, 5]
+        pusht: [1, 2, 3, 4, 5]
+        maze_medium: [1, 2, 3, 4, 5]
+        maze_medium_low_density: [1, 2, 3, 4, 5]
+        maze_medium_high_damping: [1, 2, 3, 4, 5]
+        maze_diverse: [1, 2, 3, 4, 5]
+      maps_to:
+        param: checkpoint_path
+        by_setting:
+          pushobj: checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
+          pushobj_shift: checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
+          pusht: checkpoints/pvs_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
+          maze_medium: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
+          maze_medium_low_density: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
+          maze_medium_high_damping: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
+          maze_diverse: checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_{}.pth
