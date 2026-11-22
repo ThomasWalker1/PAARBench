@@ -20,27 +20,28 @@ from pathlib import Path
 
 import torch
 
-from models.hyper_lora import (
-    clear_hyper_tensors,
-    install_predictor_hyper_targets,
-)
+from models.hyper_lora import clear_hyper_tensors
+from models.shapes import install_predictor_shape_targets
 from paarbench.adapter import BaseWeightGuard
 
 
 class StaticLoRAAdapter:
     def __init__(self, wm, preprocessor, checkpoint_path,
-                 target_scope="predlast_all", rank=2, lora_scale=1.0):
+                 target_scope="predlast_all", rank=2, lora_scale=1.0,
+                 correction_shape="lora"):
         self.wm = wm
         self.preprocessor = preprocessor
         self.device = next(wm.parameters()).device
         self.rank = int(rank)
         self.target_scope = str(target_scope)
+        self.correction_shape = str(correction_shape)
 
         for param in self.wm.parameters():
             param.requires_grad = False
 
-        self.lora_targets, self.norm_targets = install_predictor_hyper_targets(
+        self.lora_targets, self.norm_targets = install_predictor_shape_targets(
             self.wm.predictor,
+            shape=self.correction_shape,
             scope=self.target_scope,
             rank=self.rank,
             scale=float(lora_scale),
@@ -79,14 +80,34 @@ class StaticLoRAAdapter:
             )
         for target in self.lora_targets:
             entry = correction[target.name]
+            if self.correction_shape != "lora":
+                # models/shapes.py shapes are stored as an ordered tensor list.
+                if entry.get("kind") != "shape" or entry.get("shape") != self.correction_shape:
+                    raise ValueError(
+                        f"{path}: {target.name} holds a {entry.get('shape', entry.get('kind'))!r} "
+                        f"correction, but correction_shape={self.correction_shape!r}"
+                    )
+                got = [tuple(t.shape) for t in entry["tensors"]]
+                if got != [tuple(s) for s in target.spec.tensor_shapes]:
+                    raise ValueError(
+                        f"{path}: {target.name} tensors are {got}, expected "
+                        f"{list(target.spec.tensor_shapes)}"
+                    )
+                continue
             if tuple(entry["A"].shape) != (target.spec.rank, target.spec.in_features):
                 raise ValueError(
                     f"{path}: {target.name} A is {tuple(entry['A'].shape)}, expected "
                     f"{(target.spec.rank, target.spec.in_features)} -- checkpoint rank "
                     f"does not match rank={self.rank}"
                 )
-        return {k: {kk: (vv.to(self.device) if torch.is_tensor(vv) else vv)
-                    for kk, vv in v.items()}
+        def to_device(value):
+            if torch.is_tensor(value):
+                return value.to(self.device)
+            if isinstance(value, list):
+                return [to_device(item) for item in value]
+            return value
+
+        return {k: {kk: to_device(vv) for kk, vv in v.items()}
                 for k, v in correction.items()}
 
     def _apply(self, batch: int):
@@ -99,6 +120,12 @@ class StaticLoRAAdapter:
         """
         for target in self.lora_targets:
             entry = self._correction[target.name]
+            if self.correction_shape != "lora":
+                target.module.set_lora(*(
+                    tensor.unsqueeze(0).expand(batch, *tensor.shape)
+                    for tensor in entry["tensors"]
+                ))
+                continue
             target.module.set_lora(
                 entry["A"].unsqueeze(0).expand(batch, -1, -1),
                 entry["B"].unsqueeze(0).expand(batch, -1, -1),

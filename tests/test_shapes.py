@@ -116,3 +116,29 @@ def test_ia3_sites_are_keys_values_and_mlp_hidden():
 def test_dora_param_count():
     spec = DoRASpec(name="x", in_features=404, out_features=3072, rank=2)
     assert spec.num_params == 2 * 404 + 3072 * 2 + 3072
+
+
+@pytest.mark.parametrize("shape", ["ia3", "dora"])
+def test_generator_packs_shape_tensors_and_starts_frozen(shape):
+    from models.hyper_lora import apply_hyper_tensors, build_generator
+
+    predictor = _predictor()
+    x = torch.randn(3, 8, 16)
+    with torch.no_grad():
+        reference = predictor(x)
+    targets, norms = install_predictor_shape_targets(predictor, shape=shape, rank=2)
+    specs = [t.spec for t in targets] + [n.spec for n in norms]
+    generator = build_generator("mlp", context_dim=5, specs=specs, init_scale=0.0)
+    assert generator.total_params == sum(spec.num_params for spec in specs)
+    tensors = generator(torch.randn(3, 5))
+    for target in targets:
+        got = [tuple(t.shape) for t in tensors[target.name]]
+        assert got == [(3,) + tuple(s) for s in target.spec.tensor_shapes]
+    apply_hyper_tensors(targets, norms, tensors)
+    with torch.no_grad():
+        assert torch.equal(predictor(x), reference)
+
+    generator.reset_output(0.1)
+    apply_hyper_tensors(targets, norms, generator(torch.randn(3, 5)))
+    with torch.no_grad():
+        assert not torch.allclose(predictor(x), reference)

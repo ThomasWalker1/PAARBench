@@ -163,6 +163,8 @@ class _PackedCorrectionMixin:
         self.fixed_a_scale = float(fixed_a_scale)
         self._fixed_a_buffers = {}
         self.total_params = sum(self._emitted_params(spec) for spec in self.specs)
+        if self.freeze_lora_A and any(hasattr(spec, "tensor_shapes") for spec in self.specs):
+            raise ValueError("freeze_lora_A applies to the LoRA shape only")
         for idx, spec in enumerate(self.specs):
             if isinstance(spec, LoRASpec) and self.freeze_lora_A:
                 buffer_name = f"fixed_lora_A_{idx}"
@@ -187,6 +189,19 @@ class _PackedCorrectionMixin:
         result = {}
         batch = packed.shape[0]
         for spec in self.specs:
+            shapes = getattr(spec, "tensor_shapes", None)
+            if shapes is not None:
+                # models/shapes.py specs ((IA)^3, DoRA) declare their tensors directly,
+                # packed in that order.
+                tensors = []
+                for shape in shapes:
+                    count = 1
+                    for dim in shape:
+                        count *= int(dim)
+                    tensors.append(packed[:, offset : offset + count].reshape(batch, *shape))
+                    offset += count
+                result[spec.name] = tuple(tensors)
+                continue
             if isinstance(spec, AffineSpec):
                 weight = packed[:, offset : offset + spec.features]
                 offset += spec.features
@@ -376,8 +391,7 @@ def apply_lora_tensors(
     tensors: dict[str, tuple[torch.Tensor, torch.Tensor]],
 ):
     for target in targets:
-        A, B = tensors[target.name]
-        target.module.set_lora(A, B)
+        target.module.set_lora(*tensors[target.name])
 
 
 def apply_hyper_tensors(
@@ -393,6 +407,11 @@ def apply_hyper_tensors(
             raise ValueError(f"Expected gate shape (B, 1), got {tuple(gate.shape)}")
         gated_lora = {}
         for target in lora_targets:
+            if not isinstance(target.spec, LoRASpec):
+                raise ValueError(
+                    f"adapter_gate is implemented for the LoRA shape only, not "
+                    f"{type(target.spec).__name__}"
+                )
             A, B = tensors[target.name]
             if A.shape[0] != gate.shape[0]:
                 raise ValueError("Gate and generated LoRA batch sizes must match")
@@ -467,6 +486,11 @@ def fold_hyper_tensors(
     (one robot, one episode) and the setting the latency table measures.
     """
     for target in lora_targets:
+        if not isinstance(target.spec, LoRASpec):
+            raise ValueError(
+                f"fold_weights is implemented for the LoRA shape only, not "
+                f"{type(target.spec).__name__}"
+            )
         A, B = tensors[target.name]
         if gate is not None:
             B = B * gate.view(gate.shape[0], 1, 1)
