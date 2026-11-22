@@ -1,0 +1,97 @@
+{
+  "method": "static_dora",
+  "method_dir": "static_dora",
+  "display_name": "Static DoRA \u2014 unconditioned correction",
+  "setting": "maze_medium",
+  "params": {
+    "checkpoint_path": "checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth",
+    "correction_shape": "dora",
+    "target_scope": "predlast_all",
+    "rank": 2,
+    "lora_scale": 1.0
+  },
+  "submission": true,
+  "selection_rule": "standard (3-point grid + boundary expansion)",
+  "selection_cost_columns": 3,
+  "selection_cost_basis": "selected",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_medium",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "static_dora",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth",
+        "correction_shape": "dora",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "medium": 0.78
+      },
+      "success": 0.78,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 197.4,
+      "out_dir": "eval_outputs/static_dora/maze_medium/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "static_dora",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth",
+        "correction_shape": "dora",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "medium": 0.7
+      },
+      "success": 0.7,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 202.5,
+      "out_dir": "eval_outputs/static_dora/maze_medium/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "static_dora",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "checkpoint_path": "checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_2.pth",
+        "correction_shape": "dora",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "medium": 0.78
+      },
+      "success": 0.78,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 192.8,
+      "out_dir": "eval_outputs/static_dora/maze_medium/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.7533333333333333,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}
