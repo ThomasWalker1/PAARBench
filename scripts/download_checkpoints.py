@@ -20,7 +20,7 @@ MANIFEST = REPO_ROOT / "CHECKPOINTS.sha256"
 HF_REPO_ID = "ThomasWalker1/paarbench-checkpoints"
 
 # Updated to the immutable Hub commit after each published artifact release.
-DEFAULT_REVISION = "2e1152cc8fa26217bf826f2799a7d542ed283226"
+DEFAULT_REVISION = "cd9e821c00e177baeffe097a702d18d1d2cadf95"
 
 GROUP_PREFIXES = {
     "settings": (
