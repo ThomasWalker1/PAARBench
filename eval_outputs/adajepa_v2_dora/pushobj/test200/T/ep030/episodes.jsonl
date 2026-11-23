@@ -1,0 +1,2 @@
+{"replan": 0, "episode_local": 0, "success": false, "state_dist": 185.8247833251953, "visual_dist": 12561.781561546117, "proprio_dist": 163.90277099609375, "cumulative_success": false, "planner_s": 9.124050811864436, "adapt_s": 0.014101804234087467, "adapt_peak_mb": 171.25341796875}
+{"replan": 1, "episode_local": 0, "success": true, "state_dist": 155.1714324951172, "visual_dist": 7320.5378900733795, "proprio_dist": 155.12477111816406, "cumulative_success": true, "planner_s": 7.823653723113239, "adapt_s": 0.18633472826331854, "adapt_peak_mb": 171.568359375}
