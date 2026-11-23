@@ -55,6 +55,18 @@ sha256sum --check --ignore-missing TARGETS.sha256   # maze_eval rows
 | `checkpoints/pvs_adapters/static_dora_r2/hyper_lora_epoch_N.pth` | Static DoRA, PushT | 1–5 | 1 |
 | `checkpoints/maze_medium_adapters/hyper_dora_r2/hyper_lora_epoch_N.pth` | Hyper-DoRA, MediumMaze (+ OOD) | 1–5 | 4 |
 | `checkpoints/maze_medium_adapters/static_dora_r2/hyper_lora_epoch_N.pth` | Static DoRA, MediumMaze (+ OOD) | 1–5 | 2 |
+| `checkpoints/pushobj_adapters/hyper_ssf_r2/hyper_lora_epoch_N.pth` | Hyper-SSF, PushObj | 1–5 | 2 |
+| `checkpoints/pushobj_adapters/static_ssf_r2/hyper_lora_epoch_N.pth` | Static SSF, PushObj | 1–5 | 3 |
+| `checkpoints/pvs_adapters/hyper_ssf_r2/hyper_lora_epoch_N.pth` | Hyper-SSF, PushT | 1–5 | 4 |
+| `checkpoints/pvs_adapters/static_ssf_r2/hyper_lora_epoch_N.pth` | Static SSF, PushT | 1–5 | 2 |
+| `checkpoints/maze_medium_adapters/hyper_ssf_r2/hyper_lora_epoch_N.pth` | Hyper-SSF, MediumMaze (+ OOD) | 1–5 | 4 |
+| `checkpoints/maze_medium_adapters/static_ssf_r2/hyper_lora_epoch_N.pth` | Static SSF, MediumMaze (+ OOD) | 1–5 | 1 |
+| `checkpoints/pushobj_adapters/hyper_adaln_r2/hyper_lora_epoch_N.pth` | Hyper-AdaLN, PushObj | 1–5 | 4 |
+| `checkpoints/pushobj_adapters/static_adaln_r2/hyper_lora_epoch_N.pth` | Static AdaLN, PushObj | 1–5 | 3 |
+| `checkpoints/pvs_adapters/hyper_adaln_r2/hyper_lora_epoch_N.pth` | Hyper-AdaLN, PushT | 1–5 | 3 |
+| `checkpoints/pvs_adapters/static_adaln_r2/hyper_lora_epoch_N.pth` | Static AdaLN, PushT | 1–5 | 2 |
+| `checkpoints/maze_medium_adapters/hyper_adaln_r2/hyper_lora_epoch_N.pth` | Hyper-AdaLN, MediumMaze (+ OOD) | 1–5 | 1 |
+| `checkpoints/maze_medium_adapters/static_adaln_r2/hyper_lora_epoch_N.pth` | Static AdaLN, MediumMaze (+ OOD) | 1–5 | 1 |
 | `checkpoints/pad/pushobj_inverse_dynamics.pth` | PAD, PushObj / PushObj Shift | — | single checkpoint |
 | `checkpoints/pad/pusht_inverse_dynamics.pth` | PAD, PushT | — | single checkpoint |
 | `checkpoints/pad/maze_medium_inverse_dynamics.pth` | PAD, MediumMaze (+ OOD) | — | single checkpoint |
