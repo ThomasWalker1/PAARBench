@@ -1,0 +1,45 @@
+name: adajepa_v2_adaln
+display_name: "AdaJEPA v2 · AdaLN — v2 fitting rule, AdaLN correction"
+description: >
+  AdaJEPA v2 with the rank-2 LoRA replaced by an affine delta (scale and shift) on every LayerNorm of the predictor, at all six depths and the final norm (13 LayerNorms); no linear layer is changed. 10,504 correction parameters instead of 20,424. It is the only shape here that reaches below the last block. Everything else -- the horizon-matched fit, the fresh-evidence brake, AdamW, clipping, the two tuned axes -- is the adajepa_v2 row, unchanged.
+reference: 'FiLM / adaptive LayerNorm: Perez et al., 2018, arXiv:1709.07871. Fitting rule: methods/adajepa_v2'
+
+adapter: adapter:AdaJEPAv2Adapter
+settings: [pushobj, pushobj_shift, pusht, maze_medium, maze_medium_low_density, maze_medium_high_damping, maze_diverse]
+
+# Owns mutable shared state -- predictor correction parameters and an AdamW trajectory
+# -- so a batched cohort would average unrelated episodes into one correction. Same
+# reason adajepa_v2 declares it.
+requires_episode_isolation: true
+
+# Identical to adajepa_v2's params except correction_shape and log_prefix. The point of
+# the row is that the shape is the only thing that changes, so nothing else is retuned
+# by hand: the selection grid below is v2's, at v2's selection cost.
+params:
+  correction_shape: adaln   # see models/shapes.py.
+  steps: 5
+  pred_lr: 2.0e-3
+  horizon: 5
+  buffer_size: 8
+  target_scope: predlast_all
+  lora_rank: 2
+  lora_scale: 1.0
+  lora_init_seed: 0
+  grad_clip_norm: 1.0
+  brake_ratio: 1.25
+  refresh_interval: 1
+  require_single_episode: true
+  log_prefix: adajepa_v2_adaln
+
+# v2's two axes and initial grid, unchanged. A shape with a different gradient scale
+# may want a different learning rate; boundary expansion is how the protocol finds it,
+# and the extra columns are counted in the selection cost.
+tunable:
+  axes:
+    pred_lr:
+      initial: [5.0e-4, 2.0e-3, 1.0e-2]
+      scale: log
+    horizon:
+      initial: [1, 3, 5]
+      scale: discrete
+      pool: [1, 2, 3, 5, 8]

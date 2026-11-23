@@ -11,6 +11,12 @@ rule, hypernetwork, selection) the same:
 - **DoRA** (Liu et al., 2024, arXiv:2402.09353): the weight is split into a
   per-output-channel magnitude and a direction; LoRA changes the direction and a
   separate vector changes the magnitude.
+- **SSF** (Lian et al., 2022, arXiv:2210.08823): a per-channel scale and shift of each
+  adapted linear's output, ``y (1 + g) + b``.  (IA)^3 plus a shift, on every output
+  channel of every adapted linear.
+- **AdaLN**: no linear is changed; the affine of *every* LayerNorm in the predictor
+  (all depths, not only the final one) gets a delta.  The cheapest correction that
+  reaches below the last block.
 
 Two conventions hold for every shape here, because the methods rely on them:
 
@@ -46,7 +52,7 @@ from .hyper_lora import (
 )
 from .lora import get_parent_module, replace_layer_norm_with_hyper, AffineSpec
 
-SHAPES = ("lora", "ia3", "dora")
+SHAPES = ("lora", "ia3", "dora", "ssf", "adaln")
 
 _NORM_EPS = 1e-12
 
@@ -99,6 +105,23 @@ class DoRASpec:
     @property
     def num_params(self) -> int:
         return self.rank * self.in_features + self.out_features * self.rank + self.out_features
+
+
+@dataclass(frozen=True)
+class SSFSpec:
+    """A per-output-channel scale delta ``g`` and shift ``b`` on one linear."""
+
+    name: str
+    in_features: int
+    out_features: int
+
+    @property
+    def tensor_shapes(self) -> tuple[tuple[int, ...], ...]:
+        return ((self.out_features,), (self.out_features,))
+
+    @property
+    def num_params(self) -> int:
+        return 2 * self.out_features
 
 
 # -- modules -------------------------------------------------------------------
@@ -260,6 +283,49 @@ class HyperDoRALinear(nn.Module):
         return y + (factor - 1.0) * F.linear(x, self.base.weight) + factor * (self.scale * lora)
 
 
+class HyperSSFLinear(nn.Module):
+    """Linear layer with an externally supplied SSF correction: ``y (1 + g) + b``."""
+
+    def __init__(self, base: nn.Linear):
+        super().__init__()
+        self.base = base
+        self.ssf_g = None
+        self.ssf_b = None
+
+    @property
+    def in_features(self) -> int:
+        return self.base.in_features
+
+    @property
+    def out_features(self) -> int:
+        return self.base.out_features
+
+    def clear_lora(self):
+        self.ssf_g = None
+        self.ssf_b = None
+
+    def set_lora(self, g: torch.Tensor, b: torch.Tensor):
+        for name, t in (("g", g), ("b", b)):
+            if t.shape[-1] != self.out_features or t.dim() not in (1, 2):
+                raise ValueError(f"Expected SSF {name} (..., {self.out_features}), got {tuple(t.shape)}")
+        if g.dim() != b.dim():
+            raise ValueError(f"SSF g and b must both be batched or both shared, got {tuple(g.shape)}, {tuple(b.shape)}")
+        self.ssf_g = g
+        self.ssf_b = b
+
+    def correction_tensors(self):
+        return (self.ssf_g, self.ssf_b)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        y = self.base(x)
+        if self.ssf_g is None:
+            return y
+        g = _feature_view(self.ssf_g.to(device=x.device, dtype=x.dtype), y)
+        b = _feature_view(self.ssf_b.to(device=x.device, dtype=x.dtype), y)
+        # Delta form: exactly y when g = b = 0.
+        return y + (y * g + b)
+
+
 # -- installation --------------------------------------------------------------
 
 
@@ -307,6 +373,8 @@ def install_predictor_shape_targets(
         return install_predictor_hyper_targets(predictor, scope=scope, rank=rank, scale=scale)
     if shape not in SHAPES:
         raise ValueError(f"Unknown correction shape {shape!r}; expected one of {SHAPES}")
+    if shape == "adaln":
+        return [], _install_all_layer_norms(predictor)
 
     targets = []
     for name in select_predictor_lora_module_names(predictor, scope):
@@ -323,6 +391,9 @@ def install_predictor_shape_targets(
                 name=name, in_features=linear.in_features, out_features=linear.out_features,
                 side=side, offset=offset, length=length,
             )
+        elif shape == "ssf":
+            module = _replace(predictor, name, HyperSSFLinear)
+            spec = SSFSpec(name=name, in_features=linear.in_features, out_features=linear.out_features)
         else:
             module = _replace(predictor, name, lambda base: HyperDoRALinear(base, rank, scale))
             spec = DoRASpec(
@@ -343,6 +414,18 @@ def install_predictor_shape_targets(
     return targets, norm_targets
 
 
+def _install_all_layer_norms(predictor: nn.Module) -> list[NormTarget]:
+    """Wrap every LayerNorm in the predictor (all depths) with an affine-delta target."""
+    names = [n for n, m in predictor.named_modules() if isinstance(m, nn.LayerNorm)]
+    if not names:
+        raise ValueError("adaln: the predictor has no LayerNorm")
+    targets = []
+    for name in names:
+        norm = replace_layer_norm_with_hyper(predictor, name)
+        targets.append(NormTarget(name=name, module=norm, spec=AffineSpec(name=name, features=norm.features)))
+    return targets
+
+
 def init_correction_tensors(spec, generator: torch.Generator | None = None):
     """Initial online-fitted tensors for one target: random where the shape needs it,
     zero everywhere that controls the size of the correction.
@@ -353,6 +436,8 @@ def init_correction_tensors(spec, generator: torch.Generator | None = None):
     if isinstance(spec, IA3Spec):
         s = torch.zeros(spec.length)
         return [s], [0]
+    if isinstance(spec, SSFSpec):
+        return [torch.zeros(spec.out_features), torch.zeros(spec.out_features)], [0, 1]
     if isinstance(spec, DoRASpec):
         A = torch.empty(spec.rank, spec.in_features)
         nn.init.normal_(A, mean=0.0, std=1.0 / max(spec.in_features, 1) ** 0.5, generator=generator)

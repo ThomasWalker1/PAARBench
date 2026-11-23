@@ -134,10 +134,12 @@ def world_model():
     return load_world_model(_BASE, "latest")
 
 
-# models/shapes.py adds `ia3_s` ((IA)^3) and `dora_dm` (DoRA's magnitude delta); DoRA's
-# direction reuses lora_A / lora_B.
+# models/shapes.py adds `ia3_s` ((IA)^3), `dora_dm` (DoRA's magnitude delta) and
+# `ssf_g` / `ssf_b` (SSF); DoRA's direction reuses lora_A / lora_B, and AdaLN uses only
+# the affine deltas.
 _CORRECTION_SUFFIXES = (
     "lora_A", "lora_B", "affine_delta_weight", "affine_delta_bias", "ia3_s", "dora_dm",
+    "ssf_g", "ssf_b",
 )
 
 
@@ -257,9 +259,11 @@ _CORRECTION_ATTRS = (
     # invisible for the one correction type that carries no parameters of its own.
     "affine_delta_weight",
     "affine_delta_bias",
-    # models/shapes.py: (IA)^3's scale and DoRA's magnitude delta.
+    # models/shapes.py: (IA)^3's scale, DoRA's magnitude delta, SSF's scale and shift.
     "ia3_s",
     "dora_dm",
+    "ssf_g",
+    "ssf_b",
 )
 
 

@@ -1,0 +1,133 @@
+{
+  "method": "adajepa_v2_adaln",
+  "method_dir": "adajepa_v2_adaln",
+  "display_name": "AdaJEPA v2 \u00b7 AdaLN \u2014 v2 fitting rule, AdaLN correction",
+  "setting": "maze_medium_low_density",
+  "params": {
+    "correction_shape": "adaln",
+    "steps": 5,
+    "pred_lr": 0.002,
+    "horizon": 3,
+    "buffer_size": 8,
+    "target_scope": "predlast_all",
+    "lora_rank": 2,
+    "lora_scale": 1.0,
+    "lora_init_seed": 0,
+    "grad_clip_norm": 1.0,
+    "brake_ratio": 1.25,
+    "refresh_interval": 1,
+    "require_single_episode": true,
+    "log_prefix": "adajepa_v2_adaln"
+  },
+  "submission": true,
+  "selection_rule": "inherited from maze_medium (standard (3-point grid + boundary expansion), 9 column(s) there)",
+  "selection_cost_columns": 9,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": true,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "maze_medium_low_density",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "adajepa_v2_adaln",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "correction_shape": "adaln",
+        "steps": 5,
+        "pred_lr": 0.002,
+        "horizon": 3,
+        "buffer_size": 8,
+        "target_scope": "predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "lora_init_seed": 0,
+        "grad_clip_norm": 1.0,
+        "brake_ratio": 1.25,
+        "refresh_interval": 1,
+        "require_single_episode": true,
+        "log_prefix": "adajepa_v2_adaln"
+      },
+      "success_by_shape": {
+        "medium": 0.76
+      },
+      "success": 0.76,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 506.6,
+      "out_dir": "eval_outputs/adajepa_v2_adaln/maze_medium_low_density/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "maze_medium_low_density",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "adajepa_v2_adaln",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "correction_shape": "adaln",
+        "steps": 5,
+        "pred_lr": 0.002,
+        "horizon": 3,
+        "buffer_size": 8,
+        "target_scope": "predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "lora_init_seed": 0,
+        "grad_clip_norm": 1.0,
+        "brake_ratio": 1.25,
+        "refresh_interval": 1,
+        "require_single_episode": true,
+        "log_prefix": "adajepa_v2_adaln"
+      },
+      "success_by_shape": {
+        "medium": 0.74
+      },
+      "success": 0.74,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 576.3,
+      "out_dir": "eval_outputs/adajepa_v2_adaln/maze_medium_low_density/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "maze_medium_low_density",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "adajepa_v2_adaln",
+      "n_evals": 50,
+      "n": 50,
+      "params": {
+        "correction_shape": "adaln",
+        "steps": 5,
+        "pred_lr": 0.002,
+        "horizon": 3,
+        "buffer_size": 8,
+        "target_scope": "predlast_all",
+        "lora_rank": 2,
+        "lora_scale": 1.0,
+        "lora_init_seed": 0,
+        "grad_clip_norm": 1.0,
+        "brake_ratio": 1.25,
+        "refresh_interval": 1,
+        "require_single_episode": true,
+        "log_prefix": "adajepa_v2_adaln"
+      },
+      "success_by_shape": {
+        "medium": 0.76
+      },
+      "success": 0.76,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 596.0,
+      "out_dir": "eval_outputs/adajepa_v2_adaln/maze_medium_low_density/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.7533333333333333,
+  "n": 150,
+  "complete": true,
+  "frozen_reference": null
+}
