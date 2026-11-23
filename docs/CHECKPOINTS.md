@@ -43,6 +43,12 @@ sha256sum --check --ignore-missing TARGETS.sha256   # maze_eval rows
 | `checkpoints/pvs_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, PushT | 1–5 | 1 |
 | `checkpoints/maze_medium_adapters/hyper_r2/hyper_lora_epoch_N.pth` | HyperLoRA, MediumMaze (+ OOD) | 1–5 | 2 |
 | `checkpoints/maze_medium_adapters/static_r2/hyper_lora_epoch_N.pth` | Static LoRA, MediumMaze (+ OOD) | 1–5 | 2 |
+| `checkpoints/pushobj_adapters/hyper_ia3_r2/hyper_lora_epoch_N.pth` | Hyper-(IA)³, PushObj | 1–5 | 3 |
+| `checkpoints/pushobj_adapters/static_ia3_r2/hyper_lora_epoch_N.pth` | Static (IA)³, PushObj | 1–5 | 2 |
+| `checkpoints/pvs_adapters/hyper_ia3_r2/hyper_lora_epoch_N.pth` | Hyper-(IA)³, PushT | 1–5 | 1 |
+| `checkpoints/pvs_adapters/static_ia3_r2/hyper_lora_epoch_N.pth` | Static (IA)³, PushT | 1–5 | 2 |
+| `checkpoints/maze_medium_adapters/hyper_ia3_r2/hyper_lora_epoch_N.pth` | Hyper-(IA)³, MediumMaze (+ OOD) | 1–5 | 1 |
+| `checkpoints/maze_medium_adapters/static_ia3_r2/hyper_lora_epoch_N.pth` | Static (IA)³, MediumMaze (+ OOD) | 1–5 | 2 |
 | `checkpoints/pad/pushobj_inverse_dynamics.pth` | PAD, PushObj / PushObj Shift | — | single checkpoint |
 | `checkpoints/pad/pusht_inverse_dynamics.pth` | PAD, PushT | — | single checkpoint |
 | `checkpoints/pad/maze_medium_inverse_dynamics.pth` | PAD, MediumMaze (+ OOD) | — | single checkpoint |

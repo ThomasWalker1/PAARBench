@@ -37,6 +37,7 @@ from models.hyper_lora import (
     select_predictor_lora_module_names,
 )
 from models.hyper_context import OrderedTransitionContext, transition_buffer_features
+from models.shapes import SHAPES, init_correction_tensors, install_predictor_shape_targets
 from methods.adajepa.adapter import AdaJEPAAdapter
 from paarbench.offline import load_training_bundle
 from paarbench.world_model import load_model, load_train_config
@@ -168,6 +169,16 @@ def parse_args():
     parser.add_argument("--gate-hidden-dim", type=int, default=64)
     parser.add_argument("--gate-init-bias", type=float, default=0.0)
     parser.add_argument("--target-scope", default="predlast_all")
+    parser.add_argument(
+        "--correction-shape",
+        choices=SHAPES,
+        default="lora",
+        help=(
+            "Parameterization of the linear-layer correction (models/shapes.py). The "
+            "sites, the final LayerNorm delta, the generator and the objective are the "
+            "same for every shape; only the emitted tensors differ."
+        ),
+    )
     parser.add_argument(
         "--static-lora",
         action="store_true",
@@ -1609,14 +1620,29 @@ def main():
         )
 
     dense_finetune = args.dense_finetune != "none"
+    if args.correction_shape != "lora":
+        unsupported = [
+            flag for flag, on in (
+                ("--distill-adapter", args.distill_adapter),
+                ("--dense-finetune", dense_finetune),
+                ("--adapter-gate", args.adapter_gate),
+                ("--freeze-lora-a", args.freeze_lora_a),
+            ) if on
+        ]
+        if unsupported:
+            raise ValueError(
+                f"--correction-shape {args.correction_shape} is implemented for the "
+                f"plain hypernetwork and static paths only; drop {unsupported}."
+            )
     if dense_finetune:
         # Full-model control for the few-shot comparison: no hypernetwork and no
         # LoRA wrappers -- the base predictor's own weights are the adapted
         # parameters, trained on the same data, loss and step budget.
         lora_targets, norm_targets = [], []
     else:
-        lora_targets, norm_targets = install_predictor_hyper_targets(
+        lora_targets, norm_targets = install_predictor_shape_targets(
             wm.predictor,
+            shape=args.correction_shape,
             scope=args.target_scope,
             rank=args.rank,
             scale=args.lora_scale,
@@ -1712,6 +1738,17 @@ def main():
         init_generator = torch.Generator(device="cpu")
         init_generator.manual_seed(int(args.seed))
         for target in lora_targets:
+            if args.correction_shape != "lora":
+                # Same identity start as LoRA's B = 0: every tensor that sets the size
+                # of the correction is zero (models/shapes.py).
+                tensors, _zeroable = init_correction_tensors(
+                    target.spec, generator=init_generator
+                )
+                params = [torch.nn.Parameter(t.to(device)) for t in tensors]
+                target.module.set_lora(*params)
+                static_lora_state[target.name] = ("shape", *params)
+                trainable_parameters += params
+                continue
             A_init = torch.empty(target.spec.rank, target.spec.in_features)
             torch.nn.init.normal_(
                 A_init,
@@ -1798,6 +1835,9 @@ def main():
                     if kind == "lora":
                         tensors[0].copy_(entry["A"].to(device))
                         tensors[1].copy_(entry["B"].to(device))
+                    elif kind == "shape":
+                        for tensor, saved in zip(tensors, entry["tensors"]):
+                            tensor.copy_(saved.to(device))
                     else:
                         tensors[0].copy_(entry["delta_weight"].to(device))
                         tensors[1].copy_(entry["delta_bias"].to(device))
@@ -2002,6 +2042,12 @@ def main():
                         "kind": "lora",
                         "A": entry[1].detach().cpu(),
                         "B": entry[2].detach().cpu(),
+                    }
+                elif kind == "shape":
+                    static_payload[name] = {
+                        "kind": "shape",
+                        "shape": args.correction_shape,
+                        "tensors": [tensor.detach().cpu() for tensor in entry[1:]],
                     }
                 else:
                     static_payload[name] = {

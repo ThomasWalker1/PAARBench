@@ -13,13 +13,13 @@ from models.hyper_lora import (
     clear_hyper_tensors,
     fold_hyper_tensors,
     full_rank_for_scope,
-    install_predictor_hyper_targets,
     lora_parameter_budget,
     module_parameter_count,
     restore_base_weights,
     snapshot_base_weights,
 )
 from models.hyper_context import OrderedTransitionContext, transition_feature
+from models.shapes import install_predictor_shape_targets
 from utils import move_to_device
 
 log = logging.getLogger(__name__)
@@ -43,6 +43,7 @@ class HyperLoRAAdapter:
         gate_hidden_dim=64,
         gate_init_bias=0.0,
         target_scope="predlast_all",
+        correction_shape="lora",
         rank=4,
         lora_scale=1.0,
         freeze_lora_A=False,
@@ -112,8 +113,10 @@ class HyperLoRAAdapter:
         if str(rank).lower() == "full":
             rank = full_rank_for_scope(self.wm.predictor, self.target_scope)
         self.rank = int(rank)
-        self.lora_targets, self.norm_targets = install_predictor_hyper_targets(
+        self.correction_shape = str(correction_shape)
+        self.lora_targets, self.norm_targets = install_predictor_shape_targets(
             self.wm.predictor,
+            shape=self.correction_shape,
             scope=self.target_scope,
             rank=self.rank,
             scale=float(lora_scale),
@@ -241,6 +244,10 @@ class HyperLoRAAdapter:
                     ("context_mode", self.context_mode, "transition_buffer"),
                     ("target_scope", self.target_scope, "predlast_all"),
                     ("generator", self.generator_kind, "mlp"),
+                    # A DoRA and a LoRA generator emit different-length vectors, but an
+                    # (IA)^3 one could in principle line up with something else; check
+                    # the shape by name rather than trusting tensor sizes.
+                    ("correction_shape", self.correction_shape, "lora"),
                 ):
                     saved = metadata.get(field, default)
                     if str(saved) != str(requested):
