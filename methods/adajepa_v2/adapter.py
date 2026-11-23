@@ -69,12 +69,21 @@ from collections import deque
 import torch
 
 from models.hyper_lora import install_predictor_hyper_targets
+from models.shapes import SHAPES, init_correction_tensors, install_predictor_shape_targets
 from paarbench.adapter import BaseWeightGuard
 from utils import move_to_device
 
 log = logging.getLogger(__name__)
 
 _EPS = 1e-12
+
+
+def _correction_tensors(module):
+    """The tensors ``module.set_lora`` takes, for LoRA and every ``models/shapes`` shape."""
+    getter = getattr(module, "correction_tensors", None)
+    if getter is not None:
+        return tuple(getter())
+    return (module.lora_A, module.lora_B)
 
 
 class AdaJEPAv2Adapter:
@@ -89,6 +98,7 @@ class AdaJEPAv2Adapter:
         horizon=3,
         buffer_size=8,
         target_scope="predlast_all",
+        correction_shape="lora",
         lora_rank=2,
         lora_scale=1.0,
         lora_init_seed=0,
@@ -107,6 +117,7 @@ class AdaJEPAv2Adapter:
         self.horizon = int(horizon)
         self.buffer_size = int(buffer_size)
         self.target_scope = str(target_scope)
+        self.correction_shape = str(correction_shape)
         self.lora_rank = int(lora_rank)
         self.lora_scale = float(lora_scale)
         self.lora_init_seed = int(lora_init_seed)
@@ -132,6 +143,11 @@ class AdaJEPAv2Adapter:
             )
         if self.lora_rank <= 0:
             raise ValueError("AdaJEPA v2 lora_rank must be positive.")
+        if self.correction_shape not in SHAPES:
+            raise ValueError(
+                f"AdaJEPA v2 correction_shape must be one of {SHAPES}, "
+                f"got {self.correction_shape!r}."
+            )
 
         self.num_hist = max(int(getattr(wm, "num_hist", 1) or 1), 1)
         self.concat_dim = int(getattr(wm, "concat_dim", 1))
@@ -164,6 +180,10 @@ class AdaJEPAv2Adapter:
     def _install_correction(self):
         for param in self.wm.parameters():
             param.requires_grad = False
+
+        if self.correction_shape != "lora":
+            self._install_shaped_correction()
+            return
 
         self.lora_targets, self.norm_targets = install_predictor_hyper_targets(
             self.wm.predictor,
@@ -214,6 +234,48 @@ class AdaJEPAv2Adapter:
             len(self._trainable),
         )
 
+    def _install_shaped_correction(self):
+        """Install a non-LoRA correction shape (``models/shapes.py``) on the same sites.
+
+        Everything else -- the LayerNorm affine delta, the optimizer, the brake, the
+        reset-by-zeroing -- is the LoRA row's.  Each shape is parameterized so that
+        zeroing its ``zeroable`` tensors returns exactly the frozen predictor, which is
+        what ``_reset_correction`` and the brake rely on.
+        """
+        self.lora_targets, self.norm_targets = install_predictor_shape_targets(
+            self.wm.predictor,
+            shape=self.correction_shape,
+            scope=self.target_scope,
+            rank=self.lora_rank,
+            scale=self.lora_scale,
+        )
+        generator = torch.Generator(device="cpu")
+        generator.manual_seed(self.lora_init_seed)
+        for target in self.lora_targets:
+            tensors, zeroable = init_correction_tensors(target.spec, generator=generator)
+            params = [torch.nn.Parameter(t.to(self.device)) for t in tensors]
+            target.module.set_lora(*params)
+            self.lora_parameters.extend(params)
+            self._trainable.extend(params)
+            self._zeroable.extend(params[i] for i in zeroable)
+        for target in self.norm_targets:
+            delta_weight = torch.nn.Parameter(
+                torch.zeros(target.spec.features, device=self.device)
+            )
+            delta_bias = torch.nn.Parameter(
+                torch.zeros(target.spec.features, device=self.device)
+            )
+            target.module.set_affine(delta_weight, delta_bias)
+            self.lora_parameters.extend([delta_weight, delta_bias])
+            self._trainable.extend([delta_weight, delta_bias])
+            self._zeroable.extend([delta_weight, delta_bias])
+        log.info(
+            "AdaJEPA v2 installed %s %s modules and %s LayerNorm modules "
+            "(%s correction parameters).",
+            len(self.lora_targets), self.correction_shape, len(self.norm_targets),
+            sum(int(p.numel()) for p in self._trainable),
+        )
+
     def _new_optimizer(self):
         return torch.optim.AdamW([{"params": self._trainable, "lr": self.pred_lr}])
 
@@ -234,7 +296,7 @@ class AdaJEPAv2Adapter:
         references to these exact objects.
         """
         saved_lora = [
-            (t.module, t.module.lora_A, t.module.lora_B) for t in self.lora_targets
+            (t.module, _correction_tensors(t.module)) for t in self.lora_targets
         ]
         saved_norm = [
             (t.module, t.module.affine_delta_weight, t.module.affine_delta_bias)
@@ -247,8 +309,8 @@ class AdaJEPAv2Adapter:
                 target.module.clear_affine()
             yield
         finally:
-            for module, A, B in saved_lora:
-                module.set_lora(A, B)
+            for module, tensors in saved_lora:
+                module.set_lora(*tensors)
             for module, weight, bias in saved_norm:
                 module.set_affine(weight, bias)
 
