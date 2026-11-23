@@ -1,0 +1,103 @@
+{
+  "method": "static_dora",
+  "method_dir": "static_dora",
+  "display_name": "Static DoRA \u2014 unconditioned correction",
+  "setting": "pushobj_shift",
+  "params": {
+    "checkpoint_path": "checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_1.pth",
+    "correction_shape": "dora",
+    "target_scope": "predlast_all",
+    "rank": 2,
+    "lora_scale": 1.0
+  },
+  "submission": true,
+  "selection_rule": "inherited from pushobj (standard (3-point grid + boundary expansion), 3 column(s) there)",
+  "selection_cost_columns": 3,
+  "selection_cost_basis": "inherited",
+  "episode_isolated": false,
+  "selection_cohort_seed": 0,
+  "test_cohorts": {
+    "test100": {
+      "setting": "pushobj_shift",
+      "cohort": "test100",
+      "seed": 100,
+      "tag": "static_dora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_1.pth",
+        "correction_shape": "dora",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "I": 0.2,
+        "small_tee": 0.46,
+        "square": 0.18
+      },
+      "success": 0.28,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 461.5,
+      "out_dir": "eval_outputs/static_dora/pushobj_shift/test100",
+      "paired_metrics": null
+    },
+    "test200": {
+      "setting": "pushobj_shift",
+      "cohort": "test200",
+      "seed": 200,
+      "tag": "static_dora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_1.pth",
+        "correction_shape": "dora",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "I": 0.18,
+        "small_tee": 0.46,
+        "square": 0.28
+      },
+      "success": 0.3066666666666667,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 459.4,
+      "out_dir": "eval_outputs/static_dora/pushobj_shift/test200",
+      "paired_metrics": null
+    },
+    "test300": {
+      "setting": "pushobj_shift",
+      "cohort": "test300",
+      "seed": 300,
+      "tag": "static_dora",
+      "n_evals": 50,
+      "n": 150,
+      "params": {
+        "checkpoint_path": "checkpoints/pushobj_adapters/static_dora_r2/hyper_lora_epoch_1.pth",
+        "correction_shape": "dora",
+        "target_scope": "predlast_all",
+        "rank": 2,
+        "lora_scale": 1.0
+      },
+      "success_by_shape": {
+        "I": 0.22,
+        "small_tee": 0.46,
+        "square": 0.14
+      },
+      "success": 0.2733333333333334,
+      "complete": true,
+      "failures": [],
+      "wall_seconds": 436.7,
+      "out_dir": "eval_outputs/static_dora/pushobj_shift/test300",
+      "paired_metrics": null
+    }
+  },
+  "success": 0.28666666666666674,
+  "n": 450,
+  "complete": true,
+  "frozen_reference": null
+}
